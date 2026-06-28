@@ -11,6 +11,53 @@ class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   var _isLogin = true;
 
+  // This correctly rejects:
+  // ❌ fdgdfgdf@ ❌ abc@gmail ❌ @gmail.com ❌ abc@
+  // ✅ 8f6tH@example.com; ✅ john.doe@yahoo.co.uk
+  final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+
+  // Password must contain at least 8-12 characters, 1 uppercase letter, 1 lowercase letter,
+  // 1 number, and 1 special character
+  // Professional & Enterprise Banking sytem;
+  // Exam: Valid: Flutter@2026; Invalid: Flutter2026
+  final passwordRegex = RegExp(
+    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$',
+  );
+
+  // ✅ 1. Username Regex: Allows only letters, numbers, underscores, and dots (Length: 4-15)
+  final usernameRegex = RegExp(r'^[a-zA-Z0-9_\.]{4,15}$');
+
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _usernameController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _usernameController.dispose();
+
+    super.dispose();
+  }
+
+  void _submitForm() {
+    final isValid = _formKey.currentState!.validate();
+
+    if (!isValid) {
+      return;
+    }
+
+    final enteredEmail = _emailController.text.trim();
+    final enteredPassword = _passwordController.text.trim();
+    final enteredUsername = _isLogin ? '' : _usernameController.text.trim();
+
+    debugPrint('Email: $enteredEmail');
+    debugPrint('Password: $enteredPassword');
+    if (!_isLogin) {
+      debugPrint('Username: $enteredUsername');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,13 +104,48 @@ class _AuthScreenState extends State<AuthScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min, // Hug content tightly
                     children: [
+                      if (!_isLogin) ...[
+                        TextFormField(
+                          controller: _usernameController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            labelText: 'Username',
+                            labelStyle: TextStyle(color: Colors.white70),
+                            prefixIcon: Icon(
+                              Icons.person_outline_rounded,
+                              color: Colors.white70,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white30),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white),
+                            ),
+                          ),
+                          autocorrect: false,
+                          textCapitalization: TextCapitalization.none,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter a username.';
+                            }
+                            if (!usernameRegex.hasMatch(value.trim())) {
+                              return '4-15 chars, letters/numbers/dots only.';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+
                       TextFormField(
+                        controller: _emailController,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           labelText: 'Email',
                           labelStyle: TextStyle(color: Colors.white70),
                           prefixIcon: Icon(
-                            Icons.lock_outline_rounded,
+                            Icons.email_outlined,
                             color: Colors.white70,
                           ),
                           enabledBorder: OutlineInputBorder(
@@ -76,9 +158,18 @@ class _AuthScreenState extends State<AuthScreen> {
                         keyboardType: TextInputType.emailAddress,
                         autocorrect: false,
                         textCapitalization: TextCapitalization.none,
+                        validator: (value) {
+                          if (value == null ||
+                              value.trim().isEmpty ||
+                              !emailRegex.hasMatch(value.trim())) {
+                            return 'Please enter a valid email address.';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
+                        controller: _passwordController,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           labelText: 'Password',
@@ -97,12 +188,18 @@ class _AuthScreenState extends State<AuthScreen> {
                         obscureText: true,
                         autocorrect: false,
                         textCapitalization: TextCapitalization.none,
+                        validator: (value) {
+                          if (value == null ||
+                              value.trim().isEmpty ||
+                              !passwordRegex.hasMatch(value.trim())) {
+                            return 'Password must contain uppercase, lowercase and a number.';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 20),
                       ElevatedButton(
-                        onPressed: () {
-                          // Action execution logic will go here in the next step!
-                        },
+                        onPressed: _submitForm,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Theme.of(
                             context,
