@@ -1,0 +1,28 @@
+import 'package:flutter/material.dart';
+
+class AuthButton extends StatelessWidget {
+  const AuthButton({super.key, required this.isLogin, required this.onTap});
+
+  final bool isLogin;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: onTap, // Handshake link to trigger parent's form submit logic
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Color.fromARGB(
+          141,
+          87,
+          87,
+          87,
+        ), // Dark enterprise contrast
+        foregroundColor: Colors.white,
+        minimumSize: const Size(double.infinity, 48),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        elevation: 1,
+      ),
+      child: Text(isLogin ? 'Sign In' : 'Create Account'),
+    );
+  }
+}
