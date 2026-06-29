@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // ✅ IMPORT YOUR SEPARATED CHILD SUB-WIDGETS HERE
 import 'package:chat_app/features/authentication/presentation/widgets/email_field.dart';
@@ -9,16 +11,17 @@ import 'package:chat_app/features/authentication/presentation/widgets/auth_butto
 import 'package:chat_app/features/authentication/presentation/widgets/auth_switch_button.dart';
 import 'package:chat_app/features/authentication/presentation/widgets/logo.dart'
     as auth_logo;
-//import 'package:chat_app/features/authentication/data/repositories/auth_repository.dart';
+// import 'package:chat_app/features/authentication/data/repositories/auth_repository.dart';
+import 'package:chat_app/features/authentication/providers/auth_provider.dart';
 
-class AuthForm extends StatefulWidget {
+class AuthForm extends ConsumerStatefulWidget {
   const AuthForm({super.key});
 
   @override
-  State<AuthForm> createState() => _AuthFormState();
+  ConsumerState<AuthForm> createState() => _AuthFormState();
 }
 
-class _AuthFormState extends State<AuthForm> {
+class _AuthFormState extends ConsumerState<AuthForm> {
   final _formKey = GlobalKey<FormState>();
   var _isLogin = true;
 
@@ -48,26 +51,78 @@ class _AuthFormState extends State<AuthForm> {
   }
 
   // ✅ 4. THE SUBMISSION ENGINE VALIDATION PIPELINE
-  void _submitForm() {
+  void _submitForm() async {
     final isValid = _formKey.currentState!.validate();
     if (!isValid) return;
 
     final enteredEmail = _emailController.text.trim();
     final enteredPassword = _passwordController.text.trim();
-    final enteredUsername = _isLogin ? '' : _usernameController.text.trim();
+    // final enteredUsername = _isLogin ? '' : _usernameController.text.trim();
 
-    debugPrint('Validation Passed! Processing Backend Request...');
-    debugPrint('Email: $enteredEmail');
-    debugPrint('Password: $enteredPassword');
-    if (!_isLogin) {
-      debugPrint('Username: $enteredUsername');
+    // Read the background repository instances via ref handles
+    final authRepository = ref.read(authRepositoryProvider);
+    final loadingNotifier = ref.read(authLoadingProvider.notifier);
+
+    try {
+      loadingNotifier.setLoading(true); // Turn on loading spinner indicator
+      ScaffoldMessenger.of(context).clearSnackBars();
+
+      if (_isLogin) {
+        // Run Cloud Sign In transaction Task
+        await authRepository.signIn(
+          email: enteredEmail,
+          password: enteredPassword,
+        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Successfully authenticated! Welcome back.'),
+          ),
+        );
+      } else {
+        // Run Cloud Account Registration Task
+        await authRepository.signUp(
+          email: enteredEmail,
+          password: enteredPassword,
+        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account successfully created! Welcome to Chat App.'),
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (error) {
+      // ✅ 3. ENTERPRISE ERROR SNACKBAR INTERCEPTORS
+      // ✅ ফায়ারবেস থেকে কোনো এরর আসলে সেটি স্ক্রিনে মেসেজ আকারে দেখাবে
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error.message ??
+                'Authentication failed. Please check your credentials.',
+          ),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('An unexpected system error occurred.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      // Turn off loading spinner indicator once operations close down
+      loadingNotifier.setLoading(false);
     }
-
-    // TODO: Trigger Firebase Authentication Service call pipeline here!
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = ref.watch(authLoadingProvider);
+
     return Form(
       key: _formKey,
       autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -112,31 +167,35 @@ class _AuthFormState extends State<AuthForm> {
 
           const SizedBox(height: 20),
 
-          // F. Isolated Primary Submit Button Unit
-          AuthButton(
-            isLogin: _isLogin,
-            onTap: _submitForm, // Passing function pointer handle cleanly
-          ),
+          if (isLoading)
+            const CircularProgressIndicator(color: Colors.black)
+          else ...[
+            // F. Isolated Primary Submit Button Unit
+            AuthButton(
+              isLogin: _isLogin,
+              onTap: _submitForm, // Passing function pointer handle cleanly
+            ),
 
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-          // G. Isolated Authentication Mode Switcher Link Unit
-          AuthSwitchButton(
-            isLogin: _isLogin,
-            onTap: () {
-              setState(() {
-                _isLogin =
-                    !_isLogin; // Reverse internal toggler flag status state
+            // G. Isolated Authentication Mode Switcher Link Unit
+            AuthSwitchButton(
+              isLogin: _isLogin,
+              onTap: () {
+                setState(() {
+                  _isLogin =
+                      !_isLogin; // Reverse internal toggler flag status state
 
-                _formKey.currentState!.reset();
+                  _formKey.currentState!.reset();
 
-                _usernameController.clear();
-                _emailController.clear();
-                _passwordController.clear();
-                _confirmPasswordController.clear();
-              });
-            },
-          ),
+                  _usernameController.clear();
+                  _emailController.clear();
+                  _passwordController.clear();
+                  _confirmPasswordController.clear();
+                });
+              },
+            ),
+          ],
         ],
       ),
     );
