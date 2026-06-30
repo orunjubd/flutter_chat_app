@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+//import 'package:cloud_firestore/cloud_firestore.dart';
 
 // ✅ IMPORT YOUR SEPARATED CHILD SUB-WIDGETS HERE
 import 'package:chat_app/features/authentication/presentation/widgets/email_field.dart';
@@ -13,6 +14,8 @@ import 'package:chat_app/features/authentication/presentation/widgets/logo.dart'
     as auth_logo;
 // import 'package:chat_app/features/authentication/data/repositories/auth_repository.dart';
 import 'package:chat_app/features/authentication/providers/auth_provider.dart';
+//import 'package:chat_app/features/chat/data/models/app_user.dart';
+import 'package:chat_app/features/authentication/providers/registration_provider.dart';
 
 class AuthForm extends ConsumerStatefulWidget {
   const AuthForm({super.key});
@@ -57,10 +60,12 @@ class _AuthFormState extends ConsumerState<AuthForm> {
 
     final enteredEmail = _emailController.text.trim();
     final enteredPassword = _passwordController.text.trim();
-    // final enteredUsername = _isLogin ? '' : _usernameController.text.trim();
+    final enteredUsername = _isLogin ? '' : _usernameController.text.trim();
 
     // Read the background repository instances via ref handles
     final authRepository = ref.read(authRepositoryProvider);
+    //final firestoreRepository = ref.read(firestoreRepositoryProvider);
+    final registrationService = ref.read(registrationServiceProvider);
     final loadingNotifier = ref.read(authLoadingProvider.notifier);
 
     try {
@@ -80,8 +85,8 @@ class _AuthFormState extends ConsumerState<AuthForm> {
           ),
         );
       } else {
-        // Run Cloud Account Registration Task
-        await authRepository.signUp(
+        await registrationService.register(
+          username: enteredUsername,
           email: enteredEmail,
           password: enteredPassword,
         );
@@ -105,7 +110,10 @@ class _AuthFormState extends ConsumerState<AuthForm> {
           backgroundColor: Colors.redAccent,
         ),
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
+      debugPrint(error.toString());
+      debugPrintStack(stackTrace: stackTrace);
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
