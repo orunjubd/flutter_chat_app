@@ -31,4 +31,12 @@ class AuthRepository {
   Future<void> signOut() async {
     await _firebase.signOut();
   }
+
+  Future<void> deleteCurrentUser() async {
+    final user = _firebase.currentUser;
+
+    if (user != null) {
+      await user.delete();
+    }
+  }
 }
