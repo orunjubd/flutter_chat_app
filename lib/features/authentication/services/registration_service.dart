@@ -57,6 +57,12 @@ class RegistrationService {
       await _firestoreRepository.createUser(appUser);
 
       // --------------------------------------------------
+      // STEP 4
+      // Send verification email
+      // --------------------------------------------------
+      await _authRepository.sendEmailVerification();
+
+      // --------------------------------------------------
       // SUCCESS
       // --------------------------------------------------
       return appUser;

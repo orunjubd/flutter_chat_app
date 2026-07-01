@@ -39,4 +39,14 @@ class AuthRepository {
       await user.delete();
     }
   }
+
+  Future<void> sendEmailVerification() async {
+    final user = _firebase.currentUser;
+
+    if (user == null) {
+      throw Exception('No authenticated user found.');
+    }
+
+    await user.sendEmailVerification();
+  }
 }

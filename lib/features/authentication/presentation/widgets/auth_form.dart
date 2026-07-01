@@ -16,6 +16,7 @@ import 'package:chat_app/features/authentication/presentation/widgets/logo.dart'
 import 'package:chat_app/features/authentication/providers/auth_provider.dart';
 //import 'package:chat_app/features/chat/data/models/app_user.dart';
 import 'package:chat_app/features/authentication/providers/registration_provider.dart';
+import 'package:chat_app/core/errors/auth_exception_mapper.dart';
 
 class AuthForm extends ConsumerStatefulWidget {
   const AuthForm({super.key});
@@ -93,31 +94,32 @@ class _AuthFormState extends ConsumerState<AuthForm> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Account successfully created! Welcome to Chat App.'),
+            duration: Duration(seconds: 5),
+            content: Text(
+              'Account created successfully. Please verify your email before logging in.',
+            ),
           ),
         );
       }
     } on FirebaseAuthException catch (error) {
       // ✅ 3. ENTERPRISE ERROR SNACKBAR INTERCEPTORS
-      // ✅ ফায়ারবেস থেকে কোনো এরর আসলে সেটি স্ক্রিনে মেসেজ আকারে দেখাবে
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            error.message ??
-                'Authentication failed. Please check your credentials.',
-          ),
+          content: Text(AuthExceptionMapper.map(error)),
           backgroundColor: Colors.redAccent,
         ),
       );
     } catch (error, stackTrace) {
-      debugPrint(error.toString());
+      debugPrint('Unexpected Error: ${error.toString()}');
       debugPrintStack(stackTrace: stackTrace);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('An unexpected system error occurred.'),
+        SnackBar(
+          content: Text(
+            'An unexpected system error occurred. Please try again later.',
+          ),
           backgroundColor: Colors.redAccent,
         ),
       );
