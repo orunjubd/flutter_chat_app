@@ -56,6 +56,7 @@ class _AuthFormState extends ConsumerState<AuthForm> {
 
   // ✅ 4. THE SUBMISSION ENGINE VALIDATION PIPELINE
   void _submitForm() async {
+    // ✅ Form validation
     final isValid = _formKey.currentState!.validate();
     if (!isValid) return;
 
@@ -63,22 +64,24 @@ class _AuthFormState extends ConsumerState<AuthForm> {
     final enteredPassword = _passwordController.text.trim();
     final enteredUsername = _isLogin ? '' : _usernameController.text.trim();
 
-    // Read the background repository instances via ref handles
+    // ✅ Reading providers and Read the background repository instances via ref handles
     final authRepository = ref.read(authRepositoryProvider);
     //final firestoreRepository = ref.read(firestoreRepositoryProvider);
     final registrationService = ref.read(registrationServiceProvider);
     final loadingNotifier = ref.read(authLoadingProvider.notifier);
 
     try {
+      // ✅ Loading state
       loadingNotifier.setLoading(true); // Turn on loading spinner indicator
       ScaffoldMessenger.of(context).clearSnackBars();
 
       if (_isLogin) {
-        // Run Cloud Sign In transaction Task
+        // ✅ SIGN IN and Run Cloud Sign In transaction Task
         await authRepository.signIn(
           email: enteredEmail,
           password: enteredPassword,
         );
+
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -86,6 +89,7 @@ class _AuthFormState extends ConsumerState<AuthForm> {
           ),
         );
       } else {
+        // ✅ REGISTRATION and Run Cloud Sign Up transaction Task
         await registrationService.register(
           username: enteredUsername,
           email: enteredEmail,
@@ -106,6 +110,7 @@ class _AuthFormState extends ConsumerState<AuthForm> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          // ✅ Exception Mappers
           content: Text(AuthExceptionMapper.map(error)),
           backgroundColor: Colors.redAccent,
         ),

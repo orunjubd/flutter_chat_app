@@ -32,3 +32,9 @@ final authStateProvider = StreamProvider<User?>((ref) {
   final repository = ref.read(authRepositoryProvider);
   return repository.authStateChanges();
 });
+
+final emailVerifiedProvider = FutureProvider<bool>((ref) async {
+  final repository = ref.read(authRepositoryProvider);
+
+  return repository.isEmailVerified();
+});

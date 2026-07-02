@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+//import 'package:flutter/foundation.dart';
 
 class AuthRepository {
   AuthRepository();
@@ -48,5 +49,17 @@ class AuthRepository {
     }
 
     await user.sendEmailVerification();
+  }
+
+  Future<bool> isEmailVerified() async {
+    final user = _firebase.currentUser;
+
+    if (user == null) {
+      return false;
+    }
+
+    await user.reload();
+
+    return _firebase.currentUser?.emailVerified ?? false;
   }
 }

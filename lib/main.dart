@@ -4,7 +4,7 @@ import 'package:chat_app/firebase_options.dart'; // ✅ Imports your newly gener
 //import 'package:chat_app/features/authentication/presentation/screens/auth_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:chat_app/features/authentication/presentation/screens/auth_gate.dart';
+import 'package:chat_app/features/authentication/presentation/gate/auth_gate.dart';
 
 void main() async {
   // ✅ 1. Ensures native mobile channels communicate correctly before running async hooks

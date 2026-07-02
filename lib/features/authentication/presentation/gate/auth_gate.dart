@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:chat_app/features/authentication/providers/auth_provider.dart';
 import 'package:chat_app/features/authentication/presentation/screens/auth_screen.dart';
+import 'package:chat_app/features/authentication/presentation/screens/verify_email_screen.dart';
 import 'package:chat_app/features/chat/presentation/screens/chat_screen.dart';
 
 // ========================================================
@@ -33,19 +34,35 @@ class AuthGate extends ConsumerWidget {
     final authState = ref.watch(authStateProvider);
 
     return authState.when(
-      data: (user) {
-        if (user != null) {
-          return const ChatScreen();
-        }
-
-        return const AuthScreen();
-      },
-
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
 
       error: (error, stackTrace) =>
           Scaffold(body: Center(child: Text(error.toString()))),
+
+      data: (user) {
+        if (user == null) {
+          return const AuthScreen();
+        }
+
+        final emailVerified = ref.watch(emailVerifiedProvider);
+
+        return emailVerified.when(
+          loading: () =>
+              const Scaffold(body: Center(child: CircularProgressIndicator())),
+
+          error: (error, stackTrace) =>
+              Scaffold(body: Center(child: Text(error.toString()))),
+
+          data: (verified) {
+            if (verified) {
+              return const ChatScreen();
+            }
+
+            return const VerifyEmailScreen();
+          },
+        );
+      },
     );
   }
 }
