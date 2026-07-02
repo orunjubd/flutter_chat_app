@@ -12,11 +12,11 @@ import 'package:chat_app/features/authentication/presentation/widgets/auth_butto
 import 'package:chat_app/features/authentication/presentation/widgets/auth_switch_button.dart';
 import 'package:chat_app/features/authentication/presentation/widgets/logo.dart'
     as auth_logo;
-// import 'package:chat_app/features/authentication/data/repositories/auth_repository.dart';
+
 import 'package:chat_app/features/authentication/providers/auth_provider.dart';
-//import 'package:chat_app/features/chat/data/models/app_user.dart';
 import 'package:chat_app/features/authentication/providers/registration_provider.dart';
 import 'package:chat_app/core/errors/auth_exception_mapper.dart';
+import 'package:chat_app/features/authentication/presentation/widgets/forgot_password_dialog.dart';
 
 class AuthForm extends ConsumerStatefulWidget {
   const AuthForm({super.key});
@@ -26,6 +26,28 @@ class AuthForm extends ConsumerStatefulWidget {
 }
 
 class _AuthFormState extends ConsumerState<AuthForm> {
+  Future<void> _showForgotPasswordDialog() async {
+    final authRepository = ref.read(authRepositoryProvider);
+
+    await showDialog(
+      context: context,
+      builder: (_) {
+        return ForgotPasswordDialog(
+          onSend: (email) async {
+            await authRepository.sendPasswordResetEmail(email: email);
+
+            if (!mounted) return;
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Password reset email sent.')),
+            );
+          },
+        );
+      },
+    );
+    debugPrint('Forgot Password dialog closed.');
+  }
+
   final _formKey = GlobalKey<FormState>();
   var _isLogin = true;
 
@@ -168,6 +190,21 @@ class _AuthFormState extends ConsumerState<AuthForm> {
             controller: _passwordController,
             passwordRegex: passwordRegex,
           ),
+
+          if (_isLogin)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed:
+                    _showForgotPasswordDialog, // Handshake link to trigger method
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors
+                      .black54, // Soft dark grey text link to match background theme
+                  padding: EdgeInsets.zero,
+                ),
+                child: const Text('Forgot Password?'),
+              ),
+            ),
 
           const SizedBox(height: 14),
 

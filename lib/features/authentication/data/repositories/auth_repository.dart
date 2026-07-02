@@ -4,16 +4,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 class AuthRepository {
   AuthRepository();
 
-  final FirebaseAuth _firebase = FirebaseAuth.instance;
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
-  User? get currentUser => _firebase.currentUser;
+  User? get currentUser => _firebaseAuth.currentUser;
 
   Stream<User?> authStateChanges() {
-    return _firebase.authStateChanges();
+    return _firebaseAuth.authStateChanges();
   }
 
   Future<void> signIn({required String email, required String password}) async {
-    await _firebase.signInWithEmailAndPassword(
+    await _firebaseAuth.signInWithEmailAndPassword(
       email: email,
       password: password,
     );
@@ -23,18 +23,18 @@ class AuthRepository {
     required String email,
     required String password,
   }) async {
-    return await _firebase.createUserWithEmailAndPassword(
+    return await _firebaseAuth.createUserWithEmailAndPassword(
       email: email,
       password: password,
     );
   }
 
   Future<void> signOut() async {
-    await _firebase.signOut();
+    await _firebaseAuth.signOut();
   }
 
   Future<void> deleteCurrentUser() async {
-    final user = _firebase.currentUser;
+    final user = _firebaseAuth.currentUser;
 
     if (user != null) {
       await user.delete();
@@ -42,7 +42,7 @@ class AuthRepository {
   }
 
   Future<void> sendEmailVerification() async {
-    final user = _firebase.currentUser;
+    final user = _firebaseAuth.currentUser;
 
     if (user == null) {
       throw Exception('No authenticated user found.');
@@ -52,7 +52,7 @@ class AuthRepository {
   }
 
   Future<bool> isEmailVerified() async {
-    final user = _firebase.currentUser;
+    final user = _firebaseAuth.currentUser;
 
     if (user == null) {
       return false;
@@ -60,6 +60,14 @@ class AuthRepository {
 
     await user.reload();
 
-    return _firebase.currentUser?.emailVerified ?? false;
+    return _firebaseAuth.currentUser?.emailVerified ?? false;
+  }
+
+  Future<void> resetPassword({required String email}) async {
+    await _firebaseAuth.sendPasswordResetEmail(email: email);
+  }
+
+  Future<void> sendPasswordResetEmail({required String email}) async {
+    await _firebaseAuth.sendPasswordResetEmail(email: email);
   }
 }
