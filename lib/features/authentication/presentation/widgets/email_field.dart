@@ -4,11 +4,11 @@ class EmailField extends StatelessWidget {
   const EmailField({
     super.key,
     required this.controller,
-    required this.emailRegex,
+    required this.validator,
   });
 
   final TextEditingController controller;
-  final RegExp emailRegex;
+  final String? Function(String?) validator;
 
   @override
   Widget build(BuildContext context) {
@@ -35,14 +35,7 @@ class EmailField extends StatelessWidget {
       textCapitalization: TextCapitalization.none,
 
       // ✅ Strict validation boundary
-      validator: (value) {
-        if (value == null ||
-            value.trim().isEmpty ||
-            !emailRegex.hasMatch(value.trim())) {
-          return 'Please enter a valid email address.';
-        }
-        return null;
-      },
+      validator: validator,
     );
   }
 }

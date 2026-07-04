@@ -4,11 +4,11 @@ class PasswordField extends StatelessWidget {
   const PasswordField({
     super.key,
     required this.controller,
-    required this.passwordRegex,
+    required this.validator,
   });
 
   final TextEditingController controller;
-  final RegExp passwordRegex;
+  final String? Function(String?) validator;
 
   @override
   Widget build(BuildContext context) {
@@ -35,14 +35,7 @@ class PasswordField extends StatelessWidget {
       textCapitalization: TextCapitalization.none,
 
       // ✅ Banking-tier security criteria validation check loop
-      validator: (value) {
-        if (value == null ||
-            value.trim().isEmpty ||
-            !passwordRegex.hasMatch(value.trim())) {
-          return 'Password must contain uppercase, lowercase and a number.';
-        }
-        return null;
-      },
+      validator: validator,
     );
   }
 }

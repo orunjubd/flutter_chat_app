@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
 import '../widgets/refresh_verification_button.dart';
 import '../widgets/resend_verification_button.dart';
+import 'package:chat_app/core/errors/dialogs/app_snackbar.dart';
 
 class VerifyEmailScreen extends ConsumerWidget {
   const VerifyEmailScreen({super.key});
@@ -51,16 +52,14 @@ class VerifyEmailScreen extends ConsumerWidget {
                     if (verified) {
                       ref.invalidate(emailVerifiedProvider);
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Email verified successfully.'),
-                        ),
+                      AppSnackBar.success(
+                        context,
+                        'Email verified successfully.',
                       );
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Your email is not verified yet.'),
-                        ),
+                      AppSnackBar.error(
+                        context,
+                        'Your email is not verified yet.',
                       );
                     }
                   },
@@ -75,18 +74,16 @@ class VerifyEmailScreen extends ConsumerWidget {
 
                       if (!context.mounted) return;
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Verification email sent again.'),
-                        ),
+                      AppSnackBar.success(
+                        context,
+                        'Verification email sent again.',
                       );
                     } catch (_) {
                       if (!context.mounted) return;
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Unable to send verification email.'),
-                        ),
+                      AppSnackBar.error(
+                        context,
+                        'Unable to send verification email.',
                       );
                     }
                   },

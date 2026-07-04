@@ -4,11 +4,13 @@ class UsernameField extends StatelessWidget {
   const UsernameField({
     super.key,
     required this.controller,
-    required this.usernameRegex,
+    //required this.usernameRegex,
+    this.validator,
   });
 
   final TextEditingController controller;
-  final RegExp usernameRegex;
+  //final RegExp usernameRegex;
+  final String? Function(String?)? validator;
 
   @override
   Widget build(BuildContext context) {
@@ -37,15 +39,7 @@ class UsernameField extends StatelessWidget {
       ),
       autocorrect: false,
       textCapitalization: TextCapitalization.none,
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'Please enter a username.';
-        }
-        if (!usernameRegex.hasMatch(value.trim())) {
-          return '4-15 chars, letters/numbers/dots only.';
-        }
-        return null;
-      },
+      validator: validator,
     );
   }
 }

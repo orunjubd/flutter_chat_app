@@ -5,6 +5,7 @@ import 'package:chat_app/features/authentication/providers/auth_provider.dart';
 //import 'package:chat_app/features/authentication/data/repositories/auth_repository.dart';
 //import 'package:firebase_auth/firebase_auth.dart'; // ✅ Required to execute the sign-out method
 import 'package:chat_app/features/chat/providers/user_provider.dart';
+import 'package:chat_app/core/errors/dialogs/app_dialogs.dart';
 
 class ChatScreen extends ConsumerWidget {
   const ChatScreen({super.key});
@@ -43,29 +44,14 @@ class ChatScreen extends ConsumerWidget {
             icon: const Icon(Icons.logout, color: Colors.redAccent),
             tooltip: 'Logout',
             onPressed: () async {
-              final shouldLogout = await showDialog<bool>(
+              final shouldLogout = await AppDialogs.confirm(
                 context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Logout'),
-                  content: const Text('Are you sure you want to sign out?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(ctx).pop(false);
-                      },
-                      child: const Text('Cancel'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(ctx).pop(true);
-                      },
-                      child: const Text('Logout'),
-                    ),
-                  ],
-                ),
+                title: 'Logout',
+                message: 'Are you sure you want to sign out?',
+                confirmText: 'Logout',
               );
 
-              if (shouldLogout == true) {
+              if (shouldLogout) {
                 await ref.read(authRepositoryProvider).signOut();
               }
             },

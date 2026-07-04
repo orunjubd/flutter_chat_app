@@ -4,11 +4,11 @@ class ConfirmPasswordTextField extends StatelessWidget {
   const ConfirmPasswordTextField({
     super.key,
     required this.controller,
-    required this.passwordController, // ✅ Receives the parent password controller to check matches
+    required this.validator, // ✅ Receives the parent password controller to check matches
   });
 
   final TextEditingController controller;
-  final TextEditingController passwordController;
+  final String? Function(String?) validator;
 
   @override
   Widget build(BuildContext context) {
@@ -51,16 +51,7 @@ class ConfirmPasswordTextField extends StatelessWidget {
 
       // ✅ CONFIRMATION MATCH CHECK VALIDATOR PIPELINE
       // ✅ পাসওয়ার্ড দুটির উইজেট ডাটা হুবহু মিলছে কিনা তা ইনস্ট্যান্ট ভ্যালিডেট করে
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'Please confirm your password.';
-        }
-        // 🚀 Matches the entered string directly against the text memory of the parent field controller
-        if (value != passwordController.text) {
-          return 'Passwords do not match.';
-        }
-        return null; // Passed verification smoothly
-      },
+      validator: validator,
     );
   }
 }
