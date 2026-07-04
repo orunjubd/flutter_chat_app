@@ -16,7 +16,7 @@ import 'package:chat_app/features/authentication/providers/auth_provider.dart';
 import 'package:chat_app/features/authentication/providers/registration_provider.dart';
 import 'package:chat_app/core/errors/auth_exception_mapper.dart';
 import 'package:chat_app/features/authentication/presentation/widgets/forgot_password_dialog.dart';
-import 'package:chat_app/core/errors/dialogs/app_snackbar.dart';
+import 'package:chat_app/core/dialogs/app_snackbar.dart';
 import 'package:chat_app/core/validators/app_validators.dart';
 
 class AuthForm extends ConsumerStatefulWidget {

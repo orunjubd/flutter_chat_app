@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
 import '../widgets/refresh_verification_button.dart';
 import '../widgets/resend_verification_button.dart';
-import 'package:chat_app/core/errors/dialogs/app_snackbar.dart';
+import 'package:chat_app/core/dialogs/app_snackbar.dart';
 
 class VerifyEmailScreen extends ConsumerWidget {
   const VerifyEmailScreen({super.key});
