@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:chat_app/features/chat/providers/message_provider.dart';
+import 'package:chat_app/features/chat/presentation/widgets/chat_bubble.dart';
 
 class MessageList extends ConsumerWidget {
   const MessageList({super.key});
@@ -33,16 +35,12 @@ class MessageList extends ConsumerWidget {
           itemBuilder: (context, index) {
             final message = messages[index];
 
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 4),
-              child: ListTile(
-                title: Text(message.senderName),
-                subtitle: Text(message.text),
-                trailing: Text(
-                  message.type,
-                  style: const TextStyle(fontSize: 11),
-                ),
-              ),
+            return ChatBubble(
+              senderName: message.senderName,
+              message: message.text,
+              createdAt: message.createdAt.toDate(),
+              isMe: message.senderId == FirebaseAuth.instance.currentUser?.uid,
+              isRead: false,
             );
           },
         );
