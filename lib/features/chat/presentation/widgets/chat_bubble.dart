@@ -31,69 +31,79 @@ class ChatBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Row(
-        mainAxisAlignment: isMe
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
-        children: [
-          Container(
-            constraints: const BoxConstraints(maxWidth: 280),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: isMe ? Colors.blue : Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Sender Name
-                Text(
-                  senderName,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: isMe ? Colors.white : Colors.black,
-                  ),
-                ),
-
-                const SizedBox(height: 6),
-
-                // Message
-                Text(
-                  message,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: isMe ? Colors.white : Colors.black87,
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                // Timestamp + Read Receipt
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _formatTime(createdAt),
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isMe ? Colors.white70 : Colors.black54,
-                      ),
-                    ),
-
-                    if (isMe) ...[
-                      const SizedBox(width: 4),
-                      Icon(
-                        isRead ? Icons.done_all : Icons.done,
-                        size: 14,
-                        color: isRead ? Colors.lightBlueAccent : Colors.white70,
-                      ),
-                    ],
-                  ],
-                ),
-              ],
+      child: Material(
+        elevation: 1.5,
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(18),
+          topRight: const Radius.circular(18),
+          bottomLeft: Radius.circular(isMe ? 18 : 4),
+          bottomRight: Radius.circular(isMe ? 4 : 18),
+        ),
+        color: Colors.transparent,
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * .72,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: isMe ? Colors.blue.shade600 : Colors.grey.shade200,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(18),
+              topRight: const Radius.circular(18),
+              bottomLeft: Radius.circular(isMe ? 18 : 4),
+              bottomRight: Radius.circular(isMe ? 4 : 18),
             ),
           ),
-        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Sender Name
+              Text(
+                senderName,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isMe ? Colors.white : Colors.black,
+                ),
+              ),
+
+              const SizedBox(height: 6),
+
+              // Message
+              Text(
+                message,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isMe ? Colors.white : Colors.black87,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              // Timestamp + Read Receipt
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _formatTime(createdAt),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isMe ? Colors.white70 : Colors.black54,
+                    ),
+                  ),
+
+                  if (isMe) ...[
+                    const SizedBox(width: 4),
+                    Icon(
+                      isRead ? Icons.done_all : Icons.done,
+                      size: 14,
+                      color: isRead ? Colors.lightBlueAccent : Colors.white70,
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

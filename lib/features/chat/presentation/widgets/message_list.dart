@@ -4,12 +4,32 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:chat_app/features/chat/providers/message_provider.dart';
 import 'package:chat_app/features/chat/presentation/widgets/chat_bubble.dart';
+import 'package:chat_app/features/chat/presentation/widgets/message_animation.dart';
 
-class MessageList extends ConsumerWidget {
-  const MessageList({super.key});
+class MessageList extends ConsumerStatefulWidget {
+  const MessageList({super.key, required this.scrollController});
+
+  final ScrollController scrollController;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MessageList> createState() => _MessageListState();
+}
+
+class _MessageListState extends ConsumerState<MessageList> {
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!widget.scrollController.hasClients) return;
+
+      widget.scrollController.animateTo(
+        widget.scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final messagesAsync = ref.watch(messagesProvider);
 
     return messagesAsync.when(
@@ -23,6 +43,7 @@ class MessageList extends ConsumerWidget {
       ),
 
       data: (messages) {
+        _scrollToBottom();
         if (messages.isEmpty) {
           return const Center(
             child: Text('No messages yet.', style: TextStyle(fontSize: 18)),
@@ -30,17 +51,22 @@ class MessageList extends ConsumerWidget {
         }
 
         return ListView.builder(
+          controller: widget.scrollController,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           itemCount: messages.length,
           itemBuilder: (context, index) {
             final message = messages[index];
 
-            return ChatBubble(
-              senderName: message.senderName,
-              message: message.text,
-              createdAt: message.createdAt.toDate(),
-              isMe: message.senderId == FirebaseAuth.instance.currentUser?.uid,
-              isRead: false,
+            return MessageAnimation(
+              key: ValueKey(message.id),
+              child: ChatBubble(
+                senderName: message.senderName,
+                message: message.text,
+                createdAt: message.createdAt.toDate(),
+                isMe:
+                    message.senderId == FirebaseAuth.instance.currentUser?.uid,
+                isRead: message.readBy.length > 1,
+              ),
             );
           },
         );

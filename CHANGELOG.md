@@ -138,3 +138,48 @@ Authentication module is fully functional and verified.
 - Registration Service V2
 - Enterprise Validation
 - Enterprise Error Handling
+
+## [v1.3.3] - 2026-07-06
+
+### Added
+- Real-time message stream using Riverpod
+- MessageList widget for rendering chat messages
+- ChatBubble widget
+- Automatic left/right bubble alignment
+- Current user vs. other user bubble styling
+- Message timestamp formatting
+- Read receipt UI foundation (✓ / ✓✓ placeholder)
+
+### Improved
+- Refactored chat UI into reusable presentation widgets
+- Better separation of responsibilities between ChatScreen, MessageList, and ChatBubble
+
+### Tested
+- Real-time messaging between two Firebase accounts
+- Android Emulator ↔ Physical Android device
+- Firestore synchronization
+- Timestamp rendering
+- User-specific bubble alignment
+
+## [v1.3.4] - 2026-07-06
+
+### Added
+- Real-time Firestore message streaming
+- Production ChatBubble widget
+- Bubble animation
+- Bubble alignment (Me / Others)
+- Message timestamps
+- Read receipt UI foundation
+- Automatic scrolling to latest messages
+
+### Improved
+- Refactored message rendering into reusable widgets
+- Better chat presentation architecture
+- Enterprise-ready message flow
+
+### Tested
+- Two-device messaging
+- Emulator ↔ Android device
+- Real-time synchronization
+- Auto-scroll behavior
+- Bubble animations

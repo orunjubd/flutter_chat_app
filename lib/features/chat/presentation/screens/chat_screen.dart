@@ -11,10 +11,24 @@ import 'package:chat_app/features/chat/providers/message_provider.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_input.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_list.dart';
 
-class ChatScreen extends ConsumerWidget {
+class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
 
-  Future<void> _sendMessage(WidgetRef ref, String text) async {
+  @override
+  ConsumerState<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends ConsumerState<ChatScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  //Future<void> _sendMessage(WidgetRef ref, String text) async {
+  Future<void> _sendMessage(String text) async {
     final firebaseUser = FirebaseAuth.instance.currentUser;
 
     if (firebaseUser == null) {
@@ -42,10 +56,19 @@ class ChatScreen extends ConsumerWidget {
     );
 
     await repository.sendMessage(message);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor:
           Colors.white12, // Sleek deep monochromatic styling canvas
@@ -94,9 +117,9 @@ class ChatScreen extends ConsumerWidget {
       // 🚀 2. THE EMPTY MESSAGE LIST PLACEHOLDER CONTAINER (For now)
       body: Column(
         children: [
-          const Expanded(child: MessageList()),
+          Expanded(child: MessageList(scrollController: _scrollController)),
 
-          MessageInput(onSend: (text) => _sendMessage(ref, text)),
+          MessageInput(onSend: _sendMessage),
         ],
       ),
     );
