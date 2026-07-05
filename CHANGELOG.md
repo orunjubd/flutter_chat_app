@@ -114,3 +114,27 @@ Authentication module is fully functional and verified.
 - Message model
 - Firestore messages
 - Real-time messaging
+
+# v1.3.1 (2026-07-05)
+
+## Added
+- Real-time Firestore message stream
+- Riverpod StreamProvider for messages
+- Message repository stream support
+- Message List UI
+- Automatic message updates without app restart
+
+## Improved
+- Chat architecture separation
+- Repository → Provider → UI data flow
+- Firestore message synchronization
+
+## Status
+
+### Authentication
+- Firebase Authentication
+- Email Verification
+- Password Reset
+- Registration Service V2
+- Enterprise Validation
+- Enterprise Error Handling

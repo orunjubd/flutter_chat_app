@@ -13,11 +13,18 @@ class MessageList extends ConsumerWidget {
     return messagesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
 
-      error: (error, _) => Center(child: Text(error.toString())),
+      error: (error, _) => Center(
+        child: Text(
+          error.toString(),
+          style: const TextStyle(color: Colors.red),
+        ),
+      ),
 
       data: (messages) {
         if (messages.isEmpty) {
-          return const Center(child: Text('No messages yet.'));
+          return const Center(
+            child: Text('No messages yet.', style: TextStyle(fontSize: 18)),
+          );
         }
 
         return ListView.builder(
@@ -27,10 +34,14 @@ class MessageList extends ConsumerWidget {
             final message = messages[index];
 
             return Card(
+              margin: const EdgeInsets.symmetric(vertical: 4),
               child: ListTile(
                 title: Text(message.senderName),
                 subtitle: Text(message.text),
-                trailing: Text(message.type),
+                trailing: Text(
+                  message.type,
+                  style: const TextStyle(fontSize: 11),
+                ),
               ),
             );
           },
