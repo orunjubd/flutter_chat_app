@@ -16,5 +16,5 @@ final messageRepositoryProvider = Provider<MessageRepository>((ref) {
 final messagesProvider = StreamProvider<List<Message>>((ref) {
   final repository = ref.read(messageRepositoryProvider);
 
-  return repository.getMessages();
+  return repository.messageStream();
 });

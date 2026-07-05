@@ -9,6 +9,7 @@ import 'package:chat_app/core/dialogs/app_dialogs.dart';
 import 'package:chat_app/features/chat/data/models/message.dart';
 import 'package:chat_app/features/chat/providers/message_provider.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_input.dart';
+import 'package:chat_app/features/chat/presentation/widgets/message_list.dart';
 
 class ChatScreen extends ConsumerWidget {
   const ChatScreen({super.key});
@@ -45,8 +46,6 @@ class ChatScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    //final currentUser = ref.watch(currentUserProvider);
-    //final appUserAsync = ref.watch(currentUserProvider);
     return Scaffold(
       backgroundColor:
           Colors.white12, // Sleek deep monochromatic styling canvas
@@ -95,9 +94,7 @@ class ChatScreen extends ConsumerWidget {
       // 🚀 2. THE EMPTY MESSAGE LIST PLACEHOLDER CONTAINER (For now)
       body: Column(
         children: [
-          const Expanded(
-            child: Center(child: Text('Messages will appear here.')),
-          ),
+          const Expanded(child: MessageList()),
 
           MessageInput(onSend: (text) => _sendMessage(ref, text)),
         ],

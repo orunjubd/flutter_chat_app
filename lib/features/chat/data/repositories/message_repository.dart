@@ -7,26 +7,43 @@ class MessageRepository {
 
   final FirebaseFirestore _firebaseFirestore = FirebaseFirestore.instance;
 
-  /// ------------------------------------------------------------
-  /// Firestore Collection Reference
-  /// ------------------------------------------------------------
+  // ------------------------------------------------------------
+  // Firestore Collection Reference
+  // ------------------------------------------------------------
   CollectionReference<Map<String, dynamic>> get messagesCollection =>
       _firebaseFirestore.collection('messages');
 
-  DocumentReference<Map<String, dynamic>> createMessageDocument() {
-    return messagesCollection.doc();
-  }
-
-  /// ------------------------------------------------------------
-  /// Send a new message
-  /// ------------------------------------------------------------
+  // ------------------------------------------------------------
+  // Send a new message
+  // ------------------------------------------------------------
   Future<void> sendMessage(Message message) async {
     await messagesCollection.doc(message.id).set(message.toMap());
   }
 
-  /// ------------------------------------------------------------
-  /// Listen to messages in real-time
-  /// ------------------------------------------------------------
+  // ------------------------------------------------------------
+  // Create a new message document reference
+  // ------------------------------------------------------------
+  DocumentReference<Map<String, dynamic>> createMessageDocument() {
+    return messagesCollection.doc();
+  }
+
+  //------------------------------------------------------------
+  // Update message
+  //------------------------------------------------------------
+  Stream<List<Message>> messageStream() {
+    return messagesCollection
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map((doc) => Message.fromMap(doc.id, doc.data()))
+              .toList();
+        });
+  }
+
+  // ------------------------------------------------------------
+  // Listen to messages in real-time
+  // ------------------------------------------------------------
   Stream<List<Message>> getMessages() {
     return messagesCollection
         .orderBy('createdAt', descending: false)
