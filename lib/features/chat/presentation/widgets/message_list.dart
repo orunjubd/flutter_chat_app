@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+//import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:chat_app/features/chat/providers/message_provider.dart';
 import 'package:chat_app/features/chat/presentation/widgets/chat_bubble.dart';
@@ -56,6 +56,23 @@ class _MessageListState extends ConsumerState<MessageList> {
           itemCount: messages.length,
           itemBuilder: (context, index) {
             final message = messages[index];
+            final currentUserId = ref.read(currentUserIdProvider);
+            final repository = ref.read(messageRepositoryProvider);
+            final isRead =
+                currentUserId != null &&
+                message.readBy.any((uid) => uid != currentUserId);
+
+            // 🚀 2. THE ENTERPRISE AUTOMATED READ RECEIPT TRIGGER BATCH FILTER
+            if (currentUserId != null &&
+                message.senderId != currentUserId &&
+                !message.readBy.contains(currentUserId)) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                repository.markMessageAsRead(
+                  messageId: message.id,
+                  userId: currentUserId,
+                );
+              });
+            }
 
             return MessageAnimation(
               key: ValueKey(message.id),
@@ -63,9 +80,8 @@ class _MessageListState extends ConsumerState<MessageList> {
                 senderName: message.senderName,
                 message: message.text,
                 createdAt: message.createdAt.toDate(),
-                isMe:
-                    message.senderId == FirebaseAuth.instance.currentUser?.uid,
-                isRead: message.readBy.length > 1,
+                isMe: message.senderId == currentUserId,
+                isRead: isRead,
               ),
             );
           },

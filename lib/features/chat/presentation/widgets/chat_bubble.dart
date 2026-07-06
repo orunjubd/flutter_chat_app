@@ -93,10 +93,14 @@ class ChatBubble extends StatelessWidget {
 
                   if (isMe) ...[
                     const SizedBox(width: 4),
-                    Icon(
-                      isRead ? Icons.done_all : Icons.done,
-                      size: 14,
-                      color: isRead ? Colors.lightBlueAccent : Colors.white70,
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      child: Icon(
+                        isRead ? Icons.done_all : Icons.done,
+                        key: ValueKey(isRead),
+                        size: 16,
+                        color: isRead ? Colors.lightBlueAccent : Colors.white70,
+                      ),
                     ),
                   ],
                 ],

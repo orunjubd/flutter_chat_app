@@ -41,6 +41,28 @@ class MessageRepository {
         });
   }
 
+  //------------------------------------------------------------
+  // Mark message as read
+  //------------------------------------------------------------
+  Future<void> markMessageAsRead({
+    required String messageId,
+    required String userId,
+  }) async {
+    await _firebaseFirestore.collection('messages').doc(messageId).update({
+      'readBy': FieldValue.arrayUnion([userId]),
+    });
+  }
+
+  // ------------------------------------------------------------
+  // Check if a user has read a message
+  // ------------------------------------------------------------
+  Future<bool> hasUserRead({
+    required Message message,
+    required String userId,
+  }) async {
+    return message.readBy.contains(userId);
+  }
+
   // ------------------------------------------------------------
   // Listen to messages in real-time
   // ------------------------------------------------------------

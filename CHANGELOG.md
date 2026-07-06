@@ -183,3 +183,47 @@ Authentication module is fully functional and verified.
 - Real-time synchronization
 - Auto-scroll behavior
 - Bubble animations
+
+# v1.3.5
+
+## ✨ Added
+
+### Typing Indicator (Step 23)
+
+- Added TypingStatus model
+- Added Firestore typing collection
+- Added TypingRepository
+- Added Riverpod typing providers
+- Added real-time typing detection
+- Added automatic idle timeout
+- Added live "User is typing..." indicator
+- Added two-device synchronization
+- Added production cleanup for typing state
+
+## Improved
+
+- Unified username source using Firestore AppUser
+- Reduced unnecessary Firestore writes
+- Improved typing performance
+- Cleaner repository architecture
+
+# v1.3.6
+
+## ✨ Added
+
+### Read Receipts (Step 24)
+
+- Added Firestore readBy synchronization
+- Added MessageRepository read receipt methods
+- Added Riverpod integration for read receipts
+- Automatically marks messages as read
+- Added animated read receipt icons
+- Connected read receipts to Firestore
+- Added production testing for two-device synchronization
+
+## Improved
+
+- Prevented duplicate read receipt updates
+- Optimized Firestore writes
+- Improved chat synchronization
+- Prepared architecture for future private conversations

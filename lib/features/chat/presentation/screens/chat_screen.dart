@@ -11,6 +11,10 @@ import 'package:chat_app/features/chat/providers/message_provider.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_input.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_list.dart';
 
+//import 'package:chat_app/features/chat/data/models/typing_status.dart';
+
+import 'package:chat_app/features/chat/providers/typing_provider.dart';
+
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
 
@@ -55,6 +59,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       type: 'text',
     );
 
+    //debugPrint(message.toMap().toString());
+
     await repository.sendMessage(message);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
@@ -69,6 +75,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final typingAsync = ref.watch(typingProvider);
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
     return Scaffold(
       backgroundColor:
           Colors.white12, // Sleek deep monochromatic styling canvas
@@ -118,6 +127,39 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       body: Column(
         children: [
           Expanded(child: MessageList(scrollController: _scrollController)),
+
+          typingAsync.when(
+            loading: () => const SizedBox.shrink(),
+
+            error: (_, _) => const SizedBox.shrink(),
+
+            data: (typingUsers) {
+              final others = typingUsers
+                  .where(
+                    (user) => user.userId != currentUserId && user.isTyping,
+                  )
+                  .toList();
+
+              if (others.isEmpty) {
+                return const SizedBox.shrink();
+              }
+
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
+                child: Text(
+                  '${others.first.username} is typing...',
+                  style: const TextStyle(
+                    fontStyle: FontStyle.italic,
+                    color: Colors.grey,
+                  ),
+                ),
+              );
+            },
+          ),
 
           MessageInput(onSend: _sendMessage),
         ],
