@@ -14,7 +14,10 @@ class TypingRepository {
   /// Update current user's typing state
   /// ------------------------------------------------------------
   Future<void> updateTypingStatus({required TypingStatus status}) async {
-    await _typingCollection.doc(status.userId).set(status.toFirestore());
+    await _typingCollection.doc(status.userId).set({
+      ...status.toFirestore(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   /// ------------------------------------------------------------

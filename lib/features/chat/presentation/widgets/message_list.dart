@@ -3,13 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 //import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:chat_app/features/chat/providers/message_provider.dart';
+import 'package:chat_app/features/chat/providers/conversation_message_provider.dart';
 import 'package:chat_app/features/chat/presentation/widgets/chat_bubble.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_animation.dart';
 
 class MessageList extends ConsumerStatefulWidget {
-  const MessageList({super.key, required this.scrollController});
+  const MessageList({
+    super.key,
+    required this.scrollController,
+    required this.conversationId,
+  });
 
   final ScrollController scrollController;
+  final String conversationId;
 
   @override
   ConsumerState<MessageList> createState() => _MessageListState();
@@ -30,7 +36,9 @@ class _MessageListState extends ConsumerState<MessageList> {
 
   @override
   Widget build(BuildContext context) {
-    final messagesAsync = ref.watch(messagesProvider);
+    final messagesAsync = ref.watch(
+      conversationMessagesProvider(widget.conversationId),
+    );
 
     return messagesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -57,7 +65,9 @@ class _MessageListState extends ConsumerState<MessageList> {
           itemBuilder: (context, index) {
             final message = messages[index];
             final currentUserId = ref.read(currentUserIdProvider);
-            final repository = ref.read(messageRepositoryProvider);
+            final repository = ref.read(
+              conversationMessageRepositoryProvider(widget.conversationId),
+            );
             final isRead =
                 currentUserId != null &&
                 message.readBy.any((uid) => uid != currentUserId);

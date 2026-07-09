@@ -19,9 +19,9 @@ class TypingStatus {
     final data = doc.data()!;
 
     return TypingStatus(
-      userId: data['userId'] as String,
-      username: data['username'] as String,
-      isTyping: data['isTyping'] as bool,
+      userId: data['userId'] as String? ?? '',
+      username: data['username'] as String? ?? '',
+      isTyping: data['isTyping'] as bool? ?? false,
       updatedAt: data['updatedAt'] as Timestamp? ?? Timestamp.now(),
     );
   }

@@ -2,32 +2,54 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 
 import 'package:chat_app/features/authentication/providers/auth_provider.dart';
 import 'package:chat_app/features/chat/providers/user_provider.dart';
 import 'package:chat_app/core/dialogs/app_dialogs.dart';
 import 'package:chat_app/features/chat/data/models/message.dart';
-import 'package:chat_app/features/chat/providers/message_provider.dart';
+//import 'package:chat_app/features/chat/providers/message_provider.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_input.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_list.dart';
-
-//import 'package:chat_app/features/chat/data/models/typing_status.dart';
-
+import 'package:chat_app/features/chat/data/models/presence.dart';
+import 'package:chat_app/features/chat/providers/presence_provider.dart';
 import 'package:chat_app/features/chat/providers/typing_provider.dart';
+import 'package:chat_app/features/chat/data/models/conversation.dart';
+//import 'package:chat_app/features/chat/data/repositories/conversation_message_repository.dart';
+import 'package:chat_app/features/chat/providers/conversation_message_provider.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
-  const ChatScreen({super.key});
+  const ChatScreen({super.key, required this.conversation});
+
+  final Conversation conversation;
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends ConsumerState<ChatScreen> {
+class _ChatScreenState extends ConsumerState<ChatScreen>
+    with WidgetsBindingObserver {
   final ScrollController _scrollController = ScrollController();
+
+  Conversation get conversation => widget.conversation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addObserver(this);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _setOnline();
+    });
+  }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+
     _scrollController.dispose();
+
     super.dispose();
   }
 
@@ -45,7 +67,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return;
     }
 
-    final repository = ref.read(messageRepositoryProvider);
+    final repository = ref.read(
+      conversationMessageRepositoryProvider(conversation.id),
+    );
 
     final document = repository.createMessageDocument();
 
@@ -73,10 +97,74 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
   }
 
+  Future<void> _setOnline() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) return;
+
+    final repository = ref.read(presenceRepositoryProvider);
+
+    await repository.updatePresence(
+      Presence(userId: user.uid, isOnline: true, lastSeen: Timestamp.now()),
+    );
+
+    debugPrint('Presence -> ONLINE');
+  }
+
+  Future<void> _setOffline() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) return;
+
+    final repository = ref.read(presenceRepositoryProvider);
+
+    await repository.setOffline(user.uid);
+
+    debugPrint('Presence -> OFFLINE');
+  }
+
+  String _formatLastSeen(Timestamp timestamp) {
+    final date = timestamp.toDate();
+
+    // if (date.day == DateTime.now().day) {
+    //   return DateFormat('hh:mm a').format(date);
+    // }
+    debugPrint(
+      'Last seen: ${DateFormat('dd MMM yyyy • hh:mm a').format(date)}',
+    );
+    return DateFormat('dd MMM yyyy • hh:mm a').format(date);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _setOnline();
+        break;
+
+      case AppLifecycleState.paused:
+        _setOffline();
+        break;
+
+      case AppLifecycleState.detached:
+        _setOffline();
+        break;
+
+      case AppLifecycleState.inactive:
+        break;
+
+      case AppLifecycleState.hidden:
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final typingAsync = ref.watch(typingProvider);
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final presenceAsync = ref.watch(currentUserPresenceProvider);
 
     return Scaffold(
       backgroundColor:
@@ -98,9 +186,39 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
         ),
         // B. App Center/Left Title Text Canvas
-        title: const Text(
-          'Chat App',
-          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Chat App',
+              style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+            ),
+
+            presenceAsync.when(
+              loading: () => const SizedBox.shrink(),
+
+              error: (_, _) => const SizedBox.shrink(),
+
+              data: (presence) {
+                if (presence == null) {
+                  return const SizedBox.shrink();
+                }
+
+                return Text(
+                  presence.isOnline
+                      ? '● Online'
+                      : 'Last seen ${_formatLastSeen(presence.lastSeen)}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: presence.isOnline
+                        ? Colors.green
+                        : Colors.grey.shade600,
+                  ),
+                );
+              },
+            ),
+          ],
         ),
         // C. Interactive Logout Button Unit Actions Bar
         actions: [
@@ -126,7 +244,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       // 🚀 2. THE EMPTY MESSAGE LIST PLACEHOLDER CONTAINER (For now)
       body: Column(
         children: [
-          Expanded(child: MessageList(scrollController: _scrollController)),
+          Expanded(
+            child: MessageList(
+              scrollController: _scrollController,
+              conversationId: conversation.id,
+            ),
+          ),
 
           typingAsync.when(
             loading: () => const SizedBox.shrink(),

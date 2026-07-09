@@ -16,3 +16,7 @@ final currentUserProvider = FutureProvider<AppUser?>((ref) async {
 
   return repository.getUser(firebaseUser.uid);
 });
+
+final currentUserIdProvider = Provider<String?>((ref) {
+  return FirebaseAuth.instance.currentUser?.uid;
+});

@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chat_app/features/authentication/providers/auth_provider.dart';
 import 'package:chat_app/features/authentication/presentation/screens/auth_screen.dart';
 import 'package:chat_app/features/authentication/presentation/screens/verify_email_screen.dart';
-import 'package:chat_app/features/chat/presentation/screens/chat_screen.dart';
+import 'package:chat_app/features/chat/presentation/screens/conversation_list_screen.dart';
+//import 'package:chat_app/features/chat/presentation/screens/chat_screen.dart';
 
 // ========================================================
 // Auth_Gate is not a screen—it's a router/decision widget.
@@ -56,7 +57,7 @@ class AuthGate extends ConsumerWidget {
 
           data: (verified) {
             if (verified) {
-              return const ChatScreen();
+              return const ConversationListScreen();
             }
 
             return const VerifyEmailScreen();
