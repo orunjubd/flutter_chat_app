@@ -8,6 +8,7 @@ class Conversation {
     required this.updatedAt,
     required this.lastMessage,
     required this.lastMessageTime,
+    required this.unreadCounts,
   });
 
   final String id;
@@ -23,6 +24,8 @@ class Conversation {
 
   final Timestamp lastMessageTime;
 
+  final Map<String, int> unreadCounts;
+
   factory Conversation.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
   ) {
@@ -35,6 +38,7 @@ class Conversation {
       updatedAt: data['updatedAt'] as Timestamp? ?? Timestamp.now(),
       lastMessage: data['lastMessage'] as String? ?? '',
       lastMessageTime: data['lastMessageTime'] as Timestamp? ?? Timestamp.now(),
+      unreadCounts: Map<String, int>.from(data['unreadCounts'] ?? const {}),
     );
   }
 

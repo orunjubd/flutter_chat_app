@@ -1,10 +1,11 @@
+import 'package:chat_app/core/widgets/app_scaffold.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
-import 'package:chat_app/features/authentication/providers/auth_provider.dart';
+//import 'package:chat_app/features/authentication/providers/auth_provider.dart';
 import 'package:chat_app/features/chat/providers/user_provider.dart';
 import 'package:chat_app/core/dialogs/app_dialogs.dart';
 import 'package:chat_app/features/chat/data/models/message.dart';
@@ -17,6 +18,10 @@ import 'package:chat_app/features/chat/providers/typing_provider.dart';
 import 'package:chat_app/features/chat/data/models/conversation.dart';
 //import 'package:chat_app/features/chat/data/repositories/conversation_message_repository.dart';
 import 'package:chat_app/features/chat/providers/conversation_message_provider.dart';
+import 'package:chat_app/features/authentication/presentation/gate/auth_gate.dart';
+import 'package:chat_app/features/authentication/providers/logout_provider.dart';
+import 'package:chat_app/features/chat/providers/conversation_provider.dart';
+//import 'package:chat_app/features/chat/providers/message_provider.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key, required this.conversation});
@@ -37,11 +42,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addObserver(this);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _setOnline();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await clearUnread();
+      await _setOnline();
     });
+
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
@@ -51,6 +57,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     _scrollController.dispose();
 
     super.dispose();
+  }
+
+  Future<void> clearUnread() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return;
+
+    await ref
+        .read(conversationRepositoryProvider)
+        .clearUnread(conversationId: conversation.id, userId: currentUser.uid);
+
+    debugPrint('Unread cleared for ${currentUser.uid} in ${conversation.id}');
   }
 
   //Future<void> _sendMessage(WidgetRef ref, String text) async {
@@ -86,6 +104,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     //debugPrint(message.toMap().toString());
 
     await repository.sendMessage(message);
+    await ref
+        .read(conversationRepositoryProvider)
+        .updateConversationAfterMessage(
+          conversationId: conversation.id,
+          lastMessage: text,
+        );
+    await ref
+        .read(conversationRepositoryProvider)
+        .incrementUnread(
+          conversation: conversation,
+          senderId: firebaseUser.uid,
+        );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
 
@@ -141,6 +172,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
 
     switch (state) {
       case AppLifecycleState.resumed:
+        clearUnread();
         _setOnline();
         break;
 
@@ -166,7 +198,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final presenceAsync = ref.watch(currentUserPresenceProvider);
 
-    return Scaffold(
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   clearUnread();
+    // });
+
+    return AppScaffold(
       backgroundColor:
           Colors.white12, // Sleek deep monochromatic styling canvas
       // 🚀 1. THE APPBAR ENGINE
@@ -234,7 +270,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
               );
 
               if (shouldLogout) {
-                await ref.read(authRepositoryProvider).signOut();
+                ref.invalidate(conversationsProvider);
+                ref.invalidate(typingProvider);
+                ref.invalidate(currentUserPresenceProvider);
+                //ref.invalidate(messageRepositoryProvider);
+
+                await Future.delayed(const Duration(milliseconds: 100));
+                //await Future.microtask(() {});
+
+                await ref.read(logoutServiceProvider).logout();
+                if (!context.mounted) return;
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const AuthGate()),
+                  (route) =>
+                      false, // This cleanly deletes every single past screen history block!
+                );
+                //await ref.read(currentUserProvider.notifier).clear();
               }
             },
           ),

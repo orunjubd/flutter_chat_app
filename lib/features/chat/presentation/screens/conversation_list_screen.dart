@@ -1,7 +1,13 @@
+import 'package:chat_app/core/widgets/app_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:chat_app/features/chat/providers/conversation_provider.dart';
+import 'package:chat_app/features/chat/presentation/widgets/conversation_tile.dart';
+import 'package:chat_app/features/chat/presentation/screens/chat_screen.dart';
+import 'package:chat_app/features/chat/presentation/screens/user_selection_screen.dart';
+import 'package:chat_app/features/authentication/providers/logout_provider.dart';
+import 'package:chat_app/core/utils/firebase_error_mapper.dart';
 
 class ConversationListScreen extends ConsumerWidget {
   const ConversationListScreen({super.key});
@@ -10,13 +16,25 @@ class ConversationListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final conversationsAsync = ref.watch(conversationsProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Conversations')),
+    return AppScaffold(
+      //backgroundColor:
+      appBar: AppBar(
+        title: const Text('Conversations'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await ref.read(logoutServiceProvider).logout();
+            },
+          ),
+        ],
+      ),
 
       body: conversationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
 
-        error: (error, _) => Center(child: Text(error.toString())),
+        error: (error, _) =>
+            Center(child: Text(FirebaseErrorMapper.message(error))),
 
         data: (conversations) {
           if (conversations.isEmpty) {
@@ -33,25 +51,14 @@ class ConversationListScreen extends ConsumerWidget {
             itemBuilder: (context, index) {
               final conversation = conversations[index];
 
-              return ListTile(
-                leading: const CircleAvatar(child: Icon(Icons.person)),
-
-                title: Text(conversation.participantIds.join(', ')),
-
-                subtitle: Text(
-                  conversation.lastMessage,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-
-                trailing: Text(
-                  TimeOfDay.fromDateTime(
-                    conversation.lastMessageTime.toDate(),
-                  ).format(context),
-                ),
-
+              return ConversationTile(
+                conversation: conversation,
                 onTap: () {
-                  // Step 26.7
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ChatScreen(conversation: conversation),
+                    ),
+                  );
                 },
               );
             },
@@ -61,7 +68,9 @@ class ConversationListScreen extends ConsumerWidget {
 
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Step 26.6
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const UserSelectionScreen()),
+          );
         },
         child: const Icon(Icons.add),
       ),

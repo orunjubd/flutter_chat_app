@@ -1,3 +1,4 @@
+import 'package:chat_app/core/widgets/app_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,16 +8,11 @@ import 'package:chat_app/features/chat/providers/conversation_provider.dart';
 import 'package:chat_app/features/chat/data/models/conversation.dart';
 //import 'package:chat_app/features/chat/data/repositories/conversation_repository.dart';
 import 'package:chat_app/features/chat/presentation/screens/chat_screen.dart';
+import 'package:chat_app/features/authentication/providers/logout_provider.dart';
+import 'package:chat_app/core/utils/firebase_error_mapper.dart';
 
 class UserSelectionScreen extends ConsumerStatefulWidget {
-  const UserSelectionScreen({
-    super.key,
-    required this.conversation,
-    //this.onClose
-  });
-
-  final Conversation conversation;
-  //final VoidCallback? onClose;
+  const UserSelectionScreen({super.key});
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() =>
@@ -37,10 +33,15 @@ class _UserSelectionScreenState extends ConsumerState<UserSelectionScreen> {
 
     final repository = ref.read(conversationRepositoryProvider);
 
+    debugPrint('Current User: ${currentUser.uid}');
+    debugPrint('Other User: $otherUserId');
+
     final Conversation conversation = await repository.createOrOpenConversation(
       currentUserId: currentUser.uid,
       otherUserId: otherUserId,
     );
+
+    debugPrint('Conversation ID: ${conversation.id}');
 
     if (!mounted) return;
 
@@ -61,8 +62,19 @@ class _UserSelectionScreenState extends ConsumerState<UserSelectionScreen> {
   Widget build(BuildContext context) {
     final usersAsync = ref.watch(usersDirectoryProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Select User')),
+    return AppScaffold(
+      backgroundColor: const Color(0xFF1E4D40),
+      appBar: AppBar(
+        title: const Text('Select User'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await ref.read(logoutServiceProvider).logout();
+            },
+          ),
+        ],
+      ),
 
       body: Column(
         children: [
@@ -89,7 +101,8 @@ class _UserSelectionScreenState extends ConsumerState<UserSelectionScreen> {
             child: usersAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
 
-              error: (error, _) => Center(child: Text(error.toString())),
+              error: (error, _) =>
+                  Center(child: Text(FirebaseErrorMapper.message(error))),
 
               data: (users) {
                 final filteredUsers = users.where((user) {

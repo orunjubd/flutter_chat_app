@@ -227,3 +227,59 @@ Authentication module is fully functional and verified.
 - Optimized Firestore writes
 - Improved chat synchronization
 - Prepared architecture for future private conversations
+
+# v1.4.0
+
+## Conversation Engine
+
+### Added
+- Conversation model
+- Conversation repository
+- Conversation provider
+- User repository
+- User selection
+- Create/Open conversation
+- Conversation message provider
+
+### Improved
+- ChatScreen migrated to conversation architecture
+- MessageList migrated to conversation messages
+- Read receipts migrated to conversation repository
+- Presence system integrated
+- Typing indicator integrated
+- Repository API synchronized
+
+### Architecture
+- Conversation-based messaging foundation completed
+- Legacy global message system retained for compatibility
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+---
+
+## [1.5.0] - 2026-07-12
+
+### Added
+- Conversation architecture
+- Conversation list
+- Read receipts
+- Unread badges
+- Typing indicator
+- Presence system
+- Connectivity banner
+- Logout service
+- Friendly Firebase error mapping
+
+### Improved
+- Conversation ordering
+- Conversation previews
+- Provider lifecycle
+- Logout cleanup
+- AppScaffold architecture
+
+### Fixed
+- Firebase permission errors during logout
+- Offline handling
+- Connectivity recovery

@@ -6,7 +6,7 @@ import 'package:chat_app/features/authentication/presentation/screens/auth_scree
 import 'package:chat_app/features/authentication/presentation/screens/verify_email_screen.dart';
 import 'package:chat_app/features/chat/presentation/screens/conversation_list_screen.dart';
 //import 'package:chat_app/features/chat/presentation/screens/chat_screen.dart';
-
+import 'package:chat_app/core/utils/firebase_error_mapper.dart';
 // ========================================================
 // Auth_Gate is not a screen—it's a router/decision widget.
 // =========================================================
@@ -38,8 +38,9 @@ class AuthGate extends ConsumerWidget {
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
 
-      error: (error, stackTrace) =>
-          Scaffold(body: Center(child: Text(error.toString()))),
+      error: (error, stackTrace) => Scaffold(
+        body: Center(child: Text(FirebaseErrorMapper.message(error))),
+      ),
 
       data: (user) {
         if (user == null) {
@@ -52,8 +53,9 @@ class AuthGate extends ConsumerWidget {
           loading: () =>
               const Scaffold(body: Center(child: CircularProgressIndicator())),
 
-          error: (error, stackTrace) =>
-              Scaffold(body: Center(child: Text(error.toString()))),
+          error: (error, stackTrace) => Scaffold(
+            body: Center(child: Text(FirebaseErrorMapper.message(error))),
+          ),
 
           data: (verified) {
             if (verified) {

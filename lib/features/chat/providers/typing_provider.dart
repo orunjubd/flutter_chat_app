@@ -13,7 +13,7 @@ final typingRepositoryProvider = Provider<TypingRepository>((ref) {
 /// ------------------------------------------------------------
 /// Typing Stream Provider
 /// ------------------------------------------------------------
-final typingProvider = StreamProvider<List<TypingStatus>>((ref) {
+final typingProvider = StreamProvider.autoDispose<List<TypingStatus>>((ref) {
   final repository = ref.watch(typingRepositoryProvider);
 
   return repository.typingStream();

@@ -19,8 +19,8 @@ final conversationMessageRepositoryProvider =
 /// Conversation Messages Stream Provider
 /// Real-time messages for one conversation.
 /// ------------------------------------------------------------
-final conversationMessagesProvider =
-    StreamProvider.family<List<Message>, String>((ref, conversationId) {
+final conversationMessagesProvider = StreamProvider.autoDispose
+    .family<List<Message>, String>((ref, conversationId) {
       final repository = ref.watch(
         conversationMessageRepositoryProvider(conversationId),
       );

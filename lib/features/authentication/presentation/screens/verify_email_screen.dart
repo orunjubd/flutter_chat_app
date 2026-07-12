@@ -1,3 +1,4 @@
+import 'package:chat_app/core/widgets/app_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,6 +6,8 @@ import '../../providers/auth_provider.dart';
 import '../widgets/refresh_verification_button.dart';
 import '../widgets/resend_verification_button.dart';
 import 'package:chat_app/core/dialogs/app_snackbar.dart';
+//import 'package:chat_app/core/services/logout_service.dart';
+import 'package:chat_app/features/authentication/providers/logout_provider.dart';
 
 class VerifyEmailScreen extends ConsumerWidget {
   const VerifyEmailScreen({super.key});
@@ -13,7 +16,7 @@ class VerifyEmailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authRepository = ref.read(authRepositoryProvider);
 
-    return Scaffold(
+    return AppScaffold(
       //backgroundColor: Theme.of(context).colorScheme.primary,
       appBar: AppBar(title: const Text('Verify Email'), centerTitle: true),
       body: SafeArea(
@@ -93,7 +96,8 @@ class VerifyEmailScreen extends ConsumerWidget {
 
                 TextButton.icon(
                   onPressed: () async {
-                    await authRepository.signOut();
+                    //await authRepository.signOut();
+                    await ref.read(logoutServiceProvider).logout();
                   },
                   icon: const Icon(Icons.logout),
                   label: const Text('Logout'),

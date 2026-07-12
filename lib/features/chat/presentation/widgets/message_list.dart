@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 //import 'package:firebase_auth/firebase_auth.dart';
 
-import 'package:chat_app/features/chat/providers/message_provider.dart';
+import 'package:chat_app/features/chat/providers/user_provider.dart';
 import 'package:chat_app/features/chat/providers/conversation_message_provider.dart';
 import 'package:chat_app/features/chat/presentation/widgets/chat_bubble.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_animation.dart';
+import 'package:chat_app/core/utils/firebase_error_mapper.dart';
 
 class MessageList extends ConsumerStatefulWidget {
   const MessageList({
@@ -45,7 +46,7 @@ class _MessageListState extends ConsumerState<MessageList> {
 
       error: (error, _) => Center(
         child: Text(
-          error.toString(),
+          FirebaseErrorMapper.message(error),
           style: const TextStyle(color: Colors.red),
         ),
       ),

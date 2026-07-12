@@ -36,6 +36,19 @@ class UserRepository {
   }
 
   // ------------------------------------------------------------
+  // Get user by ID
+  // ------------------------------------------------------------
+  Future<AppUser?> getUserById(String userId) async {
+    final document = await usersCollection.doc(userId).get();
+
+    if (!document.exists) {
+      return null;
+    }
+
+    return AppUser.fromFirestore(document);
+  }
+
+  // ------------------------------------------------------------
   // Search users
   // (implemented later)
   // ------------------------------------------------------------

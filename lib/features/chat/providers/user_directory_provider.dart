@@ -14,7 +14,7 @@ final userRepositoryProvider = Provider<UserRepository>((ref) {
 ///------------------------------------------------------------
 /// Stream all users except myself
 ///------------------------------------------------------------
-final usersDirectoryProvider = StreamProvider<List<AppUser>>((ref) {
+final usersDirectoryProvider = StreamProvider.autoDispose<List<AppUser>>((ref) {
   final repository = ref.read(userRepositoryProvider);
 
   final currentUser = FirebaseAuth.instance.currentUser;

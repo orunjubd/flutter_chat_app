@@ -86,6 +86,9 @@ class ConversationRepository {
       updatedAt: now,
       lastMessage: '',
       lastMessageTime: now,
+      //typingStatus: [],
+      //messages: [],
+      unreadCounts: {participants[0]: 0, participants[1]: 0},
     );
 
     await createConversation(conversation);
@@ -105,6 +108,52 @@ class ConversationRepository {
       'lastMessage': lastMessage,
       'lastMessageTime': timestamp,
       'updatedAt': timestamp,
+    });
+  }
+
+  ///------------------------------------------------------------
+  /// Update conversation after sending a message
+  ///------------------------------------------------------------
+  Future<void> updateConversationAfterMessage({
+    required String conversationId,
+    required String lastMessage,
+  }) async {
+    final now = Timestamp.now();
+
+    await conversationsCollection.doc(conversationId).update({
+      'lastMessage': lastMessage,
+      'lastMessageTime': now,
+      'updatedAt': now,
+    });
+  }
+
+  ///------------------------------------------------------------
+  /// Increment unread count for all participants except the sender
+  ///------------------------------------------------------------
+  Future<void> incrementUnread({
+    required Conversation conversation,
+    required String senderId,
+  }) async {
+    final updates = <String, Object>{};
+
+    for (final participant in conversation.participantIds) {
+      if (participant == senderId) continue;
+
+      updates['unreadCounts.$participant'] = FieldValue.increment(1);
+    }
+
+    await conversationsCollection.doc(conversation.id).update(updates);
+  }
+
+  ///------------------------------------------------------------
+  /// Clear unread count for a specific user
+  ///------------------------------------------------------------
+  Future<void> clearUnread({
+    required String conversationId,
+    required String userId,
+  }) async {
+    await conversationsCollection.doc(conversationId).update({
+      'unreadCounts.$userId': 0,
     });
   }
 }

@@ -13,7 +13,9 @@ final conversationRepositoryProvider = Provider<ConversationRepository>((ref) {
 ///------------------------------------------------------------
 /// Conversation Stream Provider
 ///------------------------------------------------------------
-final conversationsProvider = StreamProvider<List<Conversation>>((ref) {
+final conversationsProvider = StreamProvider.autoDispose<List<Conversation>>((
+  ref,
+) {
   final repository = ref.read(conversationRepositoryProvider);
 
   return repository.conversationStream();

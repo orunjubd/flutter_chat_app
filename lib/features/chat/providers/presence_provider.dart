@@ -14,7 +14,9 @@ final presenceRepositoryProvider = Provider<PresenceRepository>((ref) {
 ///------------------------------------------------------------
 /// Current User Presence Stream
 ///------------------------------------------------------------
-final currentUserPresenceProvider = StreamProvider<Presence?>((ref) {
+final currentUserPresenceProvider = StreamProvider.autoDispose<Presence?>((
+  ref,
+) {
   final user = FirebaseAuth.instance.currentUser;
 
   if (user == null) {
