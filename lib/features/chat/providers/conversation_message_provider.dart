@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:chat_app/features/chat/data/models/message.dart';
 import 'package:chat_app/features/chat/data/repositories/conversation_message_repository.dart';
+import 'package:chat_app/features/chat/providers/message_provider.dart';
 
 /// ------------------------------------------------------------
 /// Conversation Message Repository Provider
@@ -12,7 +13,10 @@ final conversationMessageRepositoryProvider =
       ref,
       conversationId,
     ) {
-      return ConversationMessageRepository(conversationId: conversationId);
+      return ConversationMessageRepository(
+        conversationId: conversationId,
+        messageRepository: ref.read(messageRepositoryProvider),
+      );
     });
 
 /// ------------------------------------------------------------
@@ -25,9 +29,5 @@ final conversationMessagesProvider = StreamProvider.autoDispose
         conversationMessageRepositoryProvider(conversationId),
       );
 
-      return repository.messageStream();
+      return repository.getMessages();
     });
-
-// final currentUserIdProvider = Provider<String?>((ref) {
-//   return FirebaseAuth.instance.currentUser?.uid;
-// });

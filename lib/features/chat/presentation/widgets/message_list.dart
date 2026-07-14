@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:chat_app/features/chat/providers/user_provider.dart';
 import 'package:chat_app/features/chat/providers/conversation_message_provider.dart';
+//import 'package:chat_app/features/chat/providers/message_provider.dart';
 import 'package:chat_app/features/chat/presentation/widgets/chat_bubble.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_animation.dart';
 import 'package:chat_app/core/utils/firebase_error_mapper.dart';
@@ -69,6 +70,7 @@ class _MessageListState extends ConsumerState<MessageList> {
             final repository = ref.read(
               conversationMessageRepositoryProvider(widget.conversationId),
             );
+            //final repository = ref.read(messageRepositoryProvider);
             final isRead =
                 currentUserId != null &&
                 message.readBy.any((uid) => uid != currentUserId);
@@ -88,11 +90,26 @@ class _MessageListState extends ConsumerState<MessageList> {
             return MessageAnimation(
               key: ValueKey(message.id),
               child: ChatBubble(
+                key: ValueKey(message.id),
+
                 senderName: message.senderName,
                 message: message.text,
                 createdAt: message.createdAt.toDate(),
                 isMe: message.senderId == currentUserId,
                 isRead: isRead,
+
+                onDeletePressed: () async {
+                  await repository.deleteMessage(message.id);
+
+                  if (!context.mounted) return;
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Message deleted'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
               ),
             );
           },

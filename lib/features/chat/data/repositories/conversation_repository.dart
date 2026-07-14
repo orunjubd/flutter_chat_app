@@ -5,60 +5,87 @@ import 'package:chat_app/features/chat/data/models/conversation.dart';
 class ConversationRepository {
   ConversationRepository();
 
-  final FirebaseFirestore _firebaseFirestore = FirebaseFirestore.instance;
+  final _db = FirebaseFirestore.instance;
 
-  CollectionReference<Map<String, dynamic>> get conversationsCollection =>
-      _firebaseFirestore.collection('conversations');
+  //final FirebaseFirestore _firebaseFirestore = FirebaseFirestore.instance;
+
+  CollectionReference<Map<String, dynamic>> get _dbCol =>
+      _db.collection('conversations');
 
   ///------------------------------------------------------------
   /// Create conversation document reference
   ///------------------------------------------------------------
   DocumentReference<Map<String, dynamic>> createConversationDocument() {
-    return conversationsCollection.doc();
+    return _dbCol.doc();
   }
 
   ///------------------------------------------------------------
   /// Create a conversation
   ///------------------------------------------------------------
   Future<void> createConversation(Conversation conversation) async {
-    await conversationsCollection
-        .doc(conversation.id)
-        .set(conversation.toFirestore());
+    await _dbCol.doc(conversation.id).set(conversation.toFirestore());
   }
 
   ///------------------------------------------------------------
   /// Stream all conversations
+  /// 🚀 SECURED ISOLATED STREAM QUERY: Filters out all third-party room logs completely
   ///------------------------------------------------------------
-  Stream<List<Conversation>> conversationStream() {
-    return conversationsCollection
+  Stream<List<Conversation>> conversationStream({
+    required String currentUserId,
+  }) {
+    return _dbCol
+        .where(
+          'participantIds',
+          arrayContains: currentUserId,
+        ) // 🛡️ Bulletproof privacy shield constraint
         .orderBy('updatedAt', descending: true)
         .snapshots()
-        .map(
-          (snapshot) => snapshot.docs.map(Conversation.fromFirestore).toList(),
-        );
+        .map((snap) => snap.docs.map(Conversation.fromFirestore).toList());
   }
+
+  // Stream<List<Conversation>> conversationStream() {
+  //   return _dbCol
+  //       .orderBy('updatedAt', descending: true)
+  //       .snapshots()
+  //       .map(
+  //         (snapshot) => snapshot.docs.map(Conversation.fromFirestore).toList(),
+  //       );
+  // }
 
   ///------------------------------------------------------------
   /// Find conversation by participants
   ///------------------------------------------------------------
+
   Future<Conversation?> findConversation(List<String> participantIds) async {
-    final snapshot = await conversationsCollection
-        .where('participantIds', arrayContainsAny: participantIds)
+    // Participant IDs must already be sorted array sequences before reaching here
+    final snap = await _dbCol
+        .where('participantIds', isEqualTo: participantIds)
         .get();
 
-    for (final doc in snapshot.docs) {
-      final conversation = Conversation.fromFirestore(doc);
-
-      final ids = conversation.participantIds.toSet();
-
-      if (ids.length == participantIds.length &&
-          ids.containsAll(participantIds)) {
-        return conversation;
-      }
+    if (snap.docs.isNotEmpty) {
+      return Conversation.fromFirestore(snap.docs.first);
     }
-
     return null;
   }
+
+  // Future<Conversation?> findConversation(List<String> participantIds) async {
+  //   final snapshot = await _dbCol
+  //       .where('participantIds', arrayContainsAny: participantIds)
+  //       .get();
+
+  //   for (final doc in snapshot.docs) {
+  //     final conversation = Conversation.fromFirestore(doc);
+
+  //     final ids = conversation.participantIds.toSet();
+
+  //     if (ids.length == participantIds.length &&
+  //         ids.containsAll(participantIds)) {
+  //       return conversation;
+  //     }
+  //   }
+
+  //   return null;
+  // }
 
   ///------------------------------------------------------------
   /// Create or open a conversation
@@ -104,7 +131,7 @@ class ConversationRepository {
     required String lastMessage,
     required Timestamp timestamp,
   }) async {
-    await conversationsCollection.doc(conversationId).update({
+    await _dbCol.doc(conversationId).update({
       'lastMessage': lastMessage,
       'lastMessageTime': timestamp,
       'updatedAt': timestamp,
@@ -120,7 +147,7 @@ class ConversationRepository {
   }) async {
     final now = Timestamp.now();
 
-    await conversationsCollection.doc(conversationId).update({
+    await _dbCol.doc(conversationId).update({
       'lastMessage': lastMessage,
       'lastMessageTime': now,
       'updatedAt': now,
@@ -142,7 +169,7 @@ class ConversationRepository {
       updates['unreadCounts.$participant'] = FieldValue.increment(1);
     }
 
-    await conversationsCollection.doc(conversation.id).update(updates);
+    await _dbCol.doc(conversation.id).update(updates);
   }
 
   ///------------------------------------------------------------
@@ -152,8 +179,19 @@ class ConversationRepository {
     required String conversationId,
     required String userId,
   }) async {
-    await conversationsCollection.doc(conversationId).update({
-      'unreadCounts.$userId': 0,
+    await _dbCol.doc(conversationId).update({'unreadCounts.$userId': 0});
+  }
+
+  ///------------------------------------------------------------
+  /// Clear conversation preview
+  /// ------------------------------------------------------------
+  Future<void> clearConversationPreview({
+    required String conversationId,
+  }) async {
+    await _dbCol.doc(conversationId).update({
+      'lastMessage': '',
+      'lastMessageTime': Timestamp.now(),
+      'updatedAt': Timestamp.now(),
     });
   }
 }

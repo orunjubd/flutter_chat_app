@@ -11,7 +11,21 @@ v1.3.0
 Messaging
 
 v1.4.0
-Conversation Migration
+    Conversation architecture
+
+↓
 
 v1.5.0
-Connectivity + Logout + Production Polish
+    Connectivity
+    Presence
+    Logout
+    Smart Banner
+    Production polish
+
+↓
+
+v1.5.1
+    One-to-one security fix
+    Conversation-scoped messages
+    Repository refactor
+    Private messaging stabilization

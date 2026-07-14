@@ -1,6 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'package:chat_app/core/utils/date_time_formatter.dart';
 
 class ConversationTime extends StatelessWidget {
   const ConversationTime({super.key, required this.timestamp});
@@ -9,22 +11,11 @@ class ConversationTime extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final date = timestamp.toDate();
-    final now = DateTime.now();
+    final lastTime = DateTimeFormatter.conversationTime(timestamp.toDate());
 
-    String text;
-
-    if (DateUtils.isSameDay(date, now)) {
-      text = DateFormat('hh:mm a').format(date);
-    } else if (DateUtils.isSameDay(
-      date,
-      now.subtract(const Duration(days: 1)),
-    )) {
-      text = 'Yesterday';
-    } else {
-      text = DateFormat('dd MMM').format(date);
-    }
-
-    return Text(text, style: const TextStyle(fontSize: 12, color: Colors.grey));
+    return Text(
+      lastTime,
+      style: const TextStyle(fontSize: 12, color: Colors.grey),
+    );
   }
 }

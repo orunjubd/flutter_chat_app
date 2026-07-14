@@ -8,6 +8,7 @@ import 'conversation_avatar.dart';
 import 'conversation_preview.dart';
 import 'conversation_time.dart';
 import 'unread_badge.dart';
+//import 'package:chat_app/core/utils/date_time_formatter.dart';
 
 class ConversationTile extends ConsumerWidget {
   const ConversationTile({
@@ -42,7 +43,7 @@ class ConversationTile extends ConsumerWidget {
 
       error: (_, __) => const ListTile(
         leading: CircleAvatar(child: Icon(Icons.person)),
-        title: Text('Unknown'),
+        title: Text('Unknown User'),
       ),
 
       data: (user) {
@@ -52,7 +53,7 @@ class ConversationTile extends ConsumerWidget {
           leading: ConversationAvatar(user: user),
 
           title: Text(
-            user?.username ?? 'Unknown',
+            user?.username ?? 'Unknown User',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),

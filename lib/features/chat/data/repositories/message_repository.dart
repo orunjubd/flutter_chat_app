@@ -5,83 +5,73 @@ import 'package:chat_app/features/chat/data/models/message.dart';
 class MessageRepository {
   MessageRepository();
 
-  final FirebaseFirestore _firebaseFirestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // ------------------------------------------------------------
-  // Firestore Collection Reference
-  // ------------------------------------------------------------
-  CollectionReference<Map<String, dynamic>> get messagesCollection =>
-      _firebaseFirestore.collection('messages');
-
-  // ------------------------------------------------------------
-  // Send a new message
-  // ------------------------------------------------------------
-  Future<void> sendMessage(Message message) async {
-    await messagesCollection.doc(message.id).set(message.toMap());
+  /// ------------------------------------------------------------
+  /// Messages collection inside a conversation
+  /// conversations/{conversationId}/messages
+  /// ------------------------------------------------------------
+  CollectionReference<Map<String, dynamic>> messagesCollection(
+    String conversationId,
+  ) {
+    return _firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages');
   }
 
-  // ------------------------------------------------------------
-  // Create a new message document reference
-  // ------------------------------------------------------------
-  DocumentReference<Map<String, dynamic>> createMessageDocument() {
-    return messagesCollection.doc();
+  /// ------------------------------------------------------------
+  /// Create empty document (used before sending)
+  /// ------------------------------------------------------------
+  DocumentReference<Map<String, dynamic>> createMessageDocument(
+    String conversationId,
+  ) {
+    return messagesCollection(conversationId).doc();
   }
 
-  //------------------------------------------------------------
-  // Update message
-  //------------------------------------------------------------
-  Stream<List<Message>> messageStream() {
-    return messagesCollection
-        .orderBy('createdAt', descending: false)
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs
-              .map((doc) => Message.fromMap(doc.id, doc.data()))
-              .toList();
-        });
-  }
-
-  //------------------------------------------------------------
-  // Mark message as read
-  //------------------------------------------------------------
-  Future<void> markMessageAsRead({
-    required String messageId,
-    required String userId,
-  }) async {
-    await _firebaseFirestore.collection('messages').doc(messageId).update({
-      'readBy': FieldValue.arrayUnion([userId]),
-    });
-  }
-
-  // ------------------------------------------------------------
-  // Check if a user has read a message
-  // ------------------------------------------------------------
-  Future<bool> hasUserRead({
+  /// ------------------------------------------------------------
+  /// Send message
+  /// ------------------------------------------------------------
+  Future<void> sendMessage({
+    required String conversationId,
     required Message message,
-    required String userId,
   }) async {
-    return message.readBy.contains(userId);
+    await messagesCollection(
+      conversationId,
+    ).doc(message.id).set(message.toMap());
   }
 
-  // ------------------------------------------------------------
-  // Listen to messages in real-time
-  // ------------------------------------------------------------
-  Stream<List<Message>> getMessages() {
-    return messagesCollection
-        .orderBy('createdAt', descending: false)
+  /// ------------------------------------------------------------
+  /// Real-time messages
+  /// ------------------------------------------------------------
+  Stream<List<Message>> messageStream(String conversationId) {
+    return messagesCollection(conversationId)
+        .orderBy('createdAt')
         .snapshots()
-        .map((snapshot) {
-          return snapshot.docs.map((doc) {
-            return Message.fromMap(doc.id, doc.data());
-          }).toList();
-        });
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => Message.fromMap(doc.id, doc.data()))
+              .toList(),
+        );
   }
 
   /// ------------------------------------------------------------
-  /// Get a single message
+  /// Alias
   /// ------------------------------------------------------------
-  Future<Message?> getMessage(String messageId) async {
-    final document = await messagesCollection.doc(messageId).get();
+  Stream<List<Message>> getMessages(String conversationId) {
+    return messageStream(conversationId);
+  }
+
+  /// ------------------------------------------------------------
+  /// Get one message
+  /// ------------------------------------------------------------
+  Future<Message?> getMessage({
+    required String conversationId,
+    required String messageId,
+  }) async {
+    final document = await messagesCollection(
+      conversationId,
+    ).doc(messageId).get();
 
     if (!document.exists) {
       return null;
@@ -91,9 +81,47 @@ class MessageRepository {
   }
 
   /// ------------------------------------------------------------
+  /// Latest message
+  /// ------------------------------------------------------------
+  Future<Message?> getLatestMessage(String conversationId) async {
+    final snapshot = await messagesCollection(
+      conversationId,
+    ).orderBy('createdAt', descending: true).limit(1).get();
+
+    if (snapshot.docs.isEmpty) {
+      return null;
+    }
+
+    return Message.fromMap(snapshot.docs.first.id, snapshot.docs.first.data());
+  }
+
+  /// ------------------------------------------------------------
   /// Delete message
   /// ------------------------------------------------------------
-  Future<void> deleteMessage(String messageId) async {
-    await messagesCollection.doc(messageId).delete();
+  Future<void> deleteMessage({
+    required String conversationId,
+    required String messageId,
+  }) async {
+    await messagesCollection(conversationId).doc(messageId).delete();
+  }
+
+  /// ------------------------------------------------------------
+  /// Read receipt
+  /// ------------------------------------------------------------
+  Future<void> markMessageAsRead({
+    required String conversationId,
+    required String messageId,
+    required String userId,
+  }) async {
+    await messagesCollection(conversationId).doc(messageId).update({
+      'readBy': FieldValue.arrayUnion([userId]),
+    });
+  }
+
+  /// ------------------------------------------------------------
+  /// Has user read?
+  /// ------------------------------------------------------------
+  bool hasUserRead({required Message message, required String userId}) {
+    return message.readBy.contains(userId);
   }
 }

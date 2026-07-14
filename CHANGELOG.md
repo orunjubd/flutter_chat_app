@@ -259,7 +259,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [1.5.0] - 2026-07-12
+## ECE [1.5.0] - 2026-07-12
 
 ### Added
 - Conversation architecture
@@ -283,3 +283,46 @@ All notable changes to this project will be documented in this file.
 - Firebase permission errors during logout
 - Offline handling
 - Connectivity recovery
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+---
+
+## [v1.5.1] - 2026-07-15
+
+### 🎉 Added
+- One-to-one private conversation architecture.
+- Conversation-based message storage.
+- Smart connectivity banner.
+- Logout service with centralized cleanup.
+- Connectivity monitoring across the application.
+- Conversation ordering by latest activity.
+- Unread message badges.
+- Read receipts.
+- Typing indicator.
+- Online/offline presence.
+- Delete message support.
+- Friendly offline error handling.
+
+### 🔄 Changed
+- Migrated messages from the root `messages` collection to `conversations/{conversationId}/messages`.
+- Updated repositories to use conversation-scoped messaging.
+- Improved logout flow and provider cleanup.
+- Improved conversation list timestamp formatting.
+- Improved conversation preview handling.
+- Updated stream providers to use `autoDispose`.
+
+### 🐛 Fixed
+- Fixed global-chat behavior where all users could see every message.
+- Fixed one-to-one privacy isolation.
+- Fixed conversation ordering updates.
+- Fixed connectivity exception handling.
+- Fixed logout permission issues.
+- Fixed unread counter synchronization.
+
+### 🔒 Security
+- Conversations are now filtered by participant IDs.
+- One-to-one conversations are isolated from other users.
