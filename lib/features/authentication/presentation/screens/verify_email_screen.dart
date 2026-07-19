@@ -1,4 +1,5 @@
 import 'package:chat_app/core/widgets/app_scaffold.dart';
+import 'package:chat_app/features/authentication/presentation/gate/auth_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,7 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../widgets/refresh_verification_button.dart';
 import '../widgets/resend_verification_button.dart';
 import 'package:chat_app/core/dialogs/app_snackbar.dart';
-//import 'package:chat_app/core/services/logout_service.dart';
+import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:chat_app/features/authentication/providers/logout_provider.dart';
 
 class VerifyEmailScreen extends ConsumerWidget {
@@ -32,7 +33,7 @@ class VerifyEmailScreen extends ConsumerWidget {
 
                 Text(
                   'Verify your email address',
-                  style: Theme.of(context).textTheme.headlineSmall,
+                  style: context.textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                 ),
 
@@ -98,9 +99,24 @@ class VerifyEmailScreen extends ConsumerWidget {
                   onPressed: () async {
                     //await authRepository.signOut();
                     await ref.read(logoutServiceProvider).logout();
+
+                    // 🚀 2. THE ASYNC FRAME LIFECYCLE GUARD SHIELD
+                    if (!context.mounted) return;
+
+                    // 🚀 3. SECURE PURGE: Clear navigation stack to drop the user back onto AuthGate securely
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const AuthGate()),
+                      (_) => false,
+                    );
                   },
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Logout'),
+                  icon: Icon(Icons.logout, color: context.colorScheme.error),
+                  label: Text(
+                    'Logout',
+                    style: TextStyle(
+                      color: context.colorScheme.error,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ],
             ),

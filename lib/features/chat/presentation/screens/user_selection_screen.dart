@@ -8,7 +8,7 @@ import 'package:chat_app/features/chat/providers/conversation_provider.dart';
 import 'package:chat_app/features/chat/data/models/conversation.dart';
 //import 'package:chat_app/features/chat/data/repositories/conversation_repository.dart';
 import 'package:chat_app/features/chat/presentation/screens/chat_screen.dart';
-import 'package:chat_app/features/authentication/providers/logout_provider.dart';
+//import 'package:chat_app/features/authentication/providers/logout_provider.dart';
 import 'package:chat_app/core/utils/firebase_error_mapper.dart';
 
 class UserSelectionScreen extends ConsumerStatefulWidget {
@@ -64,17 +64,7 @@ class _UserSelectionScreenState extends ConsumerState<UserSelectionScreen> {
 
     return AppScaffold(
       backgroundColor: const Color(0xFF1E4D40),
-      appBar: AppBar(
-        title: const Text('Select User'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await ref.read(logoutServiceProvider).logout();
-            },
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Select User'), actions: []),
 
       body: Column(
         children: [

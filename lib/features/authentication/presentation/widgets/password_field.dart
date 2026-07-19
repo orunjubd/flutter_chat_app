@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:chat_app/core/extensions/theme_extensions.dart';
 
 class PasswordField extends StatelessWidget {
   const PasswordField({
@@ -15,7 +16,7 @@ class PasswordField extends StatelessWidget {
     return TextFormField(
       controller: controller,
       style: const TextStyle(color: Colors.white),
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         border: OutlineInputBorder(),
         labelText: 'Password',
         labelStyle: TextStyle(color: Colors.white70),
@@ -27,7 +28,7 @@ class PasswordField extends StatelessWidget {
           borderSide: BorderSide(color: Colors.white),
         ),
         errorBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.redAccent),
+          borderSide: BorderSide(color: context.colorScheme.error),
         ),
       ),
       obscureText: true, // Shields text input values

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:chat_app/core/extensions/theme_extensions.dart';
 
 class UsernameField extends StatelessWidget {
   const UsernameField({
@@ -16,25 +17,25 @@ class UsernameField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
-      style: const TextStyle(
-        color: Colors.black,
+      style: TextStyle(
+        color: context.colorScheme.onSurface,
       ), // Dark text for white background
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         border: OutlineInputBorder(),
         labelText: 'Username',
-        labelStyle: TextStyle(color: Color.fromARGB(221, 194, 193, 193)),
+        labelStyle: TextStyle(color: context.colorScheme.onSurfaceVariant),
         prefixIcon: Icon(
           Icons.person_outline_rounded,
-          color: Color.fromARGB(221, 194, 193, 193),
+          color: context.colorScheme.onSurfaceVariant,
         ),
         enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Color.fromARGB(88, 194, 193, 193)),
+          borderSide: BorderSide(color: context.colorScheme.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.black),
+          borderSide: BorderSide(color: context.colorScheme.primary),
         ),
         errorBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.redAccent),
+          borderSide: BorderSide(color: context.colorScheme.error),
         ),
       ),
       autocorrect: false,

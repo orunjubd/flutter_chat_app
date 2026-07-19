@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 
 //import 'package:chat_app/features/authentication/providers/auth_provider.dart';
 import 'package:chat_app/features/chat/providers/user_provider.dart';
-import 'package:chat_app/core/dialogs/app_dialogs.dart';
+//import 'package:chat_app/core/dialogs/app_dialogs.dart';
 import 'package:chat_app/features/chat/data/models/message.dart';
 //import 'package:chat_app/features/chat/providers/message_provider.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_input.dart';
@@ -18,8 +18,8 @@ import 'package:chat_app/features/chat/providers/typing_provider.dart';
 import 'package:chat_app/features/chat/data/models/conversation.dart';
 //import 'package:chat_app/features/chat/data/repositories/conversation_message_repository.dart';
 import 'package:chat_app/features/chat/providers/conversation_message_provider.dart';
-import 'package:chat_app/features/authentication/presentation/gate/auth_gate.dart';
-import 'package:chat_app/features/authentication/providers/logout_provider.dart';
+//import 'package:chat_app/features/authentication/presentation/gate/auth_gate.dart';
+//import 'package:chat_app/features/authentication/providers/logout_provider.dart';
 import 'package:chat_app/features/chat/providers/conversation_provider.dart';
 //import 'package:chat_app/features/chat/providers/message_provider.dart';
 
@@ -210,17 +210,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
         backgroundColor: Colors.white12,
         elevation: 0,
         // A. User Avatar Placeholder Frame
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: CircleAvatar(
-            backgroundColor: Colors.grey[800],
-            child: const Icon(
-              Icons.person_outline_rounded,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
-        ),
+        // leadingWidth: 90,
+        // leading: Row(
+        //   children: [
+        //     Builder(
+        //       builder: (context) => IconButton(
+        //         icon: const Icon(Icons.menu),
+        //         onPressed: () {
+        //           // Scaffold.of(context).openDrawer();
+        //         },
+        //       ),
+        //     ),
+        //     const CircleAvatar(
+        //       radius: 16,
+        //       child: Icon(Icons.person_outline_rounded, size: 18),
+        //     ),
+        //   ],
+        // ),
         // B. App Center/Left Title Text Canvas
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,39 +263,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
           ],
         ),
         // C. Interactive Logout Button Unit Actions Bar
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.redAccent),
-            tooltip: 'Logout',
-            onPressed: () async {
-              final shouldLogout = await AppDialogs.confirm(
-                context: context,
-                title: 'Logout',
-                message: 'Are you sure you want to sign out?',
-                confirmText: 'Logout',
-              );
-
-              if (shouldLogout) {
-                ref.invalidate(conversationsProvider);
-                ref.invalidate(typingProvider);
-                ref.invalidate(currentUserPresenceProvider);
-                //ref.invalidate(messageRepositoryProvider);
-
-                await Future.delayed(const Duration(milliseconds: 100));
-                //await Future.microtask(() {});
-
-                await ref.read(logoutServiceProvider).logout();
-                if (!context.mounted) return;
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const AuthGate()),
-                  (route) =>
-                      false, // This cleanly deletes every single past screen history block!
-                );
-                //await ref.read(currentUserProvider.notifier).clear();
-              }
-            },
-          ),
-        ],
+        actions: [],
       ),
 
       // 🚀 2. THE EMPTY MESSAGE LIST PLACEHOLDER CONTAINER (For now)

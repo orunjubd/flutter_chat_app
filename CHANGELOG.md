@@ -326,3 +326,74 @@ All notable changes to this project will be documented in this file.
 ### 🔒 Security
 - Conversations are now filtered by participant IDs.
 - One-to-one conversations are isolated from other users.
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+---
+
+## [v1.6.0] - 2026-07-19
+
+### ✨ Added
+
+#### Enterprise Theme Engine
+
+* Introduced a centralized enterprise theme architecture.
+* Added Light, Dark and System theme support.
+* Added persistent theme selection using `SharedPreferences`.
+* Added Riverpod-based `ThemeProvider`.
+* Added `ThemePreference` service for loading and saving user preferences.
+* Added `ThemeExtensions` for cleaner theme access from `BuildContext`.
+* Added reusable `ThemeBottomSheet` for theme selection.
+* Added `ThemeSelectorTile` for the Settings/Navigation Drawer.
+* Added reusable `SettingsTile` widget.
+
+#### Theme Architecture
+
+* Added centralized `AppComponentTheme`.
+* Expanded `AppColors` into a design-token system.
+* Added semantic color tokens for:
+
+  * Borders
+  * Dividers
+  * Disabled elements
+  * Light/Dark support colors
+* Centralized Material 3 component styling.
+
+### 🔄 Changed
+
+#### Material Theme
+
+* Refactored `AppTheme` to act as the application's theme assembler.
+* Integrated:
+
+  * `AppColors`
+  * `AppTextTheme`
+  * `AppComponentTheme`
+* Configured Material 3 Light and Dark themes.
+* Added support for automatic System Theme switching.
+
+#### Component Standardization
+
+* Standardized:
+
+  * Input decorations
+  * Buttons
+  * Cards
+  * AppBars
+  * Dialogs
+  * Bottom Sheets
+  * SnackBars
+  * List Tiles
+  * Divider themes
+* Began migrating reusable widgets to the centralized theme system.
+
+### 🎨 Improved
+
+* Reduced duplicated UI styling across the application.
+* Improved consistency between Light and Dark themes.
+* Simplified widget styling by moving common visual properties into the global theme.
+* Established reusable design tokens for future UI development.
+* Improved maintainability and scalability of the UI layer.
+

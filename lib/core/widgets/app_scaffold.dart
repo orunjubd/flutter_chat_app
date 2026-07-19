@@ -1,3 +1,4 @@
+import 'package:chat_app/core/widgets/app_drawer.dart';
 import 'package:flutter/material.dart';
 
 import 'package:chat_app/features/authentication/presentation/widgets/connectivity_banner.dart';
@@ -24,17 +25,22 @@ class AppScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor ?? const Color(0xFF1E4D40),
-      appBar: appBar,
-      drawer: drawer,
-      floatingActionButton: floatingActionButton,
-      bottomNavigationBar: bottomNavigationBar,
-      body: Column(
-        children: [
-          const ConnectivityBanner(),
 
-          Expanded(child: body),
-        ],
+      drawer: const AppDrawer(), // ← Add this
+
+      appBar: appBar,
+
+      body: SafeArea(
+        child: Column(
+          children: [
+            const ConnectivityBanner(),
+
+            Expanded(child: body),
+          ],
+        ),
       ),
+
+      floatingActionButton: floatingActionButton,
     );
   }
 }

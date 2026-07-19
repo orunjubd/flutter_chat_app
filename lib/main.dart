@@ -1,37 +1,41 @@
+import 'package:chat_app/core/providers/theme_provider.dart';
+import 'package:chat_app/core/theme/app_theme.dart';
+import 'package:chat_app/features/authentication/presentation/gate/auth_gate.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart'; // ✅ Imports core cloud engine packages
-import 'package:chat_app/firebase_options.dart'; // ✅ Imports your newly generated options file
-//import 'package:chat_app/features/authentication/presentation/screens/auth_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:chat_app/features/authentication/presentation/gate/auth_gate.dart';
+import 'firebase_options.dart';
 
-void main() async {
-  // ✅ 1. Ensures native mobile channels communicate correctly before running async hooks
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ 2. Executes the live cloud handshake using your dynamic platform options
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeProvider);
+
     return MaterialApp(
-      title: 'Flutter Chat',
-      debugShowCheckedModeBanner: false, // Disables debug banner banner flag
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color.fromARGB(255, 18, 97, 84),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color.fromARGB(255, 255, 255, 255),
-          brightness: Brightness.dark,
-        ),
-      ),
-      home: AuthGate(),
+      title: 'ECE Chat',
+      debugShowCheckedModeBanner: false,
+
+      // Light Theme (Default)
+      theme: AppTheme.lightTheme,
+
+      // Dark Theme
+      darkTheme: AppTheme.darkTheme,
+
+      // Current Theme
+      themeMode: themeMode,
+
+      home: const AuthGate(),
     );
   }
 }

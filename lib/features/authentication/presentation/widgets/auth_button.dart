@@ -1,3 +1,4 @@
+import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:flutter/material.dart';
 
 class AuthButton extends StatelessWidget {
@@ -11,13 +12,8 @@ class AuthButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: onTap, // Handshake link to trigger parent's form submit logic
       style: ElevatedButton.styleFrom(
-        backgroundColor: Color.fromARGB(
-          141,
-          87,
-          87,
-          87,
-        ), // Dark enterprise contrast
-        foregroundColor: Colors.white,
+        backgroundColor: context.colorScheme.primary,
+        foregroundColor: context.colorScheme.onPrimary,
         minimumSize: const Size(double.infinity, 48),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         elevation: 1,

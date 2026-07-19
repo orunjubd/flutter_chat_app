@@ -6,7 +6,7 @@ import 'package:chat_app/features/chat/providers/conversation_provider.dart';
 import 'package:chat_app/features/chat/presentation/widgets/conversation_tile.dart';
 import 'package:chat_app/features/chat/presentation/screens/chat_screen.dart';
 import 'package:chat_app/features/chat/presentation/screens/user_selection_screen.dart';
-import 'package:chat_app/features/authentication/providers/logout_provider.dart';
+//import 'package:chat_app/features/authentication/providers/logout_provider.dart';
 import 'package:chat_app/core/utils/firebase_error_mapper.dart';
 
 class ConversationListScreen extends ConsumerWidget {
@@ -18,17 +18,7 @@ class ConversationListScreen extends ConsumerWidget {
 
     return AppScaffold(
       //backgroundColor:
-      appBar: AppBar(
-        title: const Text('Conversations'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await ref.read(logoutServiceProvider).logout();
-            },
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Chats'), actions: []),
 
       body: conversationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),

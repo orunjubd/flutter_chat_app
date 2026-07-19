@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:chat_app/core/extensions/theme_extensions.dart';
 
 class ConfirmPasswordTextField extends StatelessWidget {
   const ConfirmPasswordTextField({
@@ -14,34 +15,40 @@ class ConfirmPasswordTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
-      style: const TextStyle(
-        color: Color.fromARGB(221, 194, 193, 193),
+      style: TextStyle(
+        color: context.colorScheme.onSurface,
       ), // ✅ Clear black text ink for white background
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         border: OutlineInputBorder(),
         labelText: 'Confirm Password',
         labelStyle: TextStyle(
-          color: Color.fromARGB(221, 194, 193, 193),
+          color: context.colorScheme.onSurfaceVariant,
         ), // ✅ Soft dark grey text label
         prefixIcon: Icon(
           Icons.lock_reset_outlined,
-          color: Color.fromARGB(221, 194, 193, 193),
+          color: context.colorScheme.onSurfaceVariant,
         ),
         enabledBorder: OutlineInputBorder(
           borderSide: BorderSide(
-            color: Color.fromARGB(88, 194, 193, 193),
+            color: context.colorScheme.outlineVariant,
           ), // ✅ Subtle contrast border edge
         ),
         focusedBorder: OutlineInputBorder(
           borderSide: BorderSide(
-            color: Colors.black,
+            color: context.colorScheme.primary,
+            width: 2.0,
           ), // ✅ Strong solid black highlight on tap
         ),
         errorBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.redAccent),
+          borderSide: BorderSide(color: context.colorScheme.error, width: 1.0),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.red, width: 2),
+          borderSide: BorderSide(color: context.colorScheme.error, width: 2.0),
+        ),
+        // Dynamic error text styling text line handle
+        errorStyle: TextStyle(
+          color: context.colorScheme.error,
+          fontWeight: FontWeight.w500,
         ),
       ),
       obscureText:
@@ -50,7 +57,6 @@ class ConfirmPasswordTextField extends StatelessWidget {
       textCapitalization: TextCapitalization.none,
 
       // ✅ CONFIRMATION MATCH CHECK VALIDATOR PIPELINE
-      // ✅ পাসওয়ার্ড দুটির উইজেট ডাটা হুবহু মিলছে কিনা তা ইনস্ট্যান্ট ভ্যালিডেট করে
       validator: validator,
     );
   }

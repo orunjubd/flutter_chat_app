@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:chat_app/core/theme/app_colors.dart';
 
 class AppSnackBar {
   AppSnackBar._();
@@ -7,7 +8,7 @@ class AppSnackBar {
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
       ..showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.green),
+        SnackBar(content: Text(message), backgroundColor: AppColors.success),
       );
   }
 
@@ -15,7 +16,7 @@ class AppSnackBar {
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
       ..showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+        SnackBar(content: Text(message), backgroundColor: AppColors.error),
       );
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:chat_app/core/extensions/theme_extensions.dart';
 
 class EmailField extends StatelessWidget {
   const EmailField({
@@ -14,20 +15,27 @@ class EmailField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
-      style: const TextStyle(color: Colors.white), // Ensures text readability
-      decoration: const InputDecoration(
+      style: TextStyle(
+        color: context.colorScheme.onSurface,
+      ), // Ensures text readability
+      decoration: InputDecoration(
         border: OutlineInputBorder(),
         labelText: 'Email Address',
-        labelStyle: TextStyle(color: Colors.white70),
-        prefixIcon: Icon(Icons.email_outlined, color: Colors.white70),
+        labelStyle: context
+            .textTheme
+            .bodyMedium, // color: context.colorScheme.onSurfaceVariant,
+        prefixIcon: Icon(
+          Icons.email_outlined,
+          color: context.colorScheme.onSurfaceVariant,
+        ),
         enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.white30),
+          borderSide: BorderSide(color: context.colorScheme.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.white),
+          borderSide: BorderSide(color: context.colorScheme.primary),
         ),
         errorBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.redAccent),
+          borderSide: BorderSide(color: context.colorScheme.error),
         ),
       ),
       keyboardType: TextInputType.emailAddress,

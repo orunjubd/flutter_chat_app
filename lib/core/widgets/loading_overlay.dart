@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:chat_app/core/extensions/theme_extensions.dart';
 
 class LoadingOverlay extends StatelessWidget {
   const LoadingOverlay({
@@ -35,10 +36,7 @@ class LoadingOverlay extends StatelessWidget {
                       children: [
                         const CircularProgressIndicator(),
                         const SizedBox(height: 18),
-                        Text(
-                          message,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
+                        Text(message, style: context.textTheme.bodyMedium),
                       ],
                     ),
                   ),
