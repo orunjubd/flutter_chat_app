@@ -27,3 +27,11 @@ final currentUserPresenceProvider = StreamProvider.autoDispose<Presence?>((
 
   return repository.presenceStream(user.uid);
 });
+// ✅ UPDATE YOUR DEFINITION TO THIS IN YOUR PRESENCE PROVIDER FILE:
+final userPresenceProvider = StreamProvider.autoDispose
+    .family<Presence?, String>((ref, userId) {
+      final repository = ref.read(presenceRepositoryProvider);
+      return repository.presenceStream(
+        userId,
+      ); // Assuming your repo has a stream method
+    });

@@ -19,18 +19,19 @@ class ConfirmationDialog extends StatelessWidget {
     return AlertDialog(
       title: Text(title),
       content: Text(message),
+      actionsAlignment: MainAxisAlignment.end,
       actions: [
         TextButton(
           onPressed: () {
             Navigator.pop(context, false);
           },
-          child: Text(cancelText),
+          child: Text(cancelText, maxLines: 1),
         ),
         ElevatedButton(
           onPressed: () {
             Navigator.pop(context, true);
           },
-          child: Text(confirmText),
+          child: Text(confirmText, maxLines: 1),
         ),
       ],
     );

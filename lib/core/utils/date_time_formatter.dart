@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DateTimeFormatter {
   const DateTimeFormatter._();
@@ -29,6 +30,21 @@ class DateTimeFormatter {
     }
 
     return DateFormat('dd/MM/yyyy').format(local);
+  }
+
+  static String formatLastSeen(Timestamp timestamp) {
+    final local = timestamp.toDate().toLocal();
+    return DateFormat('dd MMM yyyy • hh:mm a').format(local);
+  }
+
+  static String messageTime(DateTime dateTime) {
+    final local = dateTime.toLocal();
+
+    return DateFormat('h:mm a').format(local);
+  }
+
+  static String fullDate(DateTime dateTime) {
+    return DateFormat('dd MMM yyyy').format(dateTime.toLocal());
   }
 
   static bool _isSameDay(DateTime a, DateTime b) {

@@ -1,3 +1,4 @@
+import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:flutter/material.dart';
 
 class ConversationPreview extends StatelessWidget {
@@ -11,7 +12,7 @@ class ConversationPreview extends StatelessWidget {
       message.isEmpty ? 'No messages yet' : message,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: const TextStyle(fontSize: 14),
+      style: context.bodyText,
     );
   }
 }

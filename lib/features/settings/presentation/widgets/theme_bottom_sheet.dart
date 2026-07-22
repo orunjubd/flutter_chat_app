@@ -1,3 +1,4 @@
+import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chat_app/core/providers/theme_provider.dart';
@@ -35,7 +36,7 @@ class ThemeBottomSheet extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Choose Theme', style: Theme.of(context).textTheme.titleLarge),
+            Text('Choose Theme', style: context.textTheme.titleLarge),
 
             const SizedBox(height: 16),
 

@@ -194,3 +194,239 @@ NEW UPDATE ROADMAP:
 * Pin Conversations
 * Mute Conversations
 * Production Optimization
+
+
+---------------------------------------------------------
+# ECE Chat Roadmap
+---------------------------------------------------------
+
+This roadmap outlines the planned evolution of ECE Chat from its current foundation to a production-ready messaging platform.
+
+---
+
+# Vision
+
+Build a clean, scalable, enterprise-grade Flutter chat application using:
+
+- Flutter
+- Riverpod
+- Firebase
+- Material 3
+- Clean Architecture
+
+The project emphasizes maintainability, reusable components, adaptive UI, and a modern messaging experience.
+
+---
+
+# ✅ Completed
+
+## v1.5.0 — Messaging Foundation
+
+### Authentication
+
+- ✅ Firebase Authentication
+- ✅ User Registration
+- ✅ Email Verification
+- ✅ Secure Login
+- ✅ Secure Logout Foundation
+
+### Conversations
+
+- ✅ One-to-One Conversations
+- ✅ Conversation List
+- ✅ Conversation Ordering
+- ✅ Unread Message Counter
+
+### Messaging
+
+- ✅ Real-Time Messaging
+- ✅ Read Receipts
+- ✅ Typing Indicator
+- ✅ Online / Offline Presence
+- ✅ Last Seen
+
+### Infrastructure
+
+- ✅ Repository Pattern
+- ✅ Riverpod Providers
+- ✅ Connectivity Monitoring
+- ✅ Loading Overlay
+- ✅ Confirmation Dialog
+- ✅ DateTime Formatter
+
+---
+
+## v1.6.0 — Theme & UI Standardization
+
+### Theme System
+
+- ✅ Material 3 Theme Architecture
+- ✅ Light / Dark Themes
+- ✅ Theme Selector
+- ✅ Theme Persistence
+
+### UI Standardization
+
+- ✅ AppBar Theme
+- ✅ Card Theme
+- ✅ Divider Theme
+- ✅ Dialog Theme
+- ✅ BottomSheet Theme
+- ✅ NavigationDrawer Theme
+- ✅ Menu Theme
+- ✅ ListTile Theme
+- ✅ FilledButton Theme
+- ✅ ElevatedButton Theme
+- ✅ OutlinedButton Theme
+- ✅ InputDecoration Theme
+- ✅ ProgressIndicator Theme
+- ✅ Checkbox Theme
+- ✅ Radio Theme
+- ✅ Switch Theme
+
+### Theme Extensions
+
+- ✅ ThemeContextExtension
+- ✅ ChatBubbleThemeExtension
+- ✅ Semantic Typography
+- ✅ Adaptive Bubble Colors
+- ✅ Adaptive Read Receipts
+
+### Utilities
+
+- ✅ Responsive Helper
+- ✅ Reusable Theme Components
+- ✅ UI Migration
+
+---
+
+# 🚀 Current Milestone
+
+## v1.6.1 — Stabilization
+
+### Production Readiness
+
+- ⏳ Production Logout
+- ⏳ Logout Confirmation Flow
+- ⏳ Logout State Cleanup
+- ⏳ Provider Cleanup
+- ⏳ Presence Cleanup
+- ⏳ Regression Testing
+- ⏳ Bug Fixes
+- ⏳ Documentation Synchronization
+
+---
+
+# 🚀 Phase 3 — Messaging Features
+
+## v1.7.0
+
+### Message Management
+
+- Delete Message
+- Delete for Everyone
+- Deleted Message Placeholder
+- Edit Message
+- Edited Label
+
+---
+
+## v1.8.0
+
+### Advanced Messaging
+
+- Reply to Message
+- Forward Message
+- Emoji Reactions
+- Message Search
+
+---
+
+## v1.9.0
+
+### Rich Communication
+
+- Voice Messages
+- Image Messages
+- Camera Integration
+- Gallery Picker
+- File Sharing
+
+---
+
+# 🚀 Phase 4 — Collaboration
+
+## v2.0.0
+
+### Collaboration
+
+- Group Chat
+- Group Administration
+- Group Roles
+- Group Invitations
+
+### Notifications
+
+- Firebase Cloud Messaging
+- Push Notifications
+- Notification Settings
+
+### Security
+
+- End-to-End Message Encryption
+- Session Improvements
+
+---
+
+# Future Enhancements
+
+## User Experience
+
+- Message Pinning
+- Starred Messages
+- Archived Chats
+- Chat Wallpaper
+- Custom Chat Themes
+- Scheduled Messages
+- Draft Messages
+- Swipe Actions
+- Message Selection Mode
+- Improved Animations
+
+---
+
+## Performance
+
+- Pagination
+- Image Caching
+- Offline Cache
+- Database Optimization
+- Lazy Loading
+- Firestore Query Optimization
+
+---
+
+## Developer Experience
+
+- Unit Tests
+- Widget Tests
+- Integration Tests
+- CI/CD Pipeline
+- GitHub Actions
+- Automated Release Workflow
+- Code Coverage Reports
+
+---
+
+# Long-Term Goal
+
+ECE Chat aims to become a fully featured, enterprise-quality messaging application demonstrating:
+
+- Clean Architecture
+- Feature-First Design
+- Material 3 Best Practices
+- Riverpod State Management
+- Firebase Integration
+- Scalable UI Architecture
+- Reusable Component System
+- Professional Project Documentation

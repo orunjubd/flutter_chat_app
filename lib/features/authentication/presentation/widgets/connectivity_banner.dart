@@ -1,3 +1,5 @@
+import 'package:chat_app/core/extensions/theme_extensions.dart';
+import 'package:chat_app/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -65,7 +67,7 @@ class _ConnectivityBannerState extends ConsumerState<ConnectivityBanner> {
       loading: () => const SizedBox.shrink(),
 
       error: (_, __) => const _Banner(
-        color: Colors.red,
+        color: AppColors.error,
         icon: Icons.wifi_off,
         text: 'Network unavailable',
       ),
@@ -75,7 +77,7 @@ class _ConnectivityBannerState extends ConsumerState<ConnectivityBanner> {
 
         if (!isOnline) {
           return const _Banner(
-            color: Colors.red,
+            color: AppColors.error,
             icon: Icons.wifi_off,
             text: 'No Internet Connection',
           );
@@ -83,7 +85,7 @@ class _ConnectivityBannerState extends ConsumerState<ConnectivityBanner> {
 
         if (_showConnected) {
           return const _Banner(
-            color: Colors.green,
+            color: AppColors.success,
             icon: Icons.wifi,
             text: 'Back Online',
           );
@@ -113,13 +115,13 @@ class _Banner extends StatelessWidget {
         bottom: false,
         child: Row(
           children: [
-            Icon(icon, color: Colors.white, size: 18),
+            Icon(icon, color: AppColors.white, size: 18),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 text,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: context.textTheme.labelLarge?.copyWith(
+                  color: AppColors.white,
                   fontWeight: FontWeight.w600,
                 ),
               ),

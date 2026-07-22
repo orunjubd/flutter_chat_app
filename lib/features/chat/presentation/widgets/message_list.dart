@@ -1,3 +1,4 @@
+import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 //import 'package:firebase_auth/firebase_auth.dart';
@@ -48,15 +49,15 @@ class _MessageListState extends ConsumerState<MessageList> {
       error: (error, _) => Center(
         child: Text(
           FirebaseErrorMapper.message(error),
-          style: const TextStyle(color: Colors.red),
+          style: context.errorText,
         ),
       ),
 
       data: (messages) {
         _scrollToBottom();
         if (messages.isEmpty) {
-          return const Center(
-            child: Text('No messages yet.', style: TextStyle(fontSize: 18)),
+          return Center(
+            child: Text('No messages yet.', style: context.subtitleText),
           );
         }
 

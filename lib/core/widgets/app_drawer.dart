@@ -1,3 +1,4 @@
+import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,6 +6,7 @@ import 'package:chat_app/features/chat/providers/user_provider.dart';
 import 'package:chat_app/features/authentication/providers/logout_provider.dart';
 import 'package:chat_app/core/providers/theme_provider.dart';
 import 'package:chat_app/features/settings/presentation/widgets/theme_selector_tile.dart';
+import 'package:chat_app/core/dialogs/app_snackbar.dart';
 
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
@@ -39,18 +41,17 @@ class AppDrawer extends ConsumerWidget {
                 final email = user?.email ?? '';
 
                 return UserAccountsDrawerHeader(
-                  decoration: const BoxDecoration(color: Color(0xFF1E4D40)),
+                  decoration: BoxDecoration(color: context.primaryColor),
 
-                  accountName: Text(username),
+                  accountName: Text(username, style: context.titleText),
 
-                  accountEmail: Text(email),
+                  accountEmail: Text(email, style: context.captionText),
 
                   currentAccountPicture: CircleAvatar(
-                    backgroundColor: Colors.white,
+                    backgroundColor: context.colorScheme.onPrimary,
                     child: Text(
                       username.isEmpty ? '?' : username[0].toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 26,
+                      style: context.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -62,25 +63,23 @@ class AppDrawer extends ConsumerWidget {
             ListTile(
               leading: const Icon(Icons.person_outline_rounded),
               title: const Text('Profile'),
-              subtitle: const Text('Coming soon'),
+              subtitle: const Text('Available soon'),
               onTap: () {
                 Navigator.pop(context);
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Profile coming soon')),
-                );
+                AppSnackBar.info(context, 'Profile coming soon');
               },
             ),
 
             ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('Settings'),
-              subtitle: const Text('Coming soon'),
+              subtitle: const Text('Available soon'),
               onTap: () {
                 Navigator.pop(context);
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Settings coming soon')),
+                AppSnackBar.info(
+                  context,
+                  'Settings available soon',
+                  duration: const Duration(seconds: 2),
                 );
               },
             ),
@@ -95,7 +94,7 @@ class AppDrawer extends ConsumerWidget {
                 showAboutDialog(
                   context: context,
                   applicationName: 'ECE Chat',
-                  applicationVersion: 'v1.5.0',
+                  applicationVersion: 'v1.6.0',
                   applicationLegalese: 'Built with Flutter & Firebase',
                 );
               },
@@ -103,16 +102,21 @@ class AppDrawer extends ConsumerWidget {
 
             const Spacer(),
 
-            const Divider(height: 1),
+            const Divider(),
 
             ThemeSelectorTile(currentTheme: currentTheme),
 
-            const Divider(height: 1),
+            const Divider(),
 
             ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
+              leading: Icon(Icons.logout, color: context.errorColor),
 
-              title: const Text('Logout', style: TextStyle(color: Colors.red)),
+              title: Text(
+                'Logout',
+                style: context.textTheme.bodyLarge?.copyWith(
+                  color: context.errorColor,
+                ),
+              ),
 
               onTap: () async {
                 Navigator.pop(context);
@@ -130,11 +134,13 @@ class AppDrawer extends ConsumerWidget {
 
             const SizedBox(height: 8),
 
-            const Padding(
-              padding: EdgeInsets.only(bottom: 12),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
               child: Text(
-                'ECE Chat • Version 1.5.0',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+                'ECE Chat • Version 1.6.0',
+                style: context.textTheme.labelSmall?.copyWith(
+                  color: context.textSecondaryColor,
+                ),
               ),
             ),
           ],

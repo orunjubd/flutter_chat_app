@@ -112,9 +112,9 @@ class VerifyEmailScreen extends ConsumerWidget {
                   icon: Icon(Icons.logout, color: context.colorScheme.error),
                   label: Text(
                     'Logout',
-                    style: TextStyle(
+                    style: context.textTheme.labelMedium?.copyWith(
                       color: context.colorScheme.error,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),

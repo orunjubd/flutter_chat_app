@@ -44,7 +44,10 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
         child: TextFormField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(labelText: 'Email'),
+          decoration: const InputDecoration(
+            labelText: 'Email',
+            prefixIcon: Icon(Icons.email_outlined),
+          ),
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Please enter your email.';

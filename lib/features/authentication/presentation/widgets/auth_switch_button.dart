@@ -14,14 +14,7 @@ class AuthSwitchButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextButton(
       onPressed: onTap, // Handshake link to reverse parent's _isLogin state
-      style: TextButton.styleFrom(
-        foregroundColor: Color.fromARGB(
-          141,
-          87,
-          87,
-          87,
-        ), // Clean dark grey link text
-      ),
+      style: TextButton.styleFrom(minimumSize: const Size.fromHeight(48)),
       child: Text(
         isLogin
             ? "Don't have an account? Sign Up"

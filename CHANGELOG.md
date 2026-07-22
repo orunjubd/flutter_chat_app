@@ -397,3 +397,111 @@ All notable changes to this project will be documented in this file.
 * Established reusable design tokens for future UI development.
 * Improved maintainability and scalability of the UI layer.
 
+###################################################################
+# Changelog
+###################################################################
+All notable changes to this project will be documented in this file.
+
+The format is based on Keep a Changelog and this project follows Semantic Versioning.
+
+---
+
+# v1.6.1 (Documentation & Architecture Update)
+
+Release Date: July 2026
+
+## Added
+
+### Documentation
+
+- Updated project documentation for the new theme architecture.
+- Added Theme Extension architecture documentation.
+- Added Chat Bubble Theme Extension documentation.
+- Updated Material 3 component standardization notes.
+- Updated roadmap for upcoming messaging features.
+
+### Theme Architecture
+
+- Centralized Material component themes.
+- Added semantic ThemeContextExtension helpers.
+- Introduced reusable ChatBubbleThemeExtension.
+- Improved Light/Dark adaptive UI behavior.
+- Standardized color usage across the application.
+
+### UI Standardization
+
+Standardized the following Material components:
+
+- AppBar
+- Card
+- Divider
+- Dialog
+- BottomSheet
+- NavigationDrawer
+- Menu
+- ListTile
+- FilledButton
+- ElevatedButton
+- OutlinedButton
+- InputDecoration
+- ProgressIndicator
+- Checkbox
+- Radio
+- Switch
+
+### Utilities
+
+- Added reusable responsive helper.
+- Improved DateTimeFormatter utility usage.
+- Reduced duplicated widget styling.
+
+## Changed
+
+- Refactored AppTheme using a centralized private builder.
+- Simplified theme configuration.
+- Migrated UI widgets to semantic theme getters.
+- Improved maintainability and scalability of the theme system.
+- Unified chat bubble styling through Theme Extensions.
+
+## Fixed
+
+- Removed duplicated Material styling.
+- Improved Light/Dark theme consistency.
+- Fixed inconsistent color usage.
+- Improved reusable component architecture.
+- Reduced UI maintenance overhead.
+
+---
+
+# v1.6.0
+
+## Added
+
+### Chat Features
+
+- One-to-one private conversations
+- Read receipts
+- Typing indicator
+- Presence (Online / Offline)
+- Unread message counters
+- Conversation ordering
+- Connectivity monitoring
+
+### UI
+
+- Theme selector
+- Responsive helper
+- Chat bubble improvements
+
+### Infrastructure
+
+- Repository cleanup
+- Logout service foundation
+- Improved provider architecture
+- Better navigation flow
+
+---
+
+# v1.5.0
+
+Previous stable release.

@@ -1,3 +1,4 @@
+import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:chat_app/core/widgets/app_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,10 +29,10 @@ class ConversationListScreen extends ConsumerWidget {
 
         data: (conversations) {
           if (conversations.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
                 'No conversations yet.',
-                style: TextStyle(fontSize: 18),
+                style: context.labelTextMedium?.copyWith(fontSize: 18),
               ),
             );
           }

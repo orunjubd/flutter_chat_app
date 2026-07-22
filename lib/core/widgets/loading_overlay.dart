@@ -1,3 +1,4 @@
+import 'package:chat_app/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:chat_app/core/extensions/theme_extensions.dart';
 
@@ -22,7 +23,7 @@ class LoadingOverlay extends StatelessWidget {
         if (isLoading)
           Positioned.fill(
             child: ColoredBox(
-              color: Colors.black54,
+              color: AppColors.black.withValues(alpha: .54),
               child: Center(
                 child: Card(
                   elevation: 8,

@@ -1,3 +1,4 @@
+import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:flutter/material.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -15,7 +16,7 @@ class ConversationTime extends StatelessWidget {
 
     return Text(
       lastTime,
-      style: const TextStyle(fontSize: 12, color: Colors.grey),
+      style: context.captionText?.copyWith(color: context.textSecondaryColor),
     );
   }
 }

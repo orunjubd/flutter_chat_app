@@ -39,14 +39,18 @@ class AppColors {
 
   static const Color lightBackground = Color(0xFFF5F7F6);
 
-  static const Color lightSurface = Colors.white;
+  static const Color lightSurface = Color(0xFFFFFFFF);
+
+  static const Color lightSurfaceTint = Colors.transparent;
+
+  static const Color lightShadow = Color(0x1F000000);
 
   /// TextField, Card and Input borders.
   static const Color lightBorder = Color(0xFFD0D5DD);
 
-  static const Color lightCard = Colors.white;
+  static const Color lightCard = Color(0xFFFFFFFF);
 
-  static const Color lightDivider = Color(0xFFE5E7EB);
+  static const Color lightDivider = Color(0xFFE0E0E0);
 
   static const Color lightTextPrimary = Color(0xFF1A1D1C);
 
@@ -62,21 +66,27 @@ class AppColors {
 
   static const Color darkBackground = Color(0xFF112D25);
 
+  static const Color darkShadow = Color(0x42000000);
+
+  static const Color darkSurfaceTint = Colors.transparent;
+
   static const Color darkSurface = Color(0xFF183E33);
 
   static const Color darkBorder = Color(0xFF4B5563);
 
   static const Color darkCard = Color(0xFF183E33);
 
-  static const Color darkDivider = Color(0xFF374151);
+  static const Color darkDivider = Color(0xFF2F3A44);
 
-  static const Color darkTextPrimary = Colors.white;
+  static const Color darkTextPrimary = Color(0xFFFFFFFF);
 
   static const Color darkTextSecondary = Color(0xFF9EABA7);
 
   static const Color darkIcon = Colors.white70;
 
   static const Color darkDisabled = Color(0xFF6B7280);
+
+  static const Color darkTextDisabled = Color(0xFF5D6B67);
 
   // ===========================================================================
   // 💬 CHAT
@@ -98,6 +108,9 @@ class AppColors {
   // 📶 USER STATUS
   // ===========================================================================
 
+  //Last seen
+  static const Color lastSeen = Color(0xFF0000FF);
+
   static const Color online = Color(0xFF2E7D32);
 
   static const Color offline = Color(0xFF757575);
@@ -117,12 +130,17 @@ class AppColors {
   static const Color info = Color(0xFF0288D1);
 
   // ===========================================================================
+  // ✈️ TELEGRAM / ECE BLUE ACCENT TOKENS
+  // ===========================================================================
+  static const Color telegramBlue = Color(0xFF2481CC);
+  static const Color telegramBlueDark = Color(0xFF50A7EA);
+
+  // ===========================================================================
   // 🔲 COMMON
   // ===========================================================================
 
   static const Color white = Colors.white;
-
+  static const Color white70 = Colors.white70;
   static const Color black = Colors.black;
-
   static const Color transparent = Colors.transparent;
 }

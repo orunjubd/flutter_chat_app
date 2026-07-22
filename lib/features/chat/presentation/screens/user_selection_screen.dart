@@ -1,3 +1,5 @@
+import 'package:chat_app/core/extensions/theme_extensions.dart';
+import 'package:chat_app/core/theme/app_colors.dart';
 import 'package:chat_app/core/widgets/app_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -75,9 +77,6 @@ class _UserSelectionScreenState extends ConsumerState<UserSelectionScreen> {
               decoration: InputDecoration(
                 hintText: 'Search users...',
                 prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
               ),
               onChanged: (value) {
                 setState(() {
@@ -101,10 +100,10 @@ class _UserSelectionScreenState extends ConsumerState<UserSelectionScreen> {
                 }).toList();
 
                 if (filteredUsers.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text(
                       'No users found.',
-                      style: TextStyle(fontSize: 18),
+                      style: context.labelTextMedium?.copyWith(fontSize: 18),
                     ),
                   );
                 }
@@ -132,7 +131,9 @@ class _UserSelectionScreenState extends ConsumerState<UserSelectionScreen> {
 
                       trailing: Icon(
                         user.isOnline ? Icons.circle : Icons.access_time,
-                        color: user.isOnline ? Colors.green : Colors.grey,
+                        color: user.isOnline
+                            ? AppColors.online
+                            : AppColors.offline,
                         size: 14,
                       ),
 

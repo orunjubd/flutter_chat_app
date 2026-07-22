@@ -15,41 +15,16 @@ class ConfirmPasswordTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
-      style: TextStyle(
-        color: context.colorScheme.onSurface,
+      style: context.bodyText?.copyWith(
+        color: context.errorColor,
+        fontWeight: FontWeight.w500,
       ), // ✅ Clear black text ink for white background
       decoration: InputDecoration(
-        border: OutlineInputBorder(),
         labelText: 'Confirm Password',
-        labelStyle: TextStyle(
+        labelStyle: context.captionText?.copyWith(
           color: context.colorScheme.onSurfaceVariant,
         ), // ✅ Soft dark grey text label
-        prefixIcon: Icon(
-          Icons.lock_reset_outlined,
-          color: context.colorScheme.onSurfaceVariant,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-            color: context.colorScheme.outlineVariant,
-          ), // ✅ Subtle contrast border edge
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-            color: context.colorScheme.primary,
-            width: 2.0,
-          ), // ✅ Strong solid black highlight on tap
-        ),
-        errorBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: context.colorScheme.error, width: 1.0),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: context.colorScheme.error, width: 2.0),
-        ),
-        // Dynamic error text styling text line handle
-        errorStyle: TextStyle(
-          color: context.colorScheme.error,
-          fontWeight: FontWeight.w500,
-        ),
+        prefixIcon: Icon(Icons.lock_reset_outlined),
       ),
       obscureText:
           true, // ✅ Secures typed password input string character layers

@@ -1,3 +1,4 @@
+import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:flutter/material.dart';
 
 class AuthLogo extends StatelessWidget {
@@ -9,19 +10,17 @@ class AuthLogo extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 20, top: 30, left: 20, right: 20),
       width: 140,
       height: 140,
-      decoration: const BoxDecoration(
-        color: Color.fromARGB(
-          141,
-          87,
-          87,
-          87,
+      decoration: BoxDecoration(
+        color: context.colorScheme.onSurface.withValues(
+          alpha: .12,
         ), // Subtle translucent dark mask circle
         shape: BoxShape.circle,
       ),
-      child: const Icon(
+      child: Icon(
         Icons.chat_bubble_outline_rounded,
         size: 64,
-        color: Colors.black, // Sharp dark look for white background
+        color:
+            context.colorScheme.primary, // Sharp dark look for white background
       ),
       // Note: Once asset tracking is live, you can replace the icon with:
       // child: Image.asset('assets/images/chat.png'),

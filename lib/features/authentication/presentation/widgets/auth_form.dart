@@ -190,11 +190,7 @@ class _AuthFormState extends ConsumerState<AuthForm> {
               child: TextButton(
                 onPressed:
                     _showForgotPasswordDialog, // Handshake link to trigger method
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors
-                      .black54, // Soft dark grey text link to match background theme
-                  padding: EdgeInsets.zero,
-                ),
+                style: TextButton.styleFrom(padding: EdgeInsets.zero),
                 child: const Text('Forgot Password?'),
               ),
             ),

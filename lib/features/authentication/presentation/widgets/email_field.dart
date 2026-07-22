@@ -15,28 +15,12 @@ class EmailField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
-      style: TextStyle(
+      style: context.bodyText?.copyWith(
         color: context.colorScheme.onSurface,
       ), // Ensures text readability
       decoration: InputDecoration(
-        border: OutlineInputBorder(),
         labelText: 'Email Address',
-        labelStyle: context
-            .textTheme
-            .bodyMedium, // color: context.colorScheme.onSurfaceVariant,
-        prefixIcon: Icon(
-          Icons.email_outlined,
-          color: context.colorScheme.onSurfaceVariant,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: context.colorScheme.outlineVariant),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: context.colorScheme.primary),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: context.colorScheme.error),
-        ),
+        prefixIcon: Icon(Icons.email_outlined),
       ),
       keyboardType: TextInputType.emailAddress,
       autocorrect: false,

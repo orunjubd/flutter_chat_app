@@ -1,3 +1,6 @@
+import 'package:chat_app/core/extensions/theme_extensions.dart';
+import 'package:chat_app/core/theme/app_colors.dart';
+import 'package:chat_app/core/utils/date_time_formatter.dart';
 import 'package:flutter/material.dart';
 
 class ChatBubble extends StatelessWidget {
@@ -22,16 +25,14 @@ class ChatBubble extends StatelessWidget {
   //final VoidCallback onLongPress;
   //final VoidCallback onMessageTap;
 
-  String _formatTime(DateTime dateTime) {
-    final hour = dateTime.hour > 12
-        ? dateTime.hour - 12
-        : (dateTime.hour == 0 ? 12 : dateTime.hour);
-
-    final minute = dateTime.minute.toString().padLeft(2, '0');
-    final period = dateTime.hour >= 12 ? 'PM' : 'AM';
-
-    return '$hour:$minute $period';
-  }
+  // String _formatTime(DateTime dateTime) {
+  //   final hour = dateTime.hour > 12
+  //       ? dateTime.hour - 12
+  //       : (dateTime.hour == 0 ? 12 : dateTime.hour);
+  //   final minute = dateTime.minute.toString().padLeft(2, '0');
+  //   final period = dateTime.hour >= 12 ? 'PM' : 'AM';
+  //   return '$hour:$minute $period';
+  // }
 
   Future<void> _showMessageMenu(BuildContext context) async {
     final result = await showModalBottomSheet<String>(
@@ -42,7 +43,7 @@ class ChatBubble extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                leading: Icon(Icons.delete_outline, color: context.errorColor),
                 title: const Text('Delete'),
                 onTap: () {
                   Navigator.pop(context, 'delete');
@@ -89,6 +90,13 @@ class ChatBubble extends StatelessWidget {
     }
   }
 
+  BorderRadius get bubbleRadius => BorderRadius.only(
+    topLeft: const Radius.circular(18),
+    topRight: const Radius.circular(18),
+    bottomLeft: Radius.circular(isMe ? 18 : 4),
+    bottomRight: Radius.circular(isMe ? 4 : 18),
+  );
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -97,26 +105,14 @@ class ChatBubble extends StatelessWidget {
         onLongPress: () => _showMessageMenu(context),
         child: Material(
           elevation: 1.5,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(18),
-            topRight: const Radius.circular(18),
-            bottomLeft: Radius.circular(isMe ? 18 : 4),
-            bottomRight: Radius.circular(isMe ? 4 : 18),
-          ),
-          color: Colors.transparent,
+          borderRadius: bubbleRadius,
+          color: AppColors.transparent,
           child: Container(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * .72,
-            ),
+            constraints: BoxConstraints(maxWidth: context.screenWidth * .72),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: isMe ? Colors.blue.shade600 : Colors.grey.shade200,
-              borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(18),
-                topRight: const Radius.circular(18),
-                bottomLeft: Radius.circular(isMe ? 18 : 4),
-                bottomRight: Radius.circular(isMe ? 4 : 18),
-              ),
+              color: isMe ? context.myBubbleColor : context.otherBubbleColor,
+              borderRadius: bubbleRadius,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,9 +120,11 @@ class ChatBubble extends StatelessWidget {
                 // Sender Name
                 Text(
                   senderName,
-                  style: TextStyle(
+                  style: context.bodyTextMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: isMe ? Colors.white : Colors.black,
+                    color: isMe
+                        ? context.myBubbleTextPrimary
+                        : context.colorScheme.onSurface,
                   ),
                 ),
 
@@ -135,9 +133,10 @@ class ChatBubble extends StatelessWidget {
                 // Message
                 Text(
                   message,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: isMe ? Colors.white : Colors.black87,
+                  style: context.bodyText?.copyWith(
+                    color: isMe
+                        ? context.myBubbleTextPrimary
+                        : context.colorScheme.onSurface.withValues(alpha: 0.87),
                   ),
                 ),
 
@@ -148,10 +147,11 @@ class ChatBubble extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      _formatTime(createdAt),
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isMe ? Colors.white70 : Colors.black54,
+                      DateTimeFormatter.messageTime(createdAt),
+                      style: context.captionText?.copyWith(
+                        color: isMe
+                            ? context.unreadReceiptColor
+                            : context.textSecondaryColor,
                       ),
                     ),
 
@@ -164,8 +164,8 @@ class ChatBubble extends StatelessWidget {
                           key: ValueKey(isRead),
                           size: 16,
                           color: isRead
-                              ? Colors.lightBlueAccent
-                              : Colors.white70,
+                              ? context.readReceiptColor
+                              : context.unreadReceiptColor,
                         ),
                       ),
                     ],

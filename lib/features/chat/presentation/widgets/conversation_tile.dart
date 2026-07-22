@@ -37,7 +37,7 @@ class ConversationTile extends ConsumerWidget {
 
     return otherUserAsync.when(
       loading: () => const ListTile(
-        leading: CircleAvatar(child: CircularProgressIndicator(strokeWidth: 2)),
+        leading: CircleAvatar(child: CircularProgressIndicator()),
         title: Text('Loading...'),
       ),
 

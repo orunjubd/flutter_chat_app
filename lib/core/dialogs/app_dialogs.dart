@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'confirmation_dialog.dart';
+import 'app_confirmation_dialog.dart';
 
 class AppDialogs {
   AppDialogs._();

@@ -1,3 +1,4 @@
+import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:flutter/material.dart';
 
 /// ---------------------------------------------------------------------------
@@ -53,18 +54,16 @@ class SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return ListTile(
       enabled: enabled,
 
       leading: leading,
 
-      title: Text(title, style: theme.textTheme.titleMedium),
+      title: Text(title, style: context.captionText),
 
       subtitle: subtitle == null
           ? null
-          : Text(subtitle!, style: theme.textTheme.bodySmall),
+          : Text(subtitle!, style: context.subtitleText),
 
       trailing: trailing ?? const Icon(Icons.chevron_right_rounded),
 

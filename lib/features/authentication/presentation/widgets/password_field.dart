@@ -15,21 +15,10 @@ class PasswordField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
-      style: const TextStyle(color: Colors.white),
+      style: context.bodyText?.copyWith(color: context.colorScheme.onSurface),
       decoration: InputDecoration(
-        border: OutlineInputBorder(),
         labelText: 'Password',
-        labelStyle: TextStyle(color: Colors.white70),
-        prefixIcon: Icon(Icons.lock_outline_rounded, color: Colors.white70),
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.white30),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.white),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: context.colorScheme.error),
-        ),
+        prefixIcon: Icon(Icons.lock_outline_rounded),
       ),
       obscureText: true, // Shields text input values
       autocorrect: false,

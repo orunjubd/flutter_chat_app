@@ -20,9 +20,13 @@ class AppSnackBar {
       );
   }
 
-  static void info(BuildContext context, String message) {
+  static void info(
+    BuildContext context,
+    String message, {
+    Duration duration = const Duration(seconds: 2),
+  }) {
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(message)));
+      ..showSnackBar(SnackBar(content: Text(message), duration: duration));
   }
 }
