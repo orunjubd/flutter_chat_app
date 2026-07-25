@@ -63,6 +63,30 @@ class ConversationMessageRepository {
       messageId: messageId,
     );
   }
+  // ------------------------------------------------------------
+  // Delete for me
+  // ------------------------------------------------------------
+
+  Future<void> deleteForMe({
+    required String messageId,
+    required String userId,
+  }) async {
+    await _messageRepository.deleteMessageForMe(
+      conversationId: conversationId,
+      messageId: messageId,
+      userId: userId,
+    );
+  }
+
+  // ------------------------------------------------------------
+  // Delete for everyone
+  // ------------------------------------------------------------
+  Future<void> deleteForEveryone({required String messageId}) async {
+    await _messageRepository.deleteMessageForEveryone(
+      conversationId: conversationId,
+      messageId: messageId,
+    );
+  }
 
   /// ------------------------------------------------------------
   /// Read receipt

@@ -84,6 +84,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
       createdAt: Timestamp.now(),
       readBy: [firebaseUser.uid],
       type: 'text',
+
+      deletedForEveryone: false,
+      deletedBy: const [],
+      deletedAt: null,
     );
 
     await repository.sendMessage(message);

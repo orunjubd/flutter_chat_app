@@ -1,3 +1,5 @@
+//import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Message {
@@ -9,6 +11,9 @@ class Message {
     required this.createdAt,
     required this.readBy,
     required this.type,
+    required this.deletedForEveryone,
+    required this.deletedBy,
+    this.deletedAt,
   });
 
   /// Firestore document ID
@@ -32,6 +37,10 @@ class Message {
   /// Message type (text, image, etc.)
   final String type;
 
+  final bool deletedForEveryone;
+  final List<String> deletedBy;
+  final Timestamp? deletedAt;
+
   factory Message.fromMap(String documentId, Map<String, dynamic> data) {
     return Message(
       id: documentId,
@@ -41,6 +50,10 @@ class Message {
       createdAt: data['createdAt'] as Timestamp? ?? Timestamp.now(),
       readBy: List<String>.from(data['readBy'] ?? const []),
       type: data['type'] as String? ?? 'text',
+
+      deletedForEveryone: data['deletedForEveryone'] as bool? ?? false,
+      deletedBy: List<String>.from(data['deletedBy'] ?? const []),
+      deletedAt: data['deletedAt'] as Timestamp?,
     );
   }
 
@@ -52,6 +65,10 @@ class Message {
       'createdAt': createdAt,
       'readBy': readBy,
       'type': type,
+
+      'deletedForEveryone': deletedForEveryone,
+      'deletedBy': deletedBy,
+      'deletedAt': deletedAt,
     };
   }
 }

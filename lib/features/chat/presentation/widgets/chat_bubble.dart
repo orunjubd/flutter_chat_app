@@ -11,9 +11,14 @@ class ChatBubble extends StatelessWidget {
     required this.isMe,
     required this.createdAt,
     required this.isRead,
-    required this.onDeletePressed,
-    //required this.onLongPress,
-    //required this.onMessageTap,
+
+    //    required this.onDeletePressed,
+    required this.deletedForEveryone,
+    required this.deletedBy,
+    required this.currentUserId,
+
+    required this.onDeleteForMe,
+    required this.onDeleteForEveryone,
   });
 
   final String senderName;
@@ -21,9 +26,14 @@ class ChatBubble extends StatelessWidget {
   final bool isMe;
   final DateTime createdAt;
   final bool isRead;
-  final VoidCallback onDeletePressed;
-  //final VoidCallback onLongPress;
-  //final VoidCallback onMessageTap;
+  //final VoidCallback onDeletePressed;
+
+  final bool deletedForEveryone;
+  final List<String> deletedBy;
+  final String currentUserId;
+
+  final VoidCallback onDeleteForMe;
+  final VoidCallback? onDeleteForEveryone;
 
   // String _formatTime(DateTime dateTime) {
   //   final hour = dateTime.hour > 12
@@ -33,6 +43,10 @@ class ChatBubble extends StatelessWidget {
   //   final period = dateTime.hour >= 12 ? 'PM' : 'AM';
   //   return '$hour:$minute $period';
   // }
+
+  bool get _deletedForMe => deletedBy.contains(currentUserId);
+
+  bool get _deleted => deletedForEveryone || _deletedForMe;
 
   Future<void> _showMessageMenu(BuildContext context) async {
     final result = await showModalBottomSheet<String>(
@@ -44,50 +58,78 @@ class ChatBubble extends StatelessWidget {
             children: [
               ListTile(
                 leading: Icon(Icons.delete_outline, color: context.errorColor),
-                title: const Text('Delete'),
+                title: const Text('Delete for Me'),
                 onTap: () {
-                  Navigator.pop(context, 'delete');
+                  Navigator.pop(context, 'delete_me');
                 },
               ),
+
+              if (isMe)
+                ListTile(
+                  leading: Icon(
+                    Icons.delete_forever,
+                    color: context.errorColor,
+                  ),
+                  title: const Text('Delete for Everyone'),
+                  onTap: () {
+                    Navigator.pop(context, 'delete_everyone');
+                  },
+                ),
             ],
           ),
         );
       },
     );
 
-    if (!context.mounted) return;
+    if (!context.mounted || result == null) return;
 
-    if (result == 'delete') {
-      final shouldDelete = await showDialog<bool>(
-        context: context,
-        builder: (_) {
-          return AlertDialog(
-            title: const Text('Delete Message'),
-            content: const Text(
-              'Are you sure you want to delete this message?',
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: const Text('Delete Message'),
+          content: Text(
+            result == 'delete_everyone'
+                ? 'Delete this message for everyone?'
+                : 'Delete this message only for you?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context, false);
-                },
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () {
-                  Navigator.pop(context, true);
-                },
-                child: const Text('Delete'),
-              ),
-            ],
-          );
-        },
-      );
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
 
-      if (shouldDelete == true) {
-        onDeletePressed();
-      }
+    if (shouldDelete != true) return;
+
+    switch (result) {
+      case 'delete_me':
+        onDeleteForMe();
+        break;
+
+      case 'delete_everyone':
+        onDeleteForEveryone?.call();
+        break;
     }
+  }
+
+  String get _displayMessage {
+    if (deletedForEveryone) {
+      return 'This message was deleted';
+    }
+
+    if (_deletedForMe) {
+      return 'You deleted this message';
+    }
+
+    return message;
   }
 
   BorderRadius get bubbleRadius => BorderRadius.only(
@@ -102,7 +144,7 @@ class ChatBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: GestureDetector(
-        onLongPress: () => _showMessageMenu(context),
+        onLongPress: _deleted ? null : () => _showMessageMenu(context),
         child: Material(
           elevation: 1.5,
           borderRadius: bubbleRadius,
@@ -111,7 +153,11 @@ class ChatBubble extends StatelessWidget {
             constraints: BoxConstraints(maxWidth: context.screenWidth * .72),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: isMe ? context.myBubbleColor : context.otherBubbleColor,
+              color: _deleted
+                  ? context.colorScheme.surfaceContainerHighest
+                  : isMe
+                  ? context.myBubbleColor
+                  : context.otherBubbleColor,
               borderRadius: bubbleRadius,
             ),
             child: Column(
@@ -132,10 +178,13 @@ class ChatBubble extends StatelessWidget {
 
                 // Message
                 Text(
-                  message,
+                  _displayMessage,
                   style: context.bodyText?.copyWith(
-                    color: isMe
-                        ? context.myBubbleTextPrimary
+                    fontStyle: _deleted ? FontStyle.italic : FontStyle.normal,
+                    color: _deleted
+                        ? context.textSecondaryColor
+                        : isMe
+                        ? Colors.white
                         : context.colorScheme.onSurface.withValues(alpha: 0.87),
                   ),
                 ),

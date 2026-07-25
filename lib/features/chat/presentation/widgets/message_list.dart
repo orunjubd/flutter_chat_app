@@ -1,4 +1,3 @@
-import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 //import 'package:firebase_auth/firebase_auth.dart';
@@ -9,6 +8,8 @@ import 'package:chat_app/features/chat/providers/conversation_message_provider.d
 import 'package:chat_app/features/chat/presentation/widgets/chat_bubble.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_animation.dart';
 import 'package:chat_app/core/utils/firebase_error_mapper.dart';
+import 'package:chat_app/core/dialogs/app_snackbar.dart';
+import 'package:chat_app/core/extensions/theme_extensions.dart';
 
 class MessageList extends ConsumerStatefulWidget {
   const MessageList({
@@ -54,8 +55,20 @@ class _MessageListState extends ConsumerState<MessageList> {
       ),
 
       data: (messages) {
+        final currentUserId = ref.read(currentUserIdProvider);
+
+        // Security Guard Anchor
+        if (currentUserId == null) {
+          return const SizedBox.shrink();
+        }
+
+        // 🚀 UPSTREAM FILTERING MATRIX: Eliminates hidden text bubbles before it hits the UI layout tree
+        final visibleMessages = messages.where((message) {
+          return !message.deletedBy.contains(currentUserId);
+        }).toList();
+
         _scrollToBottom();
-        if (messages.isEmpty) {
+        if (visibleMessages.isEmpty) {
           return Center(
             child: Text('No messages yet.', style: context.subtitleText),
           );
@@ -64,21 +77,18 @@ class _MessageListState extends ConsumerState<MessageList> {
         return ListView.builder(
           controller: widget.scrollController,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          itemCount: messages.length,
+          itemCount: visibleMessages.length,
           itemBuilder: (context, index) {
-            final message = messages[index];
-            final currentUserId = ref.read(currentUserIdProvider);
+            final message = visibleMessages[index];
+
             final repository = ref.read(
               conversationMessageRepositoryProvider(widget.conversationId),
             );
             //final repository = ref.read(messageRepositoryProvider);
-            final isRead =
-                currentUserId != null &&
-                message.readBy.any((uid) => uid != currentUserId);
+            final isRead = message.readBy.any((uid) => uid != currentUserId);
 
             // 🚀 2. THE ENTERPRISE AUTOMATED READ RECEIPT TRIGGER BATCH FILTER
-            if (currentUserId != null &&
-                message.senderId != currentUserId &&
+            if (message.senderId != currentUserId &&
                 !message.readBy.contains(currentUserId)) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 repository.markMessageAsRead(
@@ -88,6 +98,7 @@ class _MessageListState extends ConsumerState<MessageList> {
               });
             }
 
+            // Return your animated chat bubble viewport wrappers down here seamlessly!
             return MessageAnimation(
               key: ValueKey(message.id),
               child: ChatBubble(
@@ -96,21 +107,49 @@ class _MessageListState extends ConsumerState<MessageList> {
                 senderName: message.senderName,
                 message: message.text,
                 createdAt: message.createdAt.toDate(),
+
                 isMe: message.senderId == currentUserId,
                 isRead: isRead,
 
-                onDeletePressed: () async {
-                  await repository.deleteMessage(message.id);
+                deletedForEveryone: message.deletedForEveryone,
+                deletedBy: message.deletedBy,
+                currentUserId: currentUserId,
+
+                onDeleteForMe: () async {
+                  //if (currentUserId == null) return;
+
+                  await repository.deleteForMe(
+                    messageId: message.id,
+                    userId: currentUserId,
+                  );
 
                   if (!context.mounted) return;
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Message deleted'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
+                  // ScaffoldMessenger.of(context).showSnackBar(
+                  //   const SnackBar(content: Text('Message deleted for you')),
+                  // );
+                  AppSnackBar.info(context, 'Message deleted for you');
                 },
+
+                onDeleteForEveryone: message.senderId == currentUserId
+                    ? () async {
+                        await repository.deleteForEveryone(
+                          messageId: message.id,
+                        );
+
+                        if (!context.mounted) return;
+
+                        // ScaffoldMessenger.of(context).showSnackBar(
+                        //   const SnackBar(
+                        //     content: Text('Message deleted for everyone'),
+                        //   ),
+                        // );
+                        AppSnackBar.info(
+                          context,
+                          'Message deleted for everyone',
+                        );
+                      }
+                    : null,
               ),
             );
           },

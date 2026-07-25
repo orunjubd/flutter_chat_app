@@ -119,16 +119,17 @@ class AppDrawer extends ConsumerWidget {
               ),
 
               onTap: () async {
+                // Close the drawer
                 Navigator.pop(context);
 
+                // Remove every page above the ConversationListScreen
+                Navigator.of(context).popUntil((route) => route.isFirst);
+
+                // Allow the disposed widgets to cancel their Firestore listeners.
+                await Future.delayed(const Duration(milliseconds: 50));
+
+                // Logout.
                 await ref.read(logoutServiceProvider).logout();
-
-                // if (!context.mounted) return;
-
-                // Navigator.of(context).pushAndRemoveUntil(
-                //   MaterialPageRoute(builder: (_) => const AuthGate()),
-                //   (_) => false,
-                // );
               },
             ),
 

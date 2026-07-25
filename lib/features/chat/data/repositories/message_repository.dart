@@ -98,11 +98,55 @@ class MessageRepository {
   /// ------------------------------------------------------------
   /// Delete message
   /// ------------------------------------------------------------
+  // Future<void> deleteMessage({
+  //   required String conversationId,
+  //   required String messageId,
+  // }) async {
+  //   await messagesCollection(conversationId).doc(messageId).delete();
+  // }
   Future<void> deleteMessage({
     required String conversationId,
     required String messageId,
   }) async {
-    await messagesCollection(conversationId).doc(messageId).delete();
+    await _firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .doc(messageId)
+        .delete();
+  }
+
+  /// ------------------------------------------------------------
+  /// Delete message
+  /// ------------------------------------------------------------
+  Future<void> deleteMessageForMe({
+    required String conversationId,
+    required String messageId,
+    required String userId,
+  }) async {
+    await _firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .doc(messageId)
+        .update({
+          'deletedBy': FieldValue.arrayUnion([userId]),
+        });
+  }
+
+  /// ------------------------------------------------------------
+  /// Delete message
+  /// ------------------------------------------------------------
+  Future<void> deleteMessageForEveryone({
+    required String conversationId,
+    required String messageId,
+  }) async {
+    await _firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .doc(messageId)
+        .update({'deletedForEveryone': true, 'deletedAt': Timestamp.now()});
   }
 
   /// ------------------------------------------------------------
