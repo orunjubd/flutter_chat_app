@@ -92,6 +92,9 @@ extension ThemeContextExtension on BuildContext {
 
   bool get isLight => brightness == Brightness.light;
 
+  /// Returns true with 100% mathematical certainty if the app is currently running in Dark Mode
+  bool get isDarkMode => theme.brightness == Brightness.dark;
+
   // ===========================================================================
   // Radius helper shortcuts
   // ===========================================================================

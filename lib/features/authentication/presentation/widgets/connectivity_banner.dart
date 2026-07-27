@@ -66,7 +66,7 @@ class _ConnectivityBannerState extends ConsumerState<ConnectivityBanner> {
     return connectivity.when(
       loading: () => const SizedBox.shrink(),
 
-      error: (_, __) => const _Banner(
+      error: (_, _) => const _Banner(
         color: AppColors.error,
         icon: Icons.wifi_off,
         text: 'Network unavailable',

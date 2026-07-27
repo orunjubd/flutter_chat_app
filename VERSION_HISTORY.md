@@ -130,3 +130,16 @@ Release Date: July 2026
 - Group Chat
 - Push Notifications
 - End-to-End Message Encryption
+
+## v1.6.2
+
+Release Date:
+2026
+
+Highlights
+
+✓ Delete for Me
+✓ Delete for Everyone
+✓ Firestore soft delete
+✓ Deleted placeholder
+✓ Future-ready delete architecture

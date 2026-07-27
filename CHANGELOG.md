@@ -505,3 +505,26 @@ Standardized the following Material components:
 # v1.5.0
 
 Previous stable release.
+
+# v1.6.2 (Delete Messages)
+
+## Added
+- Delete for Me
+- Delete for Everyone
+- deletedForEveryone flag
+- deletedBy list
+- deletedAt timestamp
+- Firestore delete placeholder support
+- ChatBubble deleted message UI
+- Enterprise delete architecture for future messaging features
+
+## Changed
+- Message model extended
+- MessageRepository updated
+- ConversationMessageRepository updated
+- MessageList filtering logic improved
+
+## Fixed
+- Delete no longer permanently removes Firestore document
+- Sender can delete for everyone
+- Receiver can delete only for themselves

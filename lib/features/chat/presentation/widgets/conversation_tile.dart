@@ -41,7 +41,7 @@ class ConversationTile extends ConsumerWidget {
         title: Text('Loading...'),
       ),
 
-      error: (_, __) => const ListTile(
+      error: (_, _) => const ListTile(
         leading: CircleAvatar(child: Icon(Icons.person)),
         title: Text('Unknown User'),
       ),

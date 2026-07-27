@@ -11,9 +11,15 @@ class Message {
     required this.createdAt,
     required this.readBy,
     required this.type,
+
     required this.deletedForEveryone,
     required this.deletedBy,
     this.deletedAt,
+
+    this.replyToMessageId,
+    this.replyToSenderId,
+    this.replyToSenderName,
+    this.replyToText,
   });
 
   /// Firestore document ID
@@ -41,6 +47,11 @@ class Message {
   final List<String> deletedBy;
   final Timestamp? deletedAt;
 
+  final String? replyToMessageId;
+  final String? replyToSenderId;
+  final String? replyToSenderName;
+  final String? replyToText;
+
   factory Message.fromMap(String documentId, Map<String, dynamic> data) {
     return Message(
       id: documentId,
@@ -54,6 +65,11 @@ class Message {
       deletedForEveryone: data['deletedForEveryone'] as bool? ?? false,
       deletedBy: List<String>.from(data['deletedBy'] ?? const []),
       deletedAt: data['deletedAt'] as Timestamp?,
+
+      replyToMessageId: data['replyToMessageId'] as String?,
+      replyToSenderId: data['replyToSenderId'] as String?,
+      replyToSenderName: data['replyToSenderName'] as String?,
+      replyToText: data['replyToText'] as String?,
     );
   }
 
@@ -69,6 +85,11 @@ class Message {
       'deletedForEveryone': deletedForEveryone,
       'deletedBy': deletedBy,
       'deletedAt': deletedAt,
+
+      'replyToMessageId': replyToMessageId,
+      'replyToSenderId': replyToSenderId,
+      'replyToSenderName': replyToSenderName,
+      'replyToText': replyToText,
     };
   }
 }

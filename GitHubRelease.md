@@ -283,3 +283,32 @@ Built with:
 Thank you for using ECE Chat.
 
 The project continues to evolve toward a production-ready enterprise messaging platform.
+
+-------------------------------------------------------------
+ECE Chat v1.6.2 — Delete Messages
+-------------------------------------------------------------
+## 🚀 What's New
+
+This release introduces Enterprise Soft Delete architecture.
+
+### Features
+
+- Delete for Me
+- Delete for Everyone
+- Deleted placeholder
+- Firestore soft delete
+- Future-ready messaging model
+
+### Internal Improvements
+
+- Message model upgraded
+- Repository architecture improved
+- UI rendering optimized
+- Firestore updates simplified
+
+This release prepares the project for:
+
+- Edit Message
+- Reply Message
+- Emoji Reactions
+- Forward Message

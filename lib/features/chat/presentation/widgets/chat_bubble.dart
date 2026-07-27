@@ -1,135 +1,56 @@
+//import 'package:cloud_firestore/cloud_firestore.dart';
+//import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:chat_app/core/theme/app_colors.dart';
 import 'package:chat_app/core/utils/date_time_formatter.dart';
-import 'package:flutter/material.dart';
+// import 'package:chat_app/features/chat/providers/reply_provider.dart';
+import 'package:chat_app/features/chat/data/models/message.dart';
+import 'package:chat_app/features/chat/presentation/widgets/reply_card.dart';
+import 'package:chat_app/features/chat/presentation/widgets/message_menu.dart';
 
-class ChatBubble extends StatelessWidget {
+//----------------------------------------------------------------------------
+// Perfect. This is the final cleanup of ChatBubble. After this step:
+
+// ✅ ChatBubble = UI only
+// ✅ MessageMenu = menu logic
+// ✅ ReplyCard = reply UI
+// ✅ ReplyPreview = input preview
+// ✅ ReplyProvider = state
+// ✅ Repository = database
+
+//This is exactly the architecture we wanted.
+//---------------------------------------------------------------------------
+
+class ChatBubble extends ConsumerWidget {
   const ChatBubble({
     super.key,
-    required this.senderName,
-    required this.message,
+    //required this.senderName,
+    required this.messageData,
     required this.isMe,
-    required this.createdAt,
     required this.isRead,
-
-    //    required this.onDeletePressed,
-    required this.deletedForEveryone,
-    required this.deletedBy,
-    required this.currentUserId,
-
     required this.onDeleteForMe,
     required this.onDeleteForEveryone,
   });
 
-  final String senderName;
-  final String message;
+  final Message messageData;
   final bool isMe;
-  final DateTime createdAt;
   final bool isRead;
-  //final VoidCallback onDeletePressed;
-
-  final bool deletedForEveryone;
-  final List<String> deletedBy;
-  final String currentUserId;
 
   final VoidCallback onDeleteForMe;
   final VoidCallback? onDeleteForEveryone;
 
-  // String _formatTime(DateTime dateTime) {
-  //   final hour = dateTime.hour > 12
-  //       ? dateTime.hour - 12
-  //       : (dateTime.hour == 0 ? 12 : dateTime.hour);
-  //   final minute = dateTime.minute.toString().padLeft(2, '0');
-  //   final period = dateTime.hour >= 12 ? 'PM' : 'AM';
-  //   return '$hour:$minute $period';
-  // }
-
-  bool get _deletedForMe => deletedBy.contains(currentUserId);
-
-  bool get _deleted => deletedForEveryone || _deletedForMe;
-
-  Future<void> _showMessageMenu(BuildContext context) async {
-    final result = await showModalBottomSheet<String>(
-      context: context,
-      builder: (_) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(Icons.delete_outline, color: context.errorColor),
-                title: const Text('Delete for Me'),
-                onTap: () {
-                  Navigator.pop(context, 'delete_me');
-                },
-              ),
-
-              if (isMe)
-                ListTile(
-                  leading: Icon(
-                    Icons.delete_forever,
-                    color: context.errorColor,
-                  ),
-                  title: const Text('Delete for Everyone'),
-                  onTap: () {
-                    Navigator.pop(context, 'delete_everyone');
-                  },
-                ),
-            ],
-          ),
-        );
-      },
-    );
-
-    if (!context.mounted || result == null) return;
-
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (_) {
-        return AlertDialog(
-          title: const Text('Delete Message'),
-          content: Text(
-            result == 'delete_everyone'
-                ? 'Delete this message for everyone?'
-                : 'Delete this message only for you?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (shouldDelete != true) return;
-
-    switch (result) {
-      case 'delete_me':
-        onDeleteForMe();
-        break;
-
-      case 'delete_everyone':
-        onDeleteForEveryone?.call();
-        break;
-    }
-  }
+  bool get _deleted =>
+      messageData.deletedForEveryone || messageData.deletedBy.isNotEmpty;
 
   String get _displayMessage {
-    if (deletedForEveryone) {
+    if (messageData.deletedForEveryone) {
       return 'This message was deleted';
     }
 
-    if (_deletedForMe) {
-      return 'You deleted this message';
-    }
-
-    return message;
+    return messageData.text;
   }
 
   BorderRadius get bubbleRadius => BorderRadius.only(
@@ -140,15 +61,26 @@ class ChatBubble extends StatelessWidget {
   );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: GestureDetector(
-        onLongPress: _deleted ? null : () => _showMessageMenu(context),
+        onLongPress: _deleted
+            ? null
+            : () {
+                MessageMenu.show(
+                  context: context,
+                  ref: ref,
+                  message: messageData,
+                  canDeleteForEveryone: onDeleteForEveryone != null,
+                  onDeleteForMe: onDeleteForMe,
+                  onDeleteForEveryone: onDeleteForEveryone,
+                );
+              },
         child: Material(
           elevation: 1.5,
-          borderRadius: bubbleRadius,
           color: AppColors.transparent,
+          borderRadius: bubbleRadius,
           child: Container(
             constraints: BoxConstraints(maxWidth: context.screenWidth * .72),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -163,9 +95,11 @@ class ChatBubble extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Sender Name
+                //------------------------------------
+                // Sender
+                //------------------------------------
                 Text(
-                  senderName,
+                  messageData.senderName,
                   style: context.bodyTextMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: isMe
@@ -174,9 +108,24 @@ class ChatBubble extends StatelessWidget {
                   ),
                 ),
 
+                //------------------------------------
+                // Reply Card
+                //------------------------------------
+                if (messageData.replyToMessageId != null) ...[
+                  const SizedBox(height: 6),
+
+                  ReplyCard(
+                    senderName: messageData.replyToSenderName ?? '',
+                    message: messageData.replyToText ?? '',
+                    compact: true,
+                  ),
+                ],
+
                 const SizedBox(height: 6),
 
+                //------------------------------------
                 // Message
+                //------------------------------------
                 Text(
                   _displayMessage,
                   style: context.bodyText?.copyWith(
@@ -184,19 +133,23 @@ class ChatBubble extends StatelessWidget {
                     color: _deleted
                         ? context.textSecondaryColor
                         : isMe
-                        ? Colors.white
-                        : context.colorScheme.onSurface.withValues(alpha: 0.87),
+                        ? context.myBubbleTextPrimary
+                        : context.colorScheme.onSurface.withValues(alpha: .87),
                   ),
                 ),
 
                 const SizedBox(height: 8),
 
-                // Timestamp + Read Receipt
+                //------------------------------------
+                // Time + Read receipt
+                //------------------------------------
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      DateTimeFormatter.messageTime(createdAt),
+                      DateTimeFormatter.messageTime(
+                        messageData.createdAt.toDate(),
+                      ),
                       style: context.captionText?.copyWith(
                         color: isMe
                             ? context.unreadReceiptColor
@@ -206,6 +159,7 @@ class ChatBubble extends StatelessWidget {
 
                     if (isMe) ...[
                       const SizedBox(width: 4),
+
                       AnimatedSwitcher(
                         duration: const Duration(milliseconds: 250),
                         child: Icon(

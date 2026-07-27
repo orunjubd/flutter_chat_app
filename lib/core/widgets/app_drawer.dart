@@ -29,7 +29,7 @@ class AppDrawer extends ConsumerWidget {
                 ),
               ),
 
-              error: (_, __) => const UserAccountsDrawerHeader(
+              error: (_, _) => const UserAccountsDrawerHeader(
                 accountName: Text('Unknown User'),
                 accountEmail: Text(''),
                 currentAccountPicture: CircleAvatar(child: Icon(Icons.person)),

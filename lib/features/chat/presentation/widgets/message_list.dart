@@ -85,11 +85,11 @@ class _MessageListState extends ConsumerState<MessageList> {
               conversationMessageRepositoryProvider(widget.conversationId),
             );
             //final repository = ref.read(messageRepositoryProvider);
-            final isRead = message.readBy.any((uid) => uid != currentUserId);
+            final isRead = message.readBy.length > 1;
+            final isMe = message.senderId == currentUserId;
 
             // 🚀 2. THE ENTERPRISE AUTOMATED READ RECEIPT TRIGGER BATCH FILTER
-            if (message.senderId != currentUserId &&
-                !message.readBy.contains(currentUserId)) {
+            if (!isMe && !message.readBy.contains(currentUserId)) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 repository.markMessageAsRead(
                   messageId: message.id,
@@ -103,47 +103,25 @@ class _MessageListState extends ConsumerState<MessageList> {
               key: ValueKey(message.id),
               child: ChatBubble(
                 key: ValueKey(message.id),
-
-                senderName: message.senderName,
-                message: message.text,
-                createdAt: message.createdAt.toDate(),
-
-                isMe: message.senderId == currentUserId,
+                messageData: message,
+                isMe: isMe,
                 isRead: isRead,
 
-                deletedForEveryone: message.deletedForEveryone,
-                deletedBy: message.deletedBy,
-                currentUserId: currentUserId,
-
                 onDeleteForMe: () async {
-                  //if (currentUserId == null) return;
-
                   await repository.deleteForMe(
                     messageId: message.id,
                     userId: currentUserId,
                   );
-
                   if (!context.mounted) return;
-
-                  // ScaffoldMessenger.of(context).showSnackBar(
-                  //   const SnackBar(content: Text('Message deleted for you')),
-                  // );
                   AppSnackBar.info(context, 'Message deleted for you');
                 },
 
-                onDeleteForEveryone: message.senderId == currentUserId
+                onDeleteForEveryone: isMe
                     ? () async {
                         await repository.deleteForEveryone(
                           messageId: message.id,
                         );
-
                         if (!context.mounted) return;
-
-                        // ScaffoldMessenger.of(context).showSnackBar(
-                        //   const SnackBar(
-                        //     content: Text('Message deleted for everyone'),
-                        //   ),
-                        // );
                         AppSnackBar.info(
                           context,
                           'Message deleted for everyone',
