@@ -1,5 +1,7 @@
 //import 'package:cloud_firestore/cloud_firestore.dart';
 //import 'package:firebase_auth/firebase_auth.dart';
+//import 'package:chat_app/features/chat/providers/forward_provider.dart';
+import 'package:chat_app/features/chat/presentation/screens/user_selection_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,6 +12,7 @@ import 'package:chat_app/core/utils/date_time_formatter.dart';
 import 'package:chat_app/features/chat/data/models/message.dart';
 import 'package:chat_app/features/chat/presentation/widgets/reply_card.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_menu.dart';
+import 'package:chat_app/features/chat/providers/forward_provider.dart';
 
 //----------------------------------------------------------------------------
 // Perfect. This is the final cleanup of ChatBubble. After this step:
@@ -75,6 +78,22 @@ class ChatBubble extends ConsumerWidget {
                   canDeleteForEveryone: onDeleteForEveryone != null,
                   onDeleteForMe: onDeleteForMe,
                   onDeleteForEveryone: onDeleteForEveryone,
+                  onForward: () {
+                    ref.read(forwardProvider.notifier).forward(messageData);
+
+                    // Close the action sheet modal window gracefully first
+                    //Navigator.of(context).pop();
+
+                    // 2. 🚀 THE MASTER NAVIGATION ROUTER ACTION
+                    // Instantly pushes the user over onto the directory dashboard tray list map page!
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        // Make sure you import UserSelectionScreen at the top of the file!
+                        builder: (_) => const UserSelectionScreen(),
+                        fullscreenDialog: true,
+                      ),
+                    );
+                  },
                 );
               },
         child: Material(
@@ -107,6 +126,34 @@ class ChatBubble extends ConsumerWidget {
                         : context.colorScheme.onSurface,
                   ),
                 ),
+
+                //--------------------------------------------
+                // Forwarded
+                //------------------------------------
+                if (messageData.forwarded) ...[
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.forward,
+                        size: 14,
+                        color: context.textSecondaryColor,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        messageData.forwardedFromUserName == null
+                            ? 'Forwarded'
+                            : 'Forwarded from ${messageData.forwardedFromUserName}',
+                        style: context.captionText?.copyWith(
+                          fontStyle: FontStyle.italic,
+                          color: context.textSecondaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 6),
+                ],
 
                 //------------------------------------
                 // Reply Card

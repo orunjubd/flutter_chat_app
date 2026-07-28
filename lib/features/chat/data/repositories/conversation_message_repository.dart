@@ -21,6 +21,49 @@ class ConversationMessageRepository {
   }
 
   /// ------------------------------------------------------------
+  /// Forward
+  /// ------------------------------------------------------------
+  Future<void> forwardMessage({
+    required Message originalMessage,
+    required String currentUserId,
+    required String currentUserName,
+  }) async {
+    final document = _messageRepository.createMessageDocument(conversationId);
+
+    final forwardedMessage = Message(
+      id: document.id,
+
+      senderId: currentUserId,
+      senderName: currentUserName,
+
+      text: originalMessage.text,
+
+      createdAt: Timestamp.now(),
+
+      readBy: [currentUserId],
+
+      type: originalMessage.type,
+
+      deletedForEveryone: false,
+      deletedBy: const [],
+      deletedAt: null,
+
+      // Reply fields are NOT copied.
+      replyToMessageId: null,
+      replyToSenderId: null,
+      replyToSenderName: null,
+      replyToText: null,
+
+      // New forward metadata
+      forwarded: true,
+      forwardedFromUserId: originalMessage.senderId,
+      forwardedFromUserName: originalMessage.senderName,
+    );
+
+    await document.set(forwardedMessage.toMap());
+  }
+
+  /// ------------------------------------------------------------
   /// Send
   /// ------------------------------------------------------------
   Future<void> sendMessage(Message message) {

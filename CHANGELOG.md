@@ -1,7 +1,7 @@
 # Changelog
-
+--------------------------------------------------------------
 ## v1.2.0
-
+--------------------------------------------------------------
 ### Added
 
 - Firebase Authentication
@@ -23,9 +23,9 @@
 - Registration flow cleanup
 
 # Changelog
-
+--------------------------------------------------------------
 ## v1.2.1
-
+--------------------------------------------------------------
 ### Added
 - Production-safe RegistrationService
 - Firebase Authentication rollback support
@@ -54,9 +54,9 @@
 - Simplified authentication error handling.
 - Removed duplicated Firebase exception logic from the UI layer.
 - Increased separation of concerns between presentation and authentication services.
-
+--------------------------------------------------------------
 # v1.2.3 — Email Verification Gate
-
+--------------------------------------------------------------
 ## Added
 
 * Email verification workflow
@@ -86,9 +86,9 @@
 
 Status:
 Authentication module is fully functional and verified.
-
+--------------------------------------------------------------
 ## v1.3.0 — Authentication Complete / Chat Module Started
-
+--------------------------------------------------------------
 ### Authentication
 - Completed Firebase Authentication
 - Firestore user profile creation
@@ -332,9 +332,9 @@ All notable changes to this project will be documented in this file.
 All notable changes to this project will be documented in this file.
 
 ---
-
+--------------------------------------------------------------
 ## [v1.6.0] - 2026-07-19
-
+--------------------------------------------------------------
 ### ✨ Added
 
 #### Enterprise Theme Engine
@@ -405,9 +405,9 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
 ---
-
+--------------------------------------------------------------
 # v1.6.1 (Documentation & Architecture Update)
-
+--------------------------------------------------------------
 Release Date: July 2026
 
 ## Added
@@ -472,9 +472,9 @@ Standardized the following Material components:
 - Reduced UI maintenance overhead.
 
 ---
-
+--------------------------------------------------------------
 # v1.6.0
-
+--------------------------------------------------------------
 ## Added
 
 ### Chat Features
@@ -505,9 +505,9 @@ Standardized the following Material components:
 # v1.5.0
 
 Previous stable release.
-
+--------------------------------------------------------------
 # v1.6.2 (Delete Messages)
-
+--------------------------------------------------------------
 ## Added
 - Delete for Me
 - Delete for Everyone
@@ -528,3 +528,103 @@ Previous stable release.
 - Delete no longer permanently removes Firestore document
 - Sender can delete for everyone
 - Receiver can delete only for themselves
+
+
+# CHANGELOG
+--------------------------------------------------------------
+## v1.6.3 — Reply Messages
+--------------------------------------------------------------
+**Release Tag:** `Reply`
+
+### 🚀 Added
+
+* Implemented **Reply to Message** functionality similar to WhatsApp.
+* Long-press menu now includes a **Reply** action.
+* Added `replyProvider` to manage the active reply state.
+* Extended the `Message` model with reply metadata:
+
+  * `replyToMessageId`
+  * `replyToSenderId`
+  * `replyToSenderName`
+  * `replyToText`
+* Messages now save reply metadata in Firestore.
+* Added reply preview above the message composer.
+* Added inline reply cards inside chat bubbles.
+* Reply sender name and original message are displayed above replied messages.
+
+### 🏗 Architecture
+
+* Created reusable **ReplyCard** widget.
+* Created reusable **ReplyPreview** widget.
+* Created reusable **MessageMenu** widget.
+* Refactored `ChatBubble` to use reusable components instead of embedding reply and menu UI.
+* Improved separation of responsibilities following the Enterprise Conversation Engine (ECE) architecture.
+
+### 🔄 Changed
+
+* `MessageInput` now focuses only on composing and sending messages.
+* Reply preview UI moved into its own reusable widget.
+* `ChatBubble` now renders reply cards through the reusable `ReplyCard` widget.
+* Message menu logic extracted into a reusable widget for future features.
+
+### 🎨 UI Improvements
+
+* Compact reply card inside chat bubbles.
+* Full reply preview above the input field.
+* Reply cards adapt correctly to Light and Dark themes.
+* Improved spacing and typography for replied messages.
+
+### 🛠 Refactoring
+
+* Reduced duplicated UI code.
+* Improved widget reusability.
+* Prepared architecture for upcoming messaging features:
+
+  * Forward Messages
+  * Edit Messages
+  * Emoji Reactions
+  * Search Messages
+
+### 🐞 Fixed
+
+* Reply no longer opens the delete confirmation dialog.
+* Fixed sender information displayed in reply preview.
+* Fixed reply metadata persistence.
+* Fixed reply preview dismissal.
+* Improved chat bubble rendering consistency.
+
+--------------------------------------------------------------
+# v1.6.4 — ForwardMessage
+--------------------------------------------------------------
+## 🚀 Added
+- Complete Forward Message architecture
+- Forward Provider
+- Forward Preview widget
+- Forward option inside Message Menu
+- Forwarded message metadata
+- Forwarded badge inside ChatBubble
+- Forward to existing conversation
+- Forward to newly created conversation
+- Automatic provider cleanup after forwarding
+- PopScope cleanup for canceled forwarding
+
+## ♻️ Refactored
+- Reused UserSelectionScreen for forwarding workflow
+- Reused ConversationMessageRepository
+- Reused MessageMenu architecture
+- Forward pipeline follows Enterprise Conversation Engine (ECE)
+
+## 🛠 Improved
+- Prevent forwarding deleted messages
+- Better navigation flow after forwarding
+- Cleaner provider lifecycle
+
+## Architecture
+
+Forward
+ ├── forward_provider
+ ├── forward_preview
+ ├── MessageMenu
+ ├── UserSelectionScreen
+ ├── ConversationMessageRepository
+ └── ChatBubble

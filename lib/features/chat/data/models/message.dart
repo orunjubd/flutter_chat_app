@@ -20,6 +20,10 @@ class Message {
     this.replyToSenderId,
     this.replyToSenderName,
     this.replyToText,
+
+    this.forwarded = false,
+    this.forwardedFromUserId,
+    this.forwardedFromUserName,
   });
 
   /// Firestore document ID
@@ -52,6 +56,10 @@ class Message {
   final String? replyToSenderName;
   final String? replyToText;
 
+  final bool forwarded;
+  final String? forwardedFromUserId;
+  final String? forwardedFromUserName;
+
   factory Message.fromMap(String documentId, Map<String, dynamic> data) {
     return Message(
       id: documentId,
@@ -70,6 +78,10 @@ class Message {
       replyToSenderId: data['replyToSenderId'] as String?,
       replyToSenderName: data['replyToSenderName'] as String?,
       replyToText: data['replyToText'] as String?,
+
+      forwarded: data['forwarded'] as bool? ?? false,
+      forwardedFromUserId: data['forwardedFromUserId'] as String?,
+      forwardedFromUserName: data['forwardedFromUserName'] as String?,
     );
   }
 
@@ -90,6 +102,10 @@ class Message {
       'replyToSenderId': replyToSenderId,
       'replyToSenderName': replyToSenderName,
       'replyToText': replyToText,
+
+      'forwarded': forwarded,
+      'forwardedFromUserId': forwardedFromUserId,
+      'forwardedFromUserName': forwardedFromUserName,
     };
   }
 }

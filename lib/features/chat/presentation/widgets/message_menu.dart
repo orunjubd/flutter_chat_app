@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:chat_app/features/chat/data/models/message.dart';
 import 'package:chat_app/features/chat/providers/reply_provider.dart';
+//import 'package:chat_app/features/chat/providers/forward_provider.dart';
 
 //--------------------------------------------------------------------
 //What this class now owns
@@ -28,6 +29,7 @@ class MessageMenu {
     required WidgetRef ref,
     required Message message,
     required bool canDeleteForEveryone,
+    required VoidCallback onForward,
     required VoidCallback onDeleteForMe,
     required VoidCallback? onDeleteForEveryone,
   }) async {
@@ -38,6 +40,17 @@ class MessageMenu {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (!message.deletedForEveryone)
+                ListTile(
+                  leading: const Icon(Icons.forward),
+                  title: const Text('Forward'),
+                  onTap: () {
+                    Navigator.pop(context, 'forward');
+                  },
+                ),
+
+              const Divider(height: 1),
+
               ListTile(
                 leading: const Icon(Icons.reply),
                 title: const Text('Reply'),
@@ -66,6 +79,18 @@ class MessageMenu {
     );
 
     if (!context.mounted || result == null) {
+      return;
+    }
+
+    //==================================================
+    // Forward
+    //==================================================
+
+    if (result == 'forward') {
+      // ref.read(forwardProvider.notifier).forward(message);
+
+      onForward();
+
       return;
     }
 
