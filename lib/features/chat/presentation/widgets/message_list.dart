@@ -104,8 +104,20 @@ class _MessageListState extends ConsumerState<MessageList> {
               child: ChatBubble(
                 key: ValueKey(message.id),
                 messageData: message,
+                //conversationId: widget.conversationId,
                 isMe: isMe,
                 isRead: isRead,
+                onReaction: (emoji) async {
+                  await repository.toggleReaction(
+                    messageId: message.id,
+                    emoji: emoji,
+                    userId: currentUserId,
+                  );
+
+                  if (!context.mounted) return;
+
+                  AppSnackBar.info(context, 'Reaction updated');
+                },
 
                 onDeleteForMe: () async {
                   await repository.deleteForMe(

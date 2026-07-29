@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:chat_app/features/chat/data/models/message.dart';
 import 'package:chat_app/features/chat/providers/reply_provider.dart';
-//import 'package:chat_app/features/chat/providers/forward_provider.dart';
+import 'package:chat_app/features/chat/presentation/widgets/reaction_picker.dart';
 
 //--------------------------------------------------------------------
 //What this class now owns
@@ -32,35 +32,57 @@ class MessageMenu {
     required VoidCallback onForward,
     required VoidCallback onDeleteForMe,
     required VoidCallback? onDeleteForEveryone,
+    required ValueChanged<String> onReaction,
   }) async {
-    final result = await showModalBottomSheet<String>(
+    await showModalBottomSheet<void>(
       context: context,
       builder: (_) {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (!message.deletedForEveryone)
-                ListTile(
-                  leading: const Icon(Icons.forward),
-                  title: const Text('Forward'),
-                  onTap: () {
-                    Navigator.pop(context, 'forward');
-                  },
-                ),
+              const SizedBox(height: 12),
 
-              const Divider(height: 1),
+              ReactionPicker(
+                onSelected: (emoji) {
+                  Navigator.pop(context);
+
+                  onReaction(emoji);
+                },
+              ),
+
+              const Divider(),
 
               ListTile(
                 leading: const Icon(Icons.reply),
                 title: const Text('Reply'),
-                onTap: () => Navigator.pop(context, 'reply'),
+                onTap: () {
+                  Navigator.pop(context);
+
+                  ref.read(replyProvider.notifier).replyTo(message);
+                },
               ),
+
+              ListTile(
+                leading: const Icon(Icons.forward),
+                title: const Text('Forward'),
+                onTap: () {
+                  Navigator.pop(context);
+
+                  onForward();
+                },
+              ),
+
+              const Divider(),
 
               ListTile(
                 leading: Icon(Icons.delete_outline, color: context.errorColor),
                 title: const Text('Delete for Me'),
-                onTap: () => Navigator.pop(context, 'delete_me'),
+                onTap: () {
+                  Navigator.pop(context);
+
+                  onDeleteForMe();
+                },
               ),
 
               if (canDeleteForEveryone)
@@ -70,88 +92,18 @@ class MessageMenu {
                     color: context.errorColor,
                   ),
                   title: const Text('Delete for Everyone'),
-                  onTap: () => Navigator.pop(context, 'delete_everyone'),
+                  onTap: () {
+                    Navigator.pop(context);
+
+                    onDeleteForEveryone?.call();
+                  },
                 ),
+
+              const SizedBox(height: 10),
             ],
           ),
         );
       },
     );
-
-    if (!context.mounted || result == null) {
-      return;
-    }
-
-    //==================================================
-    // Forward
-    //==================================================
-
-    if (result == 'forward') {
-      // ref.read(forwardProvider.notifier).forward(message);
-
-      onForward();
-
-      return;
-    }
-
-    //--------------------------------------------------
-    // Reply
-    //--------------------------------------------------
-
-    if (result == 'reply') {
-      ref.read(replyProvider.notifier).replyTo(message);
-      return;
-    }
-
-    //--------------------------------------------------
-    // Delete Confirmation
-    //--------------------------------------------------
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) {
-        return AlertDialog(
-          title: const Text('Delete Message'),
-          content: Text(
-            result == 'delete_everyone'
-                ? 'Delete this message for everyone?'
-                : 'Delete this message only for you?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context, false);
-              },
-              child: const Text('Cancel'),
-            ),
-
-            FilledButton(
-              onPressed: () {
-                Navigator.pop(context, true);
-              },
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirm != true) {
-      return;
-    }
-
-    //--------------------------------------------------
-    // Execute
-    //--------------------------------------------------
-
-    switch (result) {
-      case 'delete_me':
-        onDeleteForMe();
-        break;
-
-      case 'delete_everyone':
-        onDeleteForEveryone?.call();
-        break;
-    }
   }
 }

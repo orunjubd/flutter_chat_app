@@ -1,7 +1,6 @@
 //import 'package:cloud_firestore/cloud_firestore.dart';
 //import 'package:firebase_auth/firebase_auth.dart';
-//import 'package:chat_app/features/chat/providers/forward_provider.dart';
-import 'package:chat_app/features/chat/presentation/screens/user_selection_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,7 +12,9 @@ import 'package:chat_app/features/chat/data/models/message.dart';
 import 'package:chat_app/features/chat/presentation/widgets/reply_card.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_menu.dart';
 import 'package:chat_app/features/chat/providers/forward_provider.dart';
-
+import 'package:chat_app/features/chat/presentation/screens/user_selection_screen.dart';
+import 'package:chat_app/features/chat/presentation/widgets/reaction_bar.dart';
+// import 'package:chat_app/features/chat/providers/reaction_provider.dart';
 //----------------------------------------------------------------------------
 // Perfect. This is the final cleanup of ChatBubble. After this step:
 
@@ -36,6 +37,8 @@ class ChatBubble extends ConsumerWidget {
     required this.isRead,
     required this.onDeleteForMe,
     required this.onDeleteForEveryone,
+
+    required this.onReaction,
   });
 
   final Message messageData;
@@ -44,6 +47,8 @@ class ChatBubble extends ConsumerWidget {
 
   final VoidCallback onDeleteForMe;
   final VoidCallback? onDeleteForEveryone;
+
+  final ValueChanged<String> onReaction;
 
   bool get _deleted =>
       messageData.deletedForEveryone || messageData.deletedBy.isNotEmpty;
@@ -65,6 +70,7 @@ class ChatBubble extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: GestureDetector(
@@ -75,22 +81,21 @@ class ChatBubble extends ConsumerWidget {
                   context: context,
                   ref: ref,
                   message: messageData,
+
                   canDeleteForEveryone: onDeleteForEveryone != null,
+
                   onDeleteForMe: onDeleteForMe,
+
                   onDeleteForEveryone: onDeleteForEveryone,
+
+                  onReaction: onReaction,
+
                   onForward: () {
                     ref.read(forwardProvider.notifier).forward(messageData);
 
-                    // Close the action sheet modal window gracefully first
-                    //Navigator.of(context).pop();
-
-                    // 2. 🚀 THE MASTER NAVIGATION ROUTER ACTION
-                    // Instantly pushes the user over onto the directory dashboard tray list map page!
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        // Make sure you import UserSelectionScreen at the top of the file!
                         builder: (_) => const UserSelectionScreen(),
-                        fullscreenDialog: true,
                       ),
                     );
                   },
@@ -184,6 +189,20 @@ class ChatBubble extends ConsumerWidget {
                         : context.colorScheme.onSurface.withValues(alpha: .87),
                   ),
                 ),
+
+                const SizedBox(height: 8),
+
+                //------------------------------------
+                // Reactions
+                //------------------------------------
+                if (messageData.reactions.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+
+                  ReactionBar(
+                    reactions: messageData.reactions,
+                    currentUserId: currentUserId,
+                  ),
+                ],
 
                 const SizedBox(height: 8),
 

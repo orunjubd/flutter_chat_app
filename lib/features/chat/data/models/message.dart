@@ -1,5 +1,3 @@
-//import 'dart:convert';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Message {
@@ -24,6 +22,8 @@ class Message {
     this.forwarded = false,
     this.forwardedFromUserId,
     this.forwardedFromUserName,
+
+    this.reactions = const {},
   });
 
   /// Firestore document ID
@@ -60,6 +60,8 @@ class Message {
   final String? forwardedFromUserId;
   final String? forwardedFromUserName;
 
+  final Map<String, List<String>> reactions;
+
   factory Message.fromMap(String documentId, Map<String, dynamic> data) {
     return Message(
       id: documentId,
@@ -82,6 +84,30 @@ class Message {
       forwarded: data['forwarded'] as bool? ?? false,
       forwardedFromUserId: data['forwardedFromUserId'] as String?,
       forwardedFromUserName: data['forwardedFromUserName'] as String?,
+
+      reactions: () {
+        final rawReactions = data['reactions'];
+
+        if (rawReactions == null) return const <String, List<String>>{};
+
+        if (rawReactions is List) {
+          return const <String, List<String>>{};
+        }
+
+        if (rawReactions is Map) {
+          // 🚀 FIX LOCK: We explicitly lock down <String, List<String>> right inside the factory constructor!
+          return Map<String, List<String>>.from(
+            rawReactions.map(
+              (key, value) => MapEntry<String, List<String>>(
+                key.toString(),
+                List<String>.from(value as List<dynamic>? ?? const []),
+              ),
+            ),
+          );
+        }
+
+        return const <String, List<String>>{};
+      }(),
     );
   }
 
@@ -106,6 +132,8 @@ class Message {
       'forwarded': forwarded,
       'forwardedFromUserId': forwardedFromUserId,
       'forwardedFromUserName': forwardedFromUserName,
+
+      'reactions': reactions,
     };
   }
 }

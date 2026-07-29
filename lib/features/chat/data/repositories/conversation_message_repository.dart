@@ -80,6 +80,22 @@ class ConversationMessageRepository {
     return _messageRepository.getMessages(conversationId);
   }
 
+  // ------------------------------------------------------------
+  // Toggle reaction
+  // ------------------------------------------------------------
+  Future<void> toggleReaction({
+    required String messageId,
+    required String userId,
+    required String emoji,
+  }) {
+    return _messageRepository.toggleReaction(
+      conversationId: conversationId,
+      messageId: messageId,
+      userId: userId,
+      emoji: emoji,
+    );
+  }
+
   /// ------------------------------------------------------------
   /// Get one
   /// ------------------------------------------------------------

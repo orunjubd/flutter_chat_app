@@ -54,6 +54,42 @@ class MessageRepository {
               .toList(),
         );
   }
+  // ------------------------------------------------------------
+  // Toggle reaction for EMOJI
+  // ------------------------------------------------------------
+
+  Future<void> toggleReaction({
+    required String conversationId,
+    required String messageId,
+    required String userId,
+    required String emoji,
+  }) async {
+    final doc = messagesCollection(conversationId).doc(messageId);
+
+    final snapshot = await doc.get();
+
+    final data = snapshot.data();
+
+    if (data == null) return;
+
+    final reactions = Map<String, dynamic>.from(data['reactions'] ?? {});
+
+    final users = List<String>.from(reactions[emoji] ?? []);
+
+    if (users.contains(userId)) {
+      users.remove(userId);
+    } else {
+      users.add(userId);
+    }
+
+    if (users.isEmpty) {
+      reactions.remove(emoji);
+    } else {
+      reactions[emoji] = users;
+    }
+
+    await doc.update({'reactions': reactions});
+  }
 
   /// ------------------------------------------------------------
   /// Alias
