@@ -39,6 +39,8 @@ class ChatBubble extends ConsumerWidget {
     required this.onDeleteForEveryone,
 
     required this.onReaction,
+
+    required this.highlight,
   });
 
   final Message messageData;
@@ -49,6 +51,8 @@ class ChatBubble extends ConsumerWidget {
   final VoidCallback? onDeleteForEveryone;
 
   final ValueChanged<String> onReaction;
+
+  final bool highlight;
 
   bool get _deleted =>
       messageData.deletedForEveryone || messageData.deletedBy.isNotEmpty;
@@ -109,7 +113,9 @@ class ChatBubble extends ConsumerWidget {
             constraints: BoxConstraints(maxWidth: context.screenWidth * .72),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: _deleted
+              color: highlight
+                  ? context.primaryColor.withValues(alpha: .30)
+                  : _deleted
                   ? context.colorScheme.surfaceContainerHighest
                   : isMe
                   ? context.myBubbleColor

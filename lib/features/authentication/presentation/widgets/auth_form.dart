@@ -121,9 +121,7 @@ class _AuthFormState extends ConsumerState<AuthForm> {
       if (!mounted) return;
       AppSnackBar.error(context, AuthExceptionMapper.map(error));
     } catch (error, stackTrace) {
-      debugPrint('Unexpected Error: ${error.toString()}');
       debugPrintStack(stackTrace: stackTrace);
-
       if (!mounted) return;
       AppSnackBar.error(
         context,

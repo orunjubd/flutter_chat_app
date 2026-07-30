@@ -37,16 +37,10 @@ class _UserSelectionScreenState extends ConsumerState<UserSelectionScreen> {
     }
 
     final repository = ref.read(conversationRepositoryProvider);
-
-    debugPrint('Current User: ${currentUser.uid}');
-    debugPrint('Other User: $otherUserId');
-
     final Conversation conversation = await repository.createOrOpenConversation(
       currentUserId: currentUser.uid,
       otherUserId: otherUserId,
     );
-
-    debugPrint('Conversation ID: ${conversation.id}');
 
     if (!mounted) return;
 
@@ -93,8 +87,6 @@ class _UserSelectionScreenState extends ConsumerState<UserSelectionScreen> {
     // A forward is in progress.
     // We'll send the message in the next step.
     //ref.read(forwardProvider.notifier).clear();
-
-    debugPrint('Conversation Ready: ${conversation.id}');
   }
 
   @override

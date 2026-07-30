@@ -4,6 +4,7 @@ import 'package:chat_app/core/utils/date_time_formatter.dart';
 import 'package:chat_app/core/widgets/app_scaffold.dart';
 import 'package:chat_app/features/chat/presentation/widgets/reply_preview.dart';
 import 'package:chat_app/features/chat/providers/reply_repository_provider.dart';
+import 'package:chat_app/features/chat/search/screens/search_messages_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,6 +22,7 @@ import 'package:chat_app/features/chat/data/models/conversation.dart';
 import 'package:chat_app/features/chat/providers/conversation_message_provider.dart';
 import 'package:chat_app/features/chat/providers/conversation_provider.dart';
 import 'package:chat_app/features/chat/providers/reply_provider.dart';
+import 'package:chat_app/features/chat/providers/message_scroll_provider.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key, required this.conversation});
@@ -34,6 +36,7 @@ class ChatScreen extends ConsumerStatefulWidget {
 class _ChatScreenState extends ConsumerState<ChatScreen>
     with WidgetsBindingObserver {
   final ScrollController _scrollController = ScrollController();
+  String? _highlightMessageId;
 
   Conversation get conversation => widget.conversation;
 
@@ -62,7 +65,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     await ref
         .read(conversationRepositoryProvider)
         .clearUnread(conversationId: conversation.id, userId: currentUser.uid);
-    debugPrint('Unread cleared for ${currentUser.uid} in ${conversation.id}');
   }
 
   //Future<void> _sendMessage(WidgetRef ref, String text) async {
@@ -109,6 +111,34 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     ref.read(replyProvider.notifier).clear();
   }
 
+  Future<void> _jumpToMessage(Message message) async {
+    final messages = ref
+        .read(conversationMessagesProvider(widget.conversation.id))
+        .value;
+
+    if (messages == null) return;
+
+    final index = messages.indexWhere((item) => item.id == message.id);
+
+    if (index == -1) return;
+
+    await ref.read(messageScrollControllerProvider).scrollToIndex(index);
+
+    if (!mounted) return;
+
+    setState(() {
+      _highlightMessageId = message.id;
+    });
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
+
+    setState(() {
+      _highlightMessageId = null;
+    });
+  }
+
   Future<void> _setOnline() async {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -119,8 +149,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     await repository.updatePresence(
       Presence(userId: user.uid, isOnline: true, lastSeen: Timestamp.now()),
     );
-
-    debugPrint('Presence -> ONLINE');
   }
 
   Future<void> _setOffline() async {
@@ -131,8 +159,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     final repository = ref.read(presenceRepositoryProvider);
 
     await repository.setOffline(user.uid);
-
-    debugPrint('Presence -> OFFLINE');
   }
 
   @override
@@ -165,6 +191,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
   Widget build(BuildContext context) {
     final typingAsync = ref.watch(typingProvider);
     final currentUserId = ref.watch(currentUserIdProvider);
+    final conversationId = widget.conversation.id;
 
     // 1. Safely extract the other user's ID
     final otherUserId = conversation.participantIds.firstWhere(
@@ -221,6 +248,36 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
             ),
           ],
         ),
+
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () async {
+              // Read the current stream data items from cache instantly before navigating [INDEX]
+              // final messagesAsyncValue = ref.read(
+              //   conversationMessagesProvider(
+              //     conversation.id,
+              //   ), // ✅ FIXED: Uses conversation.id
+              // );
+
+              // messagesAsyncValue.whenData((items) async {
+              final selectedMessage = await Navigator.push<Message>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      SearchMessagesScreen(conversationId: conversationId),
+                ),
+              );
+
+              if (!context.mounted || selectedMessage == null) {
+                return;
+              }
+              await _jumpToMessage(selectedMessage);
+              //});
+            },
+          ),
+          const SizedBox(width: 8), // Elegant minimal side margin padding
+        ],
       ),
 
       // 🚀 2. THE EMPTY MESSAGE LIST PLACEHOLDER CONTAINER (For now)
@@ -229,7 +286,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
           Expanded(
             child: MessageList(
               scrollController: _scrollController,
-              conversationId: conversation.id,
+              conversationId: widget.conversation.id,
+              highlightMessageId: _highlightMessageId,
             ),
           ),
 

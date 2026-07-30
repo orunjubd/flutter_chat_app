@@ -628,3 +628,53 @@ Forward
  ├── UserSelectionScreen
  ├── ConversationMessageRepository
  └── ChatBubble
+
+ ## v1.6.5 — EmojiReactions
+
+### Added
+- Emoji reactions for chat messages
+- Long-press message action menu with integrated reaction picker
+- Real-time reaction synchronization via Firestore
+- Multiple reaction types per message
+- Per-emoji reaction counters
+- Automatic reaction toggle (tap the same emoji again to remove)
+- Highlight for the current user's reactions
+- Reusable `ReactionBar` widget
+- Reusable `ReactionPicker` widget
+- Reusable reaction state provider
+
+### Improved
+- Reactions sorted by popularity
+- Animated reaction chips
+- Improved spacing and typography
+- Cleaner message action workflow using a single popup menu
+
+### Refactored
+- Kept reaction UI modular and reusable
+- Preserved ECE architecture by keeping message mutations inside `MessageRepository`
+
+## v1.6.6 — SearchMessages
+
+✨ Added
+• Conversation message search
+• Search screen
+• Highlight matched keywords
+• Jump directly to searched message
+• Automatic message highlight after navigation
+• Recent search history
+• Remove individual search history
+• Clear all search history
+• Search result counter
+• Empty state UI for search and history
+
+🔄 Improved
+• Search navigation flow
+• ChatScreen auto-scroll behavior
+• Search keyboard UX
+• Message highlighting animation
+
+🐞 Fixed
+• Search cache cleanup
+• Scroll positioning
+• Highlight synchronization
+• Search navigation stability
