@@ -326,7 +326,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
 
           const ReplyPreview(),
 
-          MessageInput(onSend: _sendMessage),
+          MessageInput(
+            conversationId: widget.conversation.id,
+            onSend: _sendMessage,
+          ),
         ],
       ),
     );

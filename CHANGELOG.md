@@ -678,3 +678,92 @@ Forward
 • Scroll positioning
 • Highlight synchronization
 • Search navigation stability
+
+------------------------------------------------------
+------------------------------------------------------
+## v1.6.7 — Enterprise Media Pipeline
+# CHANGELOG.md
+
+# Changelog
+
+All notable changes to this project are documented here.
+
+---
+Release Date: August 2026
+
+## Added
+
+### Media System
+
+* Cloudinary media upload
+* Image preview screen
+* Caption support
+* MediaDraft model
+* MediaUploadRepository
+* MediaMessageSender
+* Media compression pipeline
+
+### Image Rendering
+
+* Stable image bubble layout
+* Aspect-ratio rendering
+* Animated image loading
+* Image metadata storage
+* MediaContent widget
+
+### Conversation Engine
+
+* Automatic conversation preview updates
+* Last message synchronization
+* Conversation timestamp updates
+* Cross-device conversation refresh
+
+---
+
+## Improved
+
+* Chat scrolling after image upload
+* Bubble rendering performance
+* Username handling for media messages
+* Caption rendering
+* Conversation synchronization
+* Cross-device messaging reliability
+* Message loading experience
+
+---
+
+## Fixed
+
+* "Unknown" sender name for image messages
+* Conversation list not updating
+* Bubble resize while image loads
+* Scroll issues after media upload
+* Image layout instability
+* Conversation preview synchronization
+
+---
+
+# Previous Releases
+
+## v1.6.6
+
+* Presence System
+* Typing Indicator
+* Reply Engine
+* Forward Engine
+* Search Engine
+
+## v1.6.5
+
+* Conversation Architecture
+* Private Messaging
+* Read Receipts
+* Unread Counters
+
+## v1.6.x
+
+* Firebase Authentication
+* Theme System
+* Riverpod Migration
+* Repository Pattern
+* Feature-First Architecture

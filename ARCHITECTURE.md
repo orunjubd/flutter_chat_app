@@ -557,3 +557,299 @@ Future
 - Voice Messages
 - File Sharing
 - Group Chat
+
+-----------------------------------------------
+core/
+ └── media/
+      config/
+      factories/
+      models/
+      providers/
+      repositories/
+      services/
+      widgets/
+
+features/
+ └── chat/
+      media/
+
+------------------------------------------------
+# ARCHITECTURE.md ⭐⭐⭐⭐⭐
+# ECE Chat App Architecture
+
+## Overview
+
+ECE Chat App follows a Feature-First architecture with Repository Pattern, Riverpod state management, Firebase backend services, and Cloudinary media storage.
+
+The primary goals are:
+
+* Scalability
+* Maintainability
+* Testability
+* Separation of concerns
+* Enterprise-ready code structure
+
+---
+
+## Project Structure
+
+```text
+lib/
+│
+├── core/
+│   ├── dialogs/
+│   ├── extensions/
+│   ├── media/
+│   ├── providers/
+│   ├── services/
+│   ├── theme/
+│   ├── utils/
+│   └── widgets/
+│
+├── features/
+│   ├── authentication/
+│   ├── chat/
+│   ├── presence/
+│   ├── search/
+│   ├── settings/
+│   └── users/
+│
+└── firebase_options.dart
+```
+
+---
+
+# Architecture Layers
+
+## Presentation Layer
+
+Responsible for UI.
+
+Examples:
+
+* ChatScreen
+* ConversationListScreen
+* MessageInput
+* MessageList
+* ChatBubble
+* MediaContent
+* ReplyPreview
+* SearchMessagesScreen
+
+---
+
+## Provider Layer
+
+Riverpod providers coordinate state and repositories.
+
+Examples:
+
+* conversationProvider
+* conversationMessagesProvider
+* currentUserProvider
+* typingProvider
+* replyProvider
+* themeProvider
+
+---
+
+## Repository Layer
+
+Contains business logic and Firebase communication.
+
+Examples:
+
+* ConversationRepository
+* ConversationMessageRepository
+* MessageRepository
+* PresenceRepository
+* MediaUploadRepository
+
+Repositories never contain UI.
+
+---
+
+## Service Layer
+
+Reusable business services.
+
+Examples:
+
+* MediaMessageSender
+* ReplyRepository
+* RegistrationService
+
+---
+
+## Models
+
+Immutable application models.
+
+Examples:
+
+* Message
+* Conversation
+* AppUser
+* Presence
+* MediaDraft
+
+---
+
+# Messaging Flow
+
+```text
+MessageInput
+
+↓
+
+ConversationMessageRepository
+
+↓
+
+MessageRepository
+
+↓
+
+Firestore
+
+↓
+
+conversationMessagesProvider
+
+↓
+
+MessageList
+
+↓
+
+ChatBubble
+```
+
+---
+
+# Media Upload Flow
+
+```text
+Gallery
+
+↓
+
+Image Preview
+
+↓
+
+Caption
+
+↓
+
+Compression
+
+↓
+
+Cloudinary Upload
+
+↓
+
+MediaMessageSender
+
+↓
+
+ConversationMessageRepository
+
+↓
+
+Firestore
+
+↓
+
+Message Stream
+
+↓
+
+MediaContent
+```
+
+---
+
+# Conversation Preview Flow
+
+```text
+Message Sent
+
+↓
+
+ConversationRepository
+
+↓
+
+updateConversationAfterMessage()
+
+↓
+
+Firestore
+
+↓
+
+Conversation Stream
+
+↓
+
+ConversationListScreen
+```
+
+---
+
+# Current Features
+
+Authentication
+
+* Email & Password
+* Registration
+* Login
+* Logout
+
+Messaging
+
+* One-to-one conversations
+* Text messages
+* Image messages
+* Read receipts
+* Reply
+* Forward
+* Reactions
+* Search
+* Delete for me
+* Delete for everyone
+
+Presence
+
+* Online status
+* Last seen
+* Typing indicator
+
+Media
+
+* Cloudinary upload
+* Image preview
+* Compression
+* Caption support
+* Stable image layout
+* Animated loading
+* Metadata storage
+
+---
+
+# Future Architecture
+
+Planned modules:
+
+* Voice Messages
+* Full Screen Image Viewer
+* Video Messages
+* Multi-image Upload
+* Group Chat
+* Push Notifications
+* Archive
+* Message Pinning
+* Story/Status System
+* End-to-End Encryption

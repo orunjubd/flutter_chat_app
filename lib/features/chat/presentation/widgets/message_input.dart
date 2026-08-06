@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:chat_app/core/extensions/theme_extensions.dart';
+import 'package:chat_app/core/media/widgets/attachment_sheet.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,13 +9,18 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:chat_app/features/chat/providers/typing_provider.dart';
 import 'package:chat_app/features/chat/data/models/typing_status.dart';
 import 'package:chat_app/features/chat/providers/user_provider.dart';
-// import 'package:chat_app/features/chat/providers/reply_provider.dart';
-// import 'package:chat_app/features/chat/data/models/message.dart';
+import 'package:chat_app/core/media/factories/attachment_actions.dart';
 
 class MessageInput extends ConsumerStatefulWidget {
-  const MessageInput({super.key, required this.onSend});
+  const MessageInput({
+    super.key,
+    required this.onSend,
+    required this.conversationId,
+  });
 
   final Future<void> Function(String text) onSend;
+
+  final String conversationId;
 
   @override
   ConsumerState<MessageInput> createState() => _MessageInputState();
@@ -95,6 +101,31 @@ class _MessageInputState extends ConsumerState<MessageInput> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.attach_file,
+                      color: context.textSecondaryColor,
+                    ),
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        showDragHandle:
+                            true, // Displays modern material slider indicator drag bars on top [INDEX]
+                        backgroundColor: context
+                            .surfaceColor, // Seamless day/night alignment [INDEX]
+                        builder: (_) {
+                          return AttachmentSheet(
+                            actions: AttachmentActions.build(
+                              context: context,
+                              ref: ref,
+                              conversationId: widget.conversationId,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+
                   Expanded(
                     child: TextField(
                       controller: _controller,

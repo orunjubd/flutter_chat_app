@@ -2,16 +2,21 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:chat_app/features/chat/data/models/message.dart';
 import 'package:chat_app/features/chat/data/repositories/message_repository.dart';
+import 'package:chat_app/features/chat/data/repositories/conversation_repository.dart';
 
 class ConversationMessageRepository {
   ConversationMessageRepository({
     required this.conversationId,
     required MessageRepository messageRepository,
-  }) : _messageRepository = messageRepository;
+    required ConversationRepository conversationRepository,
+  }) : _messageRepository = messageRepository,
+       _conversationRepository = conversationRepository;
 
   final String conversationId;
 
   final MessageRepository _messageRepository;
+
+  final ConversationRepository _conversationRepository;
 
   /// ------------------------------------------------------------
   /// Create document
@@ -66,8 +71,44 @@ class ConversationMessageRepository {
   /// ------------------------------------------------------------
   /// Send
   /// ------------------------------------------------------------
-  Future<void> sendMessage(Message message) {
-    return _messageRepository.sendMessage(
+  Future<void> sendMessage(Message message) async {
+    await _messageRepository.sendMessage(
+      conversationId: conversationId,
+      message: message,
+    );
+
+    await _conversationRepository.updateConversationAfterMessage(
+      conversationId: conversationId,
+      lastMessage: switch (message.type) {
+        'image' => '📷 Photo',
+        'video' => '🎥 Video',
+        'voice' => '🎤 Voice message',
+        'file' => '📎 File',
+        _ => message.text,
+      },
+    );
+  }
+
+  /// ------------------------------------------------------------
+  /// Update last message
+  /// ------------------------------------------------------------
+  Future<void> sendConversationMessage({required Message message}) async {
+    await sendMessage(message);
+
+    await _conversationRepository.updateConversationPreview(
+      conversationId: conversationId,
+      message: message,
+    );
+  }
+
+  /// ------------------------------------------------------------
+  /// Send image message
+  /// ------------------------------------------------------------
+
+  Future<void> sendImageMessage({required Message message}) async {
+    await sendMessage(message);
+
+    await _conversationRepository.updateConversationPreview(
       conversationId: conversationId,
       message: message,
     );

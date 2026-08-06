@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chat_app/features/chat/data/models/message.dart';
 import 'package:chat_app/features/chat/data/repositories/conversation_message_repository.dart';
 import 'package:chat_app/features/chat/providers/message_provider.dart';
+import 'package:chat_app/features/chat/providers/conversation_provider.dart';
 
 /// ------------------------------------------------------------
 /// Conversation Message Repository Provider
@@ -16,6 +17,7 @@ final conversationMessageRepositoryProvider =
       return ConversationMessageRepository(
         conversationId: conversationId,
         messageRepository: ref.read(messageRepositoryProvider),
+        conversationRepository: ref.read(conversationRepositoryProvider),
       );
     });
 

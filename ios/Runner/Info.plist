@@ -66,5 +66,10 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- 🚀 PHASE 4 MEDIA PERMISSIONS STRIP -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Select photos to send.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Take photos to send.</string>
 </dict>
 </plist>

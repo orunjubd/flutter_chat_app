@@ -430,3 +430,164 @@ ECE Chat aims to become a fully featured, enterprise-quality messaging applicati
 - Scalable UI Architecture
 - Reusable Component System
 - Professional Project Documentation
+
+---------------------------------------------------------
+# ECE Chat Roadmap Enterprise Conversation Engine (ECE) v1.6.7
+---------------------------------------------------------
+## Current Version
+
+**v1.6.7 — "What!!"**
+
+Status:
+
+✅ Stable
+
+---
+
+# Phase 1 — Foundation
+
+Completed
+
+* Authentication
+* Theme System
+* Firebase
+* Riverpod
+* Repository Pattern
+
+---
+
+# Phase 2 — Messaging Foundation
+
+Completed
+
+* Private Conversations
+* Read Receipts
+* Reply
+* Forward
+* Reactions
+* Delete Message
+* Search
+
+---
+
+# Phase 3 — Presence
+
+Completed
+
+* Online Status
+* Last Seen
+* Typing Indicator
+* Connectivity Handling
+
+---
+
+# Phase 4 — Media Foundation
+
+Completed
+
+* Image Upload
+* Cloudinary Integration
+* Image Preview
+* Compression
+* Caption Support
+* Stable Image Bubble
+* Conversation Preview Engine
+* Cross-device Synchronization
+
+---
+
+# Phase 5 — Advanced Media
+
+Planned
+
+* Voice Messages
+* Full-screen Image Viewer
+* Image Zoom
+* Download Image
+* Save to Gallery
+* Share Image
+* Multi-image Upload
+* Video Messages
+* Video Preview
+* Thumbnail Generation
+
+---
+
+# Phase 6 — Productivity
+
+Planned
+
+* Archive Chats
+* Pin Messages
+* Star Messages
+* Message Scheduling
+* Draft Messages
+* Rich Link Preview
+* Polls
+
+---
+
+# Phase 7 — Groups
+
+Planned
+
+* Group Creation
+* Group Roles
+* Group Avatar
+* Group Description
+* Mentions
+* Admin Controls
+
+---
+
+# Phase 8 — Notifications
+
+Planned
+
+* Firebase Cloud Messaging
+* Push Notifications
+* Notification Preferences
+* Badge Counts
+* Background Handling
+
+---
+
+# Phase 9 — Security
+
+Planned
+
+* End-to-End Encryption
+* Device Management
+* Session History
+* Backup & Restore
+* Secure Media Handling
+
+---
+
+# Phase 10 — Enterprise Features
+
+Planned
+
+* Message Analytics
+* Moderation Tools
+* Audit Logs
+* Admin Dashboard
+* Multi-device Optimization
+* Performance Monitoring
+
+---
+
+## Long-Term Vision
+
+Build ECE into a production-grade messaging platform with:
+
+* Enterprise architecture
+* Modern Flutter best practices
+* Clean code principles
+* Scalable repository pattern
+* Responsive UI
+* High-performance messaging
+* Rich media support
+* Secure communication
+* Cross-platform consistency
+* Production deployment readiness

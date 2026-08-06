@@ -74,12 +74,12 @@ class _MessageListState extends ConsumerState<MessageList> {
           return !message.deletedBy.contains(currentUserId);
         }).toList();
 
-        // _scrollToBottom();
-        // if (visibleMessages.isEmpty) {
-        //   return Center(
-        //     child: Text('No messages yet.', style: context.subtitleText),
-        //   );
-        // }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+
+          scrollEngine.onMessageCountChanged(visibleMessages.length);
+        });
+
         if (visibleMessages.isEmpty) {
           return Center(
             child: Text('No messages yet.', style: context.subtitleText),

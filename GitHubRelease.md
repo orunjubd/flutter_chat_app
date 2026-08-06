@@ -312,3 +312,79 @@ This release prepares the project for:
 - Reply Message
 - Emoji Reactions
 - Forward Message
+
+-------------------------------------------------------------
+# 🚀 ECE Chat v1.6.7
+### Enterprise Media upload architecture pipeline
+-------------------------------------------------------------
+Added
+✅ Enterprise Media Pipeline (ECE)
+✅ MediaDraft architecture
+✅ MediaUploadRepository abstraction
+✅ UploadService abstraction
+✅ CloudinaryUploadService
+✅ Backend-independent media design
+✅ Image Preview screen
+✅ Caption support
+✅ Image compression pipeline
+✅ Media upload provider
+✅ Media upload notifier/state
+✅ MediaMessageSender
+✅ Image message Firestore model
+✅ Chat bubble image rendering
+✅ Caption rendering
+✅ Cloudinary integration
+✅ AttachmentSheet modular architecture
+✅ ImagePickerService
+✅ MediaContent widget
+✅ Media configuration layer
+✅ UploadResult model
+✅ UploadConfig model
+
+✅ Cloudinary upload
+✅ Media upload architecture
+✅ MediaMessageSender
+✅ MediaUploadRepository
+✅ Conversation Preview Engine
+✅ Automatic conversation preview updates
+✅ Animated loading
+✅ Conversation preview updates
+✅ Cross-device synchronization
+✅ Stable image bubble layout
+✅ Aspect-ratio based image rendering
+✅ Media metadata persistence (dimensions, MIME type, size)
+✅ Read receipts
+✅ Reply
+✅ Forward
+✅ Reactions
+✅ Search
+✅ Presence
+✅ Typing indicator
+### Improved
+
+• Better provider separation
+• Cleaner repository architecture
+• Backend independence (Cloudinary today, Firebase Storage or S3 tomorrow)
+• Attachment actions architecture
+• Image preview workflow
+• Media model extensibility
+
+• Cross-device conversation synchronization
+• Chat scrolling after image upload
+• Image rendering performance
+• Bubble layout stability
+• Caption rendering
+• Sender name consistency
+
+### Fixed
+
+• Sender username now comes from currentUserProvider
+• Image messages render correctly
+• Caption rendering fixed
+• Firestore media metadata stored correctly
+• Media upload pipeline completed
+
+• Conversation preview not updating
+• Username showing as "Unknown" for media messages
+• Bubble jumping while image loads
+• Scroll behavior after image upload

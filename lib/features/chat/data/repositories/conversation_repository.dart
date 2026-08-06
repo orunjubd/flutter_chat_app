@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:chat_app/features/chat/data/models/conversation.dart';
+import 'package:chat_app/features/chat/data/models/message.dart';
 
 class ConversationRepository {
   ConversationRepository();
@@ -151,6 +152,35 @@ class ConversationRepository {
       'lastMessage': lastMessage,
       'lastMessageTime': now,
       'updatedAt': now,
+    });
+  }
+  //------------------------------------------------------------
+  /// Update conversation preview
+  ///------------------------------------------------------------
+
+  Future<void> updateConversationPreview({
+    required String conversationId,
+    required Message message,
+  }) async {
+    final preview = switch (message.type) {
+      'image' =>
+        message.caption?.trim().isNotEmpty == true
+            ? '📷 ${message.caption}'
+            : '📷 Photo',
+
+      'video' => '🎥 Video',
+
+      'voice' => '🎤 Voice message',
+
+      'document' => '📄 Document',
+
+      _ => message.text,
+    };
+
+    await _dbCol.doc(conversationId).update({
+      'lastMessage': preview,
+      'lastMessageTime': message.createdAt,
+      'updatedAt': message.createdAt,
     });
   }
 

@@ -41,7 +41,13 @@ dependencies:
   intl: ^0.20.3
   connectivity_plus: ^6.1.5
   shared_preferences: ^2.5.3
-  scrollable_positioned_list: ^0.3.8
+  scrollable_positioned_list: ^0.3.8  
+  image_picker: ^1.2.0
+  cached_network_image: ^3.4.1
+  photo_view: ^0.15.0
+  uuid: ^4.5.1
+  http: ^1.5.0
+  flutter_image_compress: ^2.4.0
 
 dev_dependencies:
   flutter_test:

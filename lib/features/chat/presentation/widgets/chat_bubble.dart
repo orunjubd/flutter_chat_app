@@ -14,7 +14,7 @@ import 'package:chat_app/features/chat/presentation/widgets/message_menu.dart';
 import 'package:chat_app/features/chat/providers/forward_provider.dart';
 import 'package:chat_app/features/chat/presentation/screens/user_selection_screen.dart';
 import 'package:chat_app/features/chat/presentation/widgets/reaction_bar.dart';
-// import 'package:chat_app/features/chat/providers/reaction_provider.dart';
+import 'package:chat_app/core/media/widgets/media_content.dart';
 //----------------------------------------------------------------------------
 // Perfect. This is the final cleanup of ChatBubble. After this step:
 
@@ -184,17 +184,19 @@ class ChatBubble extends ConsumerWidget {
                 //------------------------------------
                 // Message
                 //------------------------------------
-                Text(
-                  _displayMessage,
-                  style: context.bodyText?.copyWith(
-                    fontStyle: _deleted ? FontStyle.italic : FontStyle.normal,
-                    color: _deleted
-                        ? context.textSecondaryColor
-                        : isMe
-                        ? context.myBubbleTextPrimary
-                        : context.colorScheme.onSurface.withValues(alpha: .87),
-                  ),
-                ),
+                _deleted
+                    ? Text(
+                        _displayMessage,
+                        style: context.bodyText?.copyWith(
+                          fontStyle: FontStyle.italic,
+                          color: context.textSecondaryColor,
+                        ),
+                      )
+                    : MediaContent(
+                        message:
+                            messageData, // Passes your non-nullable Message data model token down seamlessly! [INDEX]
+                        isMe: isMe,
+                      ),
 
                 const SizedBox(height: 8),
 

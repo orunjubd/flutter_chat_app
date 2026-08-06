@@ -24,6 +24,15 @@ class Message {
     this.forwardedFromUserName,
 
     this.reactions = const {},
+
+    this.imageUrl,
+    this.imageWidth,
+    this.imageHeight,
+
+    this.thumbnailUrl,
+    this.mimeType,
+    this.mediaBytes,
+    this.caption,
   });
 
   /// Firestore document ID
@@ -46,7 +55,6 @@ class Message {
 
   /// Message type (text, image, etc.)
   final String type;
-
   final bool deletedForEveryone;
   final List<String> deletedBy;
   final Timestamp? deletedAt;
@@ -61,6 +69,15 @@ class Message {
   final String? forwardedFromUserName;
 
   final Map<String, List<String>> reactions;
+
+  final String? imageUrl;
+  final double? imageWidth;
+  final double? imageHeight;
+
+  final String? thumbnailUrl;
+  final String? mimeType;
+  final int? mediaBytes;
+  final String? caption;
 
   factory Message.fromMap(String documentId, Map<String, dynamic> data) {
     return Message(
@@ -108,6 +125,15 @@ class Message {
 
         return const <String, List<String>>{};
       }(),
+
+      imageUrl: data['imageUrl'] as String?,
+      imageWidth: (data['imageWidth'] as num?)?.toDouble(),
+      imageHeight: (data['imageHeight'] as num?)?.toDouble(),
+
+      thumbnailUrl: data['thumbnailUrl'] as String?,
+      mimeType: data['mimeType'] as String?,
+      mediaBytes: data['mediaBytes'] as int?,
+      caption: data['caption'] as String?,
     );
   }
 
@@ -134,6 +160,15 @@ class Message {
       'forwardedFromUserName': forwardedFromUserName,
 
       'reactions': reactions,
+
+      'imageUrl': imageUrl,
+      'imageWidth': imageWidth,
+      'imageHeight': imageHeight,
+
+      'thumbnailUrl': thumbnailUrl,
+      'mimeType': mimeType,
+      'mediaBytes': mediaBytes,
+      'caption': caption,
     };
   }
 }
