@@ -1,3 +1,4 @@
+import 'package:chat_app/core/media/models/upload_result.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:chat_app/core/media/models/media_draft.dart';
@@ -81,5 +82,59 @@ class MediaMessageSender {
     //--------------------------------------------------
 
     await _messageRepository.sendImageMessage(message: message);
+  }
+
+  Future<void> sendDocument({
+    required UploadResult uploadResult,
+    required String fileName,
+    required String senderId,
+    required String senderName,
+  }) async {
+    final document = _messageRepository.createMessageDocument();
+
+    final message = Message(
+      id: document.id,
+
+      senderId: senderId,
+      senderName: senderName,
+
+      // The visible text for a file message.
+      text: fileName,
+
+      createdAt: Timestamp.now(),
+
+      readBy: [senderId],
+
+      type: 'file',
+
+      deletedForEveryone: false,
+      deletedBy: const [],
+      deletedAt: null,
+
+      replyToMessageId: null,
+      replyToSenderId: null,
+      replyToSenderName: null,
+      replyToText: null,
+
+      forwarded: false,
+      forwardedFromUserId: null,
+      forwardedFromUserName: null,
+
+      // File metadata.
+      fileUrl: uploadResult.url,
+      fileName: fileName,
+      mimeType: uploadResult.mimeType,
+      mediaBytes: uploadResult.bytes,
+
+      // Image-specific fields remain null.
+      imageUrl: null,
+      imageWidth: null,
+      imageHeight: null,
+      thumbnailUrl: null,
+
+      caption: fileName,
+    );
+
+    await _messageRepository.sendMessage(message);
   }
 }

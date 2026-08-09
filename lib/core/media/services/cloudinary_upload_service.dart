@@ -16,16 +16,21 @@ class CloudinaryUploadService extends UploadService {
   final UploadConfig _config;
 
   @override
-  Future<UploadResult> uploadImage(MediaDraft draft) async {
+  Future<UploadResult> uploadMedia(MediaDraft draft) async {
     final file = draft.file;
+
+    final String targetRoute = draft.type == MediaType.image ? 'image' : 'raw';
+
     final uri = Uri.parse(
-      ApiConfig.cloudinaryUploadUrl(cloudName: _config.cloudName),
+      ApiConfig.cloudinaryUploadUrl(
+        cloudName: _config.cloudName,
+        resourceType: targetRoute,
+      ),
     );
 
     final request = http.MultipartRequest('POST', uri);
 
     request.fields['upload_preset'] = _config.uploadPreset;
-
     request.fields['folder'] = MediaConfig.folder;
 
     request.files.add(await http.MultipartFile.fromPath('file', file.path));
@@ -35,26 +40,56 @@ class CloudinaryUploadService extends UploadService {
     final body = await response.stream.bytesToString();
 
     if (response.statusCode != 200) {
-      throw Exception(body);
+      throw Exception(
+        'Cloudinary upload failed '
+        '(${response.statusCode}): $body',
+      );
     }
 
-    final json = jsonDecode(body);
+    final json = jsonDecode(body) as Map<String, dynamic>;
+
+    final resourceType = json['resource_type'] as String?;
+    final format = json['format'] as String?;
 
     return UploadResult(
-      url: json['secure_url'],
+      url: json['secure_url'] as String? ?? '',
+      publicId: json['public_id'] as String? ?? '',
+      mimeType: _resolveMimeType(
+        resourceType: resourceType,
+        format: format,
+        fallback: draft.mimeType ?? 'application/octet-stream',
+      ),
       width: (json['width'] as num?)?.toDouble(),
       height: (json['height'] as num?)?.toDouble(),
-      bytes: json['bytes'],
-      publicId: json['public_id'],
-      mimeType: json['resource_type'] == 'image'
-          ? 'image/${json['format']}'
-          : 'application/octet-stream',
+      bytes: (json['bytes'] as num?)?.toInt(),
     );
   }
 
+  String _resolveMimeType({
+    required String? resourceType,
+    required String? format,
+    required String fallback,
+  }) {
+    if (resourceType == 'image' && format != null) {
+      return 'image/$format';
+    }
+
+    if (resourceType == 'video' && format != null) {
+      return 'video/$format';
+    }
+
+    // Cloudinary's "raw" resource type covers files such as:
+    // PDF, DOCX, ZIP, RAR, etc.
+    if (resourceType == 'raw') {
+      return fallback;
+    }
+
+    return fallback;
+  }
+
   @override
-  Future<void> deleteImage(String url) async {
+  Future<void> deleteMedia(String url) async {
     // Cloudinary deletion requires a signed request.
-    // We'll implement this later using your backend.
+    // We'll implement provider-side deletion later.
   }
 }

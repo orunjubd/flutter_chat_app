@@ -33,6 +33,10 @@ class Message {
     this.mimeType,
     this.mediaBytes,
     this.caption,
+
+    this.fileUrl,
+    this.fileName,
+    this.fileSize,
   });
 
   /// Firestore document ID
@@ -78,6 +82,10 @@ class Message {
   final String? mimeType;
   final int? mediaBytes;
   final String? caption;
+
+  final String? fileUrl;
+  final String? fileName;
+  final int? fileSize;
 
   factory Message.fromMap(String documentId, Map<String, dynamic> data) {
     return Message(
@@ -134,6 +142,10 @@ class Message {
       mimeType: data['mimeType'] as String?,
       mediaBytes: data['mediaBytes'] as int?,
       caption: data['caption'] as String?,
+
+      fileUrl: data['fileUrl'] as String?,
+      fileName: data['fileName'] as String?,
+      fileSize: data['fileSize'] as int?,
     );
   }
 
@@ -169,6 +181,10 @@ class Message {
       'mimeType': mimeType,
       'mediaBytes': mediaBytes,
       'caption': caption,
+
+      'fileUrl': fileUrl,
+      'fileName': fileName,
+      'fileSize': fileSize,
     };
   }
 }

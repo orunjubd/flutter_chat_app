@@ -10,6 +10,6 @@ class CloudinaryMediaRepository implements MediaUploadRepository {
 
   @override
   Future<UploadResult> uploadMedia(MediaDraft draft) {
-    return _service.uploadImage(draft);
+    return _service.uploadMedia(draft);
   }
 }

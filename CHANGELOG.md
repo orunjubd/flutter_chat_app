@@ -767,3 +767,44 @@ Release Date: August 2026
 * Riverpod Migration
 * Repository Pattern
 * Feature-First Architecture
+
+---------------------------------------------------
+# 🚀 ECE Chat v1.6.8
+### — File Attachment Engine Complete
+--------------------------------------------------- 
+
+Added:
+- Android file download engine
+- Local temporary file handling
+- PDF download/open support
+- DOCX download/open support
+- ZIP download support
+- RAR download support
+- APK download/open support
+- File download progress/error handling
+- MIME-aware file handling
+- File Action Sheet
+- Preview/Download actions
+- MIME/type-based preview availability
+- Android-compatible external file opening
+
+Improved:
+- Cloudinary raw file delivery
+- File message bubble
+- File metadata handling
+- File attachment upload pipeline
+
+Fixed:
+- Cloudinary PDF/ZIP delivery restriction
+- HTTP 401 raw-file delivery issue
+- Incorrect image resource-type handling for documents
+- Direct URL opening failures
+- Unsupported file preview behavior
+
+Testing:
+- Pixel 6 ✅
+- Nokia 6 ✅
+- Xiaomi/MI Android device ✅
+- Android emulator ⚠️ limited by installed compatible applications
+
+Phase 4 File Attachment: COMPLETE ✅

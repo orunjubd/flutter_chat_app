@@ -10,11 +10,11 @@ class UploadRepository {
 
   final UploadService _service;
 
-  Future<UploadResult> uploadImage(MediaDraft draft) {
-    return _service.uploadImage(draft);
+  Future<UploadResult> uploadMedia(MediaDraft draft) {
+    return _service.uploadMedia(draft);
   }
 
-  Future<void> deleteImage(String url) {
-    return _service.deleteImage(url);
+  Future<void> deleteMedia(String url) {
+    return _service.deleteMedia(url);
   }
 }

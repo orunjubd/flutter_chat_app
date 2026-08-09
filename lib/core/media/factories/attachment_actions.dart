@@ -11,6 +11,9 @@ import 'package:chat_app/features/chat/presentation/screens/image_preview_screen
 import 'package:chat_app/features/chat/providers/conversation_message_provider.dart';
 import '../models/attachment_action.dart';
 import '../providers/image_picker_provider.dart';
+//import 'package:chat_app/core/media/models/upload_result.dart';
+import 'package:chat_app/core/media/providers/file_picker_service_provider.dart';
+import 'package:chat_app/core/media/providers/media_upload_provider.dart';
 
 class AttachmentActions {
   const AttachmentActions._();
@@ -110,12 +113,116 @@ class AttachmentActions {
       ),
 
       AttachmentAction(
-        id: 'document',
-        title: 'Document',
+        id: 'file',
+        title: 'File',
         icon: Icons.insert_drive_file,
-        color: Colors.blue,
-        enabled: false,
-        onTap: () async {},
+        color: Colors.orange,
+        enabled: true,
+        onTap: () async {
+          final service = ref.read(filePickerServiceProvider);
+          // ============================================================
+          // 1. PICK FILE
+          // ============================================================
+
+          final draft = await service.pickSingleFile();
+
+          if (draft == null) {
+            debugPrint('❌ 📄 File selection cancelled.');
+            return;
+          }
+
+          debugPrint('📄 File picked: ${draft.fileName}');
+          debugPrint('📦 File size: ${draft.fileSize}');
+          debugPrint('📑 MIME type: ${draft.mimeType}');
+          debugPrint('📂 File path: ${draft.file.path}');
+
+          // ============================================================
+          // 2. CONVERT FileDraft → MediaDraft
+          // ============================================================
+
+          final mediaDraft = MediaDraft(
+            file: draft.file,
+            type: MediaType.document,
+            mimeType: draft.mimeType,
+            caption: draft.fileName,
+          );
+
+          debugPrint('✅ MediaDraft created');
+          debugPrint('   📄 ${mediaDraft.file}');
+          debugPrint('   📑 ${mediaDraft.mimeType}');
+
+          // ============================================================
+          // 3. UPLOAD TO CLOUDINARY
+          // ============================================================
+          // UploadResult uploadResult;
+          try {
+            // ============================================================
+            // 1. UPLOAD FILE TO CLOUDINARY
+            // ============================================================
+
+            debugPrint('☁️ Starting document upload...');
+
+            final uploadResult = await ref
+                .read(mediaUploadRepositoryProvider)
+                .uploadMedia(mediaDraft);
+
+            debugPrint('✅ Cloudinary upload completed');
+            debugPrint('   🔗 URL: ${uploadResult.url}');
+            debugPrint('   🆔 Public ID: ${uploadResult.publicId}');
+            debugPrint('   📑 MIME: ${uploadResult.mimeType}');
+            debugPrint('   📦 Bytes: ${uploadResult.bytes}');
+
+            // ============================================================
+            // 2. VERIFY CURRENT USER
+            // ============================================================
+
+            final currentUser = FirebaseAuth.instance.currentUser;
+
+            if (currentUser == null) {
+              debugPrint('❌ No authenticated Firebase user.');
+              return;
+            }
+
+            // ============================================================
+            // 3. RESOLVE VERIFIED USERNAME
+            // ============================================================
+
+            final appUserState = ref.read(currentUserProvider);
+
+            final String verifiedSenderName =
+                appUserState.value?.username ?? 'Unknown';
+
+            debugPrint('👤 Sender: $verifiedSenderName');
+
+            // ============================================================
+            // 4. CREATE MEDIA MESSAGE SENDER
+            // ============================================================
+
+            final conversationRepository = ref.read(
+              conversationMessageRepositoryProvider(conversationId),
+            );
+
+            final sender = ref.read(
+              mediaMessageSenderProvider(conversationRepository),
+            );
+
+            // ============================================================
+            // 5. CREATE FIRESTORE FILE MESSAGE
+            // ============================================================
+
+            await sender.sendDocument(
+              uploadResult: uploadResult,
+              fileName: draft.fileName,
+              senderId: currentUser.uid,
+              senderName: verifiedSenderName,
+            );
+
+            debugPrint('✅ Document message sent successfully.');
+          } catch (e, stackTrace) {
+            debugPrint('❌ Document upload/send failed: $e');
+            debugPrint('$stackTrace');
+          }
+        },
       ),
 
       AttachmentAction(

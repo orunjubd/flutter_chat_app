@@ -1,16 +1,29 @@
 import '../models/media_draft.dart';
 import '../models/upload_result.dart';
 
+/// Common upload contract for all media providers.
+/// Future providers can implement this same interface:
+/// - Cloudinary
+/// - Firebase Storage
+/// - Amazon S3
+/// - WHM/server storage
+/// - etc.
+
 abstract class UploadService {
   const UploadService();
 
-  /// Uploads any media draft.
+  /// Uploads any supported media draft.
   ///
-  /// Every upload provider (Cloudinary, Firebase Storage,
-  /// WHM server, S3...) implements this same API.
-  Future<UploadResult> uploadImage(MediaDraft draft);
+  /// The concrete provider decides how the media should be
+  /// uploaded based on the MediaDraft type.
+  Future<UploadResult> uploadMedia(MediaDraft draft);
 
-  Future<void> deleteImage(String url);
+  /// Deletes an uploaded media asset.
+  /// Currently retained for Cloudinary image deletion.
+  /// Later this can become provider-agnostic as the deletion
+  /// architecture is implemented.
+
+  Future<void> deleteMedia(String publicId);
 }
 
 // abstract class UploadConfig {

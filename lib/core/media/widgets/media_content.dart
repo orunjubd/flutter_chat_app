@@ -1,4 +1,5 @@
 import 'package:chat_app/core/extensions/theme_extensions.dart';
+import 'package:chat_app/features/chat/presentation/widgets/file_message_bubble.dart';
 import 'package:flutter/material.dart';
 
 import 'package:chat_app/features/chat/data/models/message.dart';
@@ -12,65 +13,48 @@ class MediaContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     switch (message.type) {
+      // ============================================================
+      // IMAGE MESSAGE
+      // ============================================================
       case 'image':
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 260),
-              child: AspectRatio(
-                aspectRatio:
-                    (message.imageWidth != null &&
-                        message.imageHeight != null &&
-                        message.imageHeight! > 0)
-                    ? message.imageWidth! / message.imageHeight!
-                    : 1,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    message.imageUrl!,
-                    fit: BoxFit.cover,
+              constraints: const BoxConstraints(maxWidth: 260, maxHeight: 320),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  message.imageUrl!,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) {
+                      return child;
+                    }
 
-                    frameBuilder:
-                        (context, child, frame, wasSynchronouslyLoaded) {
-                          if (wasSynchronouslyLoaded) {
-                            return child;
-                          }
-
-                          return AnimatedOpacity(
-                            opacity: frame == null ? 0 : 1,
-                            duration: const Duration(milliseconds: 250),
-                            curve: Curves.easeOut,
-                            child: child,
-                          );
-                        },
-
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) {
-                        return child;
-                      }
-
-                      return Container(
-                        color: Colors.black12,
-                        alignment: Alignment.center,
-                        child: const CircularProgressIndicator(),
-                      );
-                    },
-
-                    errorBuilder: (_, __, ___) {
-                      return const Center(child: Icon(Icons.broken_image));
-                    },
-                  ),
+                    return const SizedBox(
+                      width: 260,
+                      height: 180,
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  },
+                  errorBuilder: (_, _, _) {
+                    return const SizedBox(
+                      width: 260,
+                      height: 180,
+                      child: Center(child: Icon(Icons.broken_image)),
+                    );
+                  },
                 ),
               ),
             ),
 
-            if (message.caption != null && message.caption!.trim().isNotEmpty)
+            if (message.text.trim().isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  message.caption!,
+                  message.text,
                   style: context.bodyText?.copyWith(
                     color: isMe
                         ? context.myBubbleTextPrimary
@@ -81,8 +65,17 @@ class MediaContent extends StatelessWidget {
           ],
         );
 
+      // ============================================================
+      // FILE MESSAGE
+      // ============================================================
+      case 'file':
+        return FileMessageBubble(message: message, isMe: isMe);
+
+      // ============================================================
+      // FALLBACK
+      // ============================================================
       default:
-        return Text(message.text);
+        return Text(message.text, style: context.bodyText);
     }
   }
 }
