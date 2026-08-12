@@ -37,6 +37,9 @@ class Message {
     this.fileUrl,
     this.fileName,
     this.fileSize,
+
+    this.voiceUrl,
+    this.voiceDurationMs,
   });
 
   /// Firestore document ID
@@ -86,6 +89,9 @@ class Message {
   final String? fileUrl;
   final String? fileName;
   final int? fileSize;
+
+  final String? voiceUrl;
+  final int? voiceDurationMs;
 
   factory Message.fromMap(String documentId, Map<String, dynamic> data) {
     return Message(
@@ -146,6 +152,9 @@ class Message {
       fileUrl: data['fileUrl'] as String?,
       fileName: data['fileName'] as String?,
       fileSize: data['fileSize'] as int?,
+
+      voiceUrl: data['voiceUrl'] as String?,
+      voiceDurationMs: (data['voiceDurationMs'] as num?)?.toInt(),
     );
   }
 
@@ -185,6 +194,9 @@ class Message {
       'fileUrl': fileUrl,
       'fileName': fileName,
       'fileSize': fileSize,
+
+      'voiceUrl': voiceUrl,
+      'voiceDurationMs': voiceDurationMs,
     };
   }
 }

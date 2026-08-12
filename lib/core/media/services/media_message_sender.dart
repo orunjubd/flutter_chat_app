@@ -84,6 +84,9 @@ class MediaMessageSender {
     await _messageRepository.sendImageMessage(message: message);
   }
 
+  //--------------------------------------------------
+  // Send Document
+  //--------------------------------------------------
   Future<void> sendDocument({
     required UploadResult uploadResult,
     required String fileName,
@@ -133,6 +136,68 @@ class MediaMessageSender {
       thumbnailUrl: null,
 
       caption: fileName,
+    );
+
+    await _messageRepository.sendMessage(message);
+  }
+  //--------------------------------------------------
+  // Send Voice Message
+  //--------------------------------------------------
+
+  Future<void> sendVoice({
+    required MediaDraft draft,
+    required String senderId,
+    required String senderName,
+    required int durationMs,
+  }) async {
+    final uploadResult = await _uploadRepository.uploadMedia(draft);
+
+    final document = _messageRepository.createMessageDocument();
+
+    final message = Message(
+      id: document.id,
+
+      senderId: senderId,
+      senderName: senderName,
+
+      // Voice messages do not need visible text.
+      text: '',
+
+      createdAt: Timestamp.now(),
+
+      readBy: [senderId],
+
+      // ⭐ Critical: identifies this as a voice message.
+      type: 'audio',
+
+      deletedForEveryone: false,
+      deletedBy: const [],
+      deletedAt: null,
+
+      replyToMessageId: null,
+      replyToSenderId: null,
+      replyToSenderName: null,
+      replyToText: null,
+
+      forwarded: false,
+      forwardedFromUserId: null,
+      forwardedFromUserName: null,
+
+      // ⭐ Voice-specific data.
+      voiceUrl: uploadResult.url,
+      voiceDurationMs: durationMs,
+
+      // Keep image fields empty.
+      imageUrl: null,
+      imageWidth: null,
+      imageHeight: null,
+      thumbnailUrl: null,
+
+      // Audio metadata.
+      mimeType: uploadResult.mimeType,
+      mediaBytes: uploadResult.bytes,
+
+      caption: null,
     );
 
     await _messageRepository.sendMessage(message);

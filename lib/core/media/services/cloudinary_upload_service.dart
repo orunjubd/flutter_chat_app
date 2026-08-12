@@ -19,7 +19,11 @@ class CloudinaryUploadService extends UploadService {
   Future<UploadResult> uploadMedia(MediaDraft draft) async {
     final file = draft.file;
 
-    final String targetRoute = draft.type == MediaType.image ? 'image' : 'raw';
+    final String targetRoute = draft.type == MediaType.image
+        ? 'image'
+        : draft.type == MediaType.audio
+        ? 'video' // 🌟 CRITICAL ENCODER PIPELINE PATH FOR VOICE MESSAGES
+        : 'raw';
 
     final uri = Uri.parse(
       ApiConfig.cloudinaryUploadUrl(
@@ -40,9 +44,10 @@ class CloudinaryUploadService extends UploadService {
     final body = await response.stream.bytesToString();
 
     if (response.statusCode != 200) {
+      final errorSnippet = body.length > 300 ? body.substring(0, 300) : body;
       throw Exception(
         'Cloudinary upload failed '
-        '(${response.statusCode}): $body',
+        '(${response.statusCode}): $errorSnippet',
       );
     }
 

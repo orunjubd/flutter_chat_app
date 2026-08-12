@@ -1,4 +1,7 @@
 import 'dart:io';
+//import 'package:chat_app/core/audio/providers/audio_recorder_provider.dart';
+import 'package:chat_app/core/audio/models/voice_recording.dart';
+//import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,9 +14,10 @@ import 'package:chat_app/features/chat/presentation/screens/image_preview_screen
 import 'package:chat_app/features/chat/providers/conversation_message_provider.dart';
 import '../models/attachment_action.dart';
 import '../providers/image_picker_provider.dart';
-//import 'package:chat_app/core/media/models/upload_result.dart';
 import 'package:chat_app/core/media/providers/file_picker_service_provider.dart';
 import 'package:chat_app/core/media/providers/media_upload_provider.dart';
+//import 'package:chat_app/core/audio/providers/audio_recorder_provider.dart';
+import 'package:chat_app/core/audio/widgets/voice_recorder_widget.dart';
 
 class AttachmentActions {
   const AttachmentActions._();
@@ -248,8 +252,104 @@ class AttachmentActions {
         title: 'Audio',
         icon: Icons.headphones,
         color: Colors.deepPurple,
-        enabled: false,
-        onTap: () async {},
+        enabled: true,
+        onTap: () async {
+          //final recorder = ref.read(audioRecorderServiceProvider);
+
+          final VoiceRecording? recording =
+              await showModalBottomSheet<VoiceRecording?>(
+                context: context,
+                isScrollControlled: true,
+                builder: (_) {
+                  return VoiceRecorderWidget(
+                    onRecordingComplete: (recording) {
+                      Navigator.pop(context, recording);
+                    },
+                    onCancel: () {
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              );
+
+          if (recording == null || recording.path.isEmpty) {
+            debugPrint('🗑️ [AttachmentActions] Voice recording cancelled.');
+            return;
+          }
+
+          debugPrint('🎙️ [AttachmentActions] Voice recording ready.');
+          debugPrint('📂 Path: ${recording.path}');
+          debugPrint('📦 Bytes: ${recording.fileSize}');
+          debugPrint('⏱️ Duration: ${recording.durationMs} ms');
+
+          final file = File(recording.path);
+
+          if (!await file.exists()) {
+            debugPrint(
+              '❌ [AttachmentActions] Recorded voice file does not exist.',
+            );
+            return;
+          }
+
+          final bytes = await file.length();
+
+          debugPrint('📦 Voice bytes: $bytes');
+
+          final mediaDraft = MediaDraft(
+            file: file,
+            type: MediaType.audio,
+            mimeType: recording.mimeType,
+            caption: '',
+          );
+
+          debugPrint('✅ Voice MediaDraft created.: ${mediaDraft.file.path}');
+
+          final currentUser = FirebaseAuth.instance.currentUser;
+
+          if (currentUser == null) {
+            debugPrint('❌ No authenticated Firebase user.');
+            return;
+          }
+
+          final appUserState = ref.read(currentUserProvider);
+
+          final senderName = appUserState.value?.username ?? 'Unknown';
+
+          final conversationRepository = ref.read(
+            conversationMessageRepositoryProvider(conversationId),
+          );
+
+          final sender = ref.read(
+            mediaMessageSenderProvider(conversationRepository),
+          );
+
+          try {
+            debugPrint('☁️ Starting voice upload...');
+
+            final uploadResult = await ref
+                .read(mediaUploadRepositoryProvider)
+                .uploadMedia(mediaDraft);
+
+            debugPrint('✅ Voice upload completed.');
+            debugPrint('🔗 URL: ${uploadResult.url}');
+            debugPrint('🆔 Public ID: ${uploadResult.publicId}');
+            debugPrint('📑 MIME: ${uploadResult.mimeType}');
+            debugPrint('📦 Bytes: ${uploadResult.bytes}');
+
+            await sender.sendVoice(
+              //uploadResult: uploadResult,
+              draft: mediaDraft,
+              senderId: currentUser.uid,
+              senderName: senderName,
+              durationMs: recording.durationMs,
+            );
+
+            debugPrint('✅ Voice message sent successfully.');
+          } catch (e, stackTrace) {
+            debugPrint('❌ Voice upload/send failed: $e');
+            debugPrint('$stackTrace');
+          }
+        },
       ),
     ];
   }

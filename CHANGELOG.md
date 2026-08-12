@@ -808,3 +808,40 @@ Testing:
 - Android emulator ⚠️ limited by installed compatible applications
 
 Phase 4 File Attachment: COMPLETE ✅
+
+---------------------------------------------------
+# 🚀 ECE Chat v1.6.9
+## [Unreleased]
+### — Phase 4 — Media Engine 
+#### Added — Voice Messages Complete
+---------------------------------------------------
+
+- Added voice recording functionality.
+- Added `VoiceRecorderWidget`.
+- Added microphone permission handling.
+- Added recording start, stop, and cancel flows.
+- Added `VoiceRecording` model for recording metadata.
+- Added voice duration tracking.
+- Added voice file-size tracking.
+- Added voice `MediaDraft` integration.
+- Added voice upload through Cloudinary.
+- Configured Cloudinary voice uploads through the `video` resource path.
+- Added voice message persistence in Firestore.
+- Added `voiceUrl` and `voiceDurationMs` message fields.
+- Added `VoiceMessageBubble`.
+- Added single-active-voice playback behaviour.
+- Added play/pause/resume functionality.
+- Added playback completion handling.
+- Added seek support.
+- Added backward-seek recovery for problematic Android/OEM codecs.
+- Added protection against spurious native `completed` events.
+- Added seek-jitter protection.
+- Added Pixel 6 and Nokia 6 / Mi 9e playback testing.
+- Added separate active/static voice progress rendering to reduce unnecessary
+  rebuilds of inactive voice messages.
+
+### Current Status
+
+- Phase 4.4 — Voice Messages: **Complete**
+- Phase 4.6 — Video Messages: **In Progress**
+- Phase 5 — Conversations: **Paused**

@@ -429,3 +429,68 @@ Testing:
 - Android emulator ⚠️ limited by installed compatible applications
 
 Phase 4 File Attachment: COMPLETE ✅
+
+---------------------------------------------------
+# 🚀 ECE Chat v1.6.9
+## [Unreleased]
+### — Phase 4 — Media Engine 
+#### Added — Voice Messages Complete
+---------------------------------------------------
+## Media Expansion Update
+
+### Completed
+
+#### Voice Messages
+
+Phase 4.4 Voice Messages has been completed.
+
+Implemented:
+
+- Voice recording
+- Microphone permission handling
+- Start / stop / cancel recording
+- Recording duration
+- Voice file metadata
+- Cloudinary upload
+- Firestore voice message persistence
+- Voice playback
+- Play / pause / resume
+- Single active voice playback
+- Playback completion reset
+- Seeking
+- Backward-seek recovery
+- Android codec recovery handling
+- Voice message bubble
+- Pixel 6 testing
+- Nokia 6 testing
+- Mi 9e testing
+
+### Current Development
+
+#### Phase 4.6 — Video Messages
+
+Video messaging is now the active development target.
+
+Planned implementation:
+
+- Video selection
+- Video recording
+- Video preview
+- MediaDraft integration
+- Cloudinary video upload
+- Video metadata
+- Firestore message persistence
+- Video message bubble
+- Thumbnail generation/display
+- Video playback
+- Playback controls
+
+### Paused
+
+Phase 5 — Conversations is temporarily paused while Phase 4.6
+Video Messages is implemented.
+
+### Next Milestone
+
+Complete Phase 4.6 Video Messages and validate the complete media
+pipeline across the existing Android test devices.

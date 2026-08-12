@@ -853,3 +853,54 @@ Planned modules:
 * Message Pinning
 * Story/Status System
 * End-to-End Encryption
+
+---------------------------------------------------
+# 🚀 ECE Chat v1.6.9
+## [Unreleased]
+### — Phase 4 — Media Engine 
+#### Added — Voice Messages Complete
+---------------------------------------------------
+The media system follows a draft → upload → message-send architecture.
+
+AttachmentActions
+        │
+        ▼
+     Media UI
+        │
+        ▼
+    MediaDraft
+        │
+        ▼
+CloudinaryUploadService
+        │
+        ▼
+ MediaMessageSender
+        │
+        ▼
+ MessageRepository
+        │
+        ▼
+   Firestore Message
+        │
+        ▼
+    MediaContent
+
+Voice Messages
+
+Voice messages are implemented as a dedicated media type
+
+VoiceRecorderWidget
+        ↓
+VoiceRecording
+        ↓
+MediaDraft(type: audio)
+        ↓
+CloudinaryUploadService
+        ↓
+MediaMessageSender.sendVoice()
+        ↓
+MessageRepository
+        ↓
+Firestore
+        ↓
+VoiceMessageBubble    

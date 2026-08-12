@@ -409,3 +409,168 @@ ROADMAP.md
 VERSION_HISTORY.md
 
 ARCHITECTURE.md
+
+---------------------------------------------------
+# 🚀 ECE Chat v1.6.9
+## [Unreleased]
+### — Phase 4 — Media Engine 
+#### Added — Voice Messages Complete
+---------------------------------------------------
+# ECE Chat App — Project State
+
+## Current Project State
+
+ECE Chat App is currently in **Phase 4 — Media**.
+
+## Completed Phases
+
+### Phase 1 — Foundation
+
+Status: COMPLETE
+
+- Authentication
+- Email verification
+- User profile
+- Riverpod architecture
+- Firebase integration
+
+### Phase 2 — Messaging Foundation
+
+Status: COMPLETE
+
+- One-to-one conversations
+- Conversation creation
+- Conversation list
+- Message sending
+- Read receipts
+- Unread counts
+- Typing indicator
+- Presence
+- Conversation ordering
+- Conversation preview
+- Connectivity monitoring
+- Logout service
+- Delete message
+
+## Phase 3 — Messaging Features
+
+Status: COMPLETE / IMPLEMENTED SCOPE
+
+- Delete for everyone
+- Delete for me
+- Deleted message placeholder
+- Edit message
+- Reply
+- Forward
+- Emoji reactions
+- Message search
+
+## Phase 4 — Media
+
+### 4.1 Profile Photos
+
+Status: COMPLETE
+
+### 4.2 Image Messages
+
+Status: COMPLETE
+
+### 4.3 File Attachments
+
+Status: COMPLETE
+
+Supported attachment scope includes:
+
+- PDF
+- DOCX
+- ZIP
+- APK
+
+### 4.4 Voice Messages
+
+Status: COMPLETE
+
+Implemented:
+
+- Recording
+- Permission handling
+- Start / stop / cancel
+- Duration
+- VoiceRecording model
+- MediaDraft integration
+- Cloudinary upload
+- Firestore persistence
+- Voice playback
+- Play / pause / resume
+- Single active playback
+- Automatic completion reset
+- Seek
+- Backward seek recovery
+- Codec completion protection
+- VoiceMessageBubble
+
+Tested on:
+
+- Pixel 6
+- Nokia 6
+- Mi 9e
+
+Voice recording and playback are currently considered stable
+for the implemented scope.
+
+### 4.6 Video Messages
+
+Status: IN PROGRESS
+
+Current focus.
+
+Planned:
+
+- Video picker
+- Video recorder
+- Video preview
+- Video metadata
+- Cloudinary upload
+- Firestore persistence
+- VideoMessageBubble
+- Thumbnail
+- Video playback
+- Playback controls
+
+## Phase 5 — Conversations
+
+Status: PAUSED
+
+Planned:
+
+- Search Conversations
+- Pin Conversations
+- Archive
+- Favorite
+- Mute
+- Conversation Filters
+
+Phase 5 will resume after Phase 4.6 is completed.
+
+## Current Development Target
+
+**Phase 4.6 — Video Messages**
+
+## Architecture Principle
+
+Media follows:
+
+```text
+UI
+ ↓
+MediaDraft
+ ↓
+Upload Service
+ ↓
+Media Message Sender
+ ↓
+Repository
+ ↓
+Firestore
+ ↓
+Media-specific UI
