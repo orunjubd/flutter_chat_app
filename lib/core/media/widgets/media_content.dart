@@ -1,14 +1,13 @@
-import 'package:chat_app/core/extensions/theme_extensions.dart';
-import 'package:chat_app/features/chat/presentation/widgets/file_message_bubble.dart';
-import 'package:chat_app/features/chat/presentation/widgets/voice_message_bubble.dart';
+//import 'package:chat_app/features/chat/presentation/widgets/video_message_bubble.dart';
 import 'package:flutter/material.dart';
-
+import 'package:chat_app/core/extensions/theme_extensions.dart';
+import 'package:chat_app/features/chat/presentation/widgets/voice_message_bubble.dart';
 import 'package:chat_app/features/chat/data/models/message.dart';
 
 class MediaContent extends StatelessWidget {
   const MediaContent({super.key, required this.message, required this.isMe});
 
-  final Message message;
+  final LegacyMessage message;
   final bool isMe;
 
   @override
@@ -69,8 +68,8 @@ class MediaContent extends StatelessWidget {
       // ============================================================
       // FILE MESSAGE
       // ============================================================
-      case 'file':
-        return FileMessageBubble(message: message, isMe: isMe);
+      // case 'file':
+      //   return FileMessageBubble(message: message, isMe: isMe);
 
       // =======================================================================
       // 🎙️ NEW: ENTERPRISE VOICE RECORDING ROUTING CELL

@@ -494,3 +494,65 @@ Video Messages is implemented.
 
 Complete Phase 4.6 Video Messages and validate the complete media
 pipeline across the existing Android test devices.
+
+---------------------------------------------------
+# 🚀 ECE Chat v1.7.0
+## [1.7.0] — Video Architecture
+--------------------------------------------------- 
+# `GitHubRELEASE.md`
+
+## Release Summary
+
+v1.7.0 completes the application's video messaging architecture and end-to-end video lifecycle.
+
+## Highlights
+
+### 🎥 Video Messaging
+- Video attachment
+- Video metadata extraction
+- Thumbnail generation
+- Cloudinary upload
+- Video compression
+- H.264 output
+- 1080-resolution compression target
+- Firestore persistence
+- Video captions
+- Real upload progress
+
+### ▶️ Video Player
+
+Implemented:
+
+- Play
+- Pause
+- Resume
+- Seek
+- Mute / Unmute
+- Duration
+- Position
+- Buffering
+- Completion
+- Lifecycle/disposal
+- Fullscreen playback
+- Portrait and landscape rendering
+
+### 🏗 Architecture
+
+Video messages use the existing shared conversation message architecture.
+
+```text
+MediaDraft
+   ↓
+VideoCompressionService
+   ↓
+VideoUploadService
+   ↓
+VideoMessageSender
+   ↓
+ConversationMessageRepository
+   ↓
+Firestore
+   ↓
+VideoMessageBubble
+   ↓
+FullscreenVideoPlayer

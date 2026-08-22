@@ -845,3 +845,79 @@ Phase 4 File Attachment: COMPLETE ✅
 - Phase 4.4 — Voice Messages: **Complete**
 - Phase 4.6 — Video Messages: **In Progress**
 - Phase 5 — Conversations: **Paused**
+
+---------------------------------------------------
+# 🚀 ECE Chat v1.7.0
+## [1.7.0] — Video Architecture
+--------------------------------------------------- 
+### Added
+- Completed Video Message architecture and end-to-end video messaging pipeline.
+- Added dedicated video media model and Firestore serialization/deserialization.
+- Added Cloudinary video upload integration.
+- Added video thumbnail generation.
+- Added video metadata extraction for dimensions, MIME type, file size, and duration.
+- Added video compression service with a maximum target of 1080×1080.
+- Added H.264 video compression for improved Android playback compatibility.
+- Added video message sender integrated with `ConversationMessageRepository`.
+- Added Firestore video message persistence.
+- Added video message bubble with playback controls.
+- Added fullscreen video player.
+- Added Riverpod video player provider.
+- Added real video upload progress support.
+- Added video caption support.
+- Added video playback controls:
+  - Play
+  - Pause
+  - Resume
+  - Seek
+  - Mute / Unmute
+  - Duration
+  - Position
+  - Buffering indicator
+  - Completion handling
+  - Player lifecycle and disposal
+- Added responsive video rendering for portrait and landscape videos.
+- Added video compression that skips unnecessary re-encoding for already optimized videos.
+
+### Improved
+- Video messages now use the shared `ConversationMessageRepository` message flow instead of duplicating conversation-message persistence logic.
+- Video messages correctly update conversation activity and preview information through the shared conversation messaging architecture.
+- Large videos are downscaled to a maximum 1080 resolution target before upload.
+- Video dimensions are revalidated after compression and upload before being stored in the `VideoMessage`.
+- Video playback layout now uses responsive fitting to prevent portrait/landscape rotation overflow.
+- Video upload flow now returns cleanly from the preview screen to the chat screen after sending.
+- Upload progress is displayed during video message transmission.
+
+### Fixed
+- Fixed missing conversation updates when sending video messages.
+- Fixed incorrect/private video repository architecture that duplicated shared message persistence behavior.
+- Fixed `VideoMessage.fromMap()` deserialization flow to use the shared `Message.fromMap()` factory.
+- Fixed video repository/provider naming mismatch.
+- Fixed duplicate video captions in the chat UI.
+- Fixed video playback controls not responding from the chat screen.
+- Fixed fullscreen video playback navigation.
+- Fixed portrait-video `RenderFlex` overflow.
+- Fixed landscape/rotated-video `RenderFlex` overflow.
+- Fixed video player lifecycle and controller disposal issues.
+- Fixed large-video playback compatibility by compressing videos to H.264/1080-target output.
+
+### Tested
+- `.mp4` video upload and Firestore persistence.
+- Small optimized video upload.
+- Larger video compression and upload.
+- Portrait video playback.
+- Landscape video playback.
+- Rotated video playback.
+- Play / Pause / Resume.
+- Seek.
+- Mute / Unmute.
+- Duration and position.
+- Buffering state.
+- Completion.
+- Video player lifecycle and disposal.
+- Video captions.
+- Real upload progress.
+- Fullscreen playback.
+- Android emulator testing.
+- Pixel 6 testing.
+- Vivo Android device testing.

@@ -1,10 +1,8 @@
 import 'package:chat_app/core/media/models/upload_result.dart';
+import 'package:chat_app/features/chat/data/models/message.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'package:chat_app/core/media/models/media_draft.dart';
 import 'package:chat_app/core/media/repositories/media_upload_repository.dart';
-
-import 'package:chat_app/features/chat/data/models/message.dart';
 import 'package:chat_app/features/chat/data/repositories/conversation_message_repository.dart';
 
 class MediaMessageSender {
@@ -39,7 +37,7 @@ class MediaMessageSender {
     // Message
     //--------------------------------------------------
 
-    final message = Message(
+    final message = LegacyMessage(
       id: document.id,
 
       senderId: senderId,
@@ -95,7 +93,7 @@ class MediaMessageSender {
   }) async {
     final document = _messageRepository.createMessageDocument();
 
-    final message = Message(
+    final message = LegacyMessage(
       id: document.id,
 
       senderId: senderId,
@@ -154,7 +152,7 @@ class MediaMessageSender {
 
     final document = _messageRepository.createMessageDocument();
 
-    final message = Message(
+    final message = LegacyMessage(
       id: document.id,
 
       senderId: senderId,

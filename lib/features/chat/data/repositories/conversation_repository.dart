@@ -162,17 +162,15 @@ class ConversationRepository {
     required String conversationId,
     required Message message,
   }) async {
-    final preview = switch (message.type) {
-      'image' =>
-        message.caption?.trim().isNotEmpty == true
-            ? '📷 ${message.caption}'
-            : '📷 Photo',
+    final preview = switch (message) {
+      VideoMessage() => '🎥 Video',
 
-      'video' => '🎥 Video',
+      LegacyMessage m when m.type == 'image' =>
+        m.caption?.trim().isNotEmpty == true ? '📷 ${m.caption}' : '📷 Photo',
 
-      'voice' => '🎤 Voice message',
+      LegacyMessage m when m.type == 'audio' => '🎤 Voice message',
 
-      'document' => '📄 Document',
+      LegacyMessage m when m.type == 'file' => '📄 Document',
 
       _ => message.text,
     };

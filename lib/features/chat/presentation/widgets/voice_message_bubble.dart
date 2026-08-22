@@ -13,7 +13,7 @@ class VoiceMessageBubble extends ConsumerWidget {
     required this.isMe,
   });
 
-  final Message message;
+  final LegacyMessage message;
   final bool isMe;
 
   @override
@@ -121,7 +121,7 @@ class _ActiveVoiceProgress extends StatefulWidget {
   final WidgetRef ref;
   final VoicePlayerService player;
   final String voiceUrl;
-  final Message message;
+  final LegacyMessage message;
   final bool isPlaying;
   final bool isMe;
 
@@ -276,7 +276,7 @@ class _StaticVoiceProgress extends StatelessWidget {
   });
 
   final BuildContext context;
-  final Message message;
+  final LegacyMessage message;
   final bool isMe;
 
   @override

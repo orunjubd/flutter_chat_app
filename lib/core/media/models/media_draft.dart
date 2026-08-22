@@ -1,6 +1,6 @@
 import 'dart:io';
 
-enum MediaType { image, video, document, audio }
+import 'package:chat_app/core/media/models/media_type.dart';
 
 class MediaDraft {
   const MediaDraft({
@@ -11,21 +11,22 @@ class MediaDraft {
     this.height,
     this.mimeType,
     this.fileSize,
+    this.durationMs, // audio + video only; null for image/document
   });
 
   final File file;
-
   final MediaType type;
-
   final String caption;
-
   final int? width;
-
   final int? height;
-
   final String? mimeType;
-
   final int? fileSize;
+  final int? durationMs;
+
+  bool get isImage => type == MediaType.image;
+  bool get isDocument => type == MediaType.document;
+  bool get isVideo => type == MediaType.video;
+  bool get isAudio => type == MediaType.audio;
 
   MediaDraft copyWith({
     File? file,
@@ -35,6 +36,7 @@ class MediaDraft {
     int? height,
     String? mimeType,
     int? fileSize,
+    int? durationMs,
   }) {
     return MediaDraft(
       file: file ?? this.file,
@@ -44,42 +46,7 @@ class MediaDraft {
       height: height ?? this.height,
       mimeType: mimeType ?? this.mimeType,
       fileSize: fileSize ?? this.fileSize,
+      durationMs: durationMs ?? this.durationMs,
     );
   }
 }
-
-// extension MediaDraftExtensions on MediaDraft {
-//   bool get isImage => file.isImage;
-// }
-
-// extension FileExtensions on File {
-//   bool get isImage => path.endsWith('.jpg') || path.endsWith('.png');
-// }
-
-// extension StringExtensions on String {
-//   bool get isImage => endsWith('.jpg') || endsWith('.png');
-// }
-
-// extension UriExtensions on Uri {
-//   bool get isImage => path.endsWith('.jpg') || path.endsWith('.png');
-// }
-
-// extension HttpUriExtensions on Uri {
-//   bool get isImage => path.endsWith('.jpg') || path.endsWith('.png');
-// }
-
-// extension HttpUrlExtensions on String {
-//   bool get isImage => endsWith('.jpg') || endsWith('.png');
-// }
-
-// extension PathExtensions on String {
-//   bool get isImage => endsWith('.jpg') || endsWith('.png');
-// }
-
-// extension UriPathExtensions on Uri {
-//   bool get isImage => path.endsWith('.jpg') || path.endsWith('.png');
-// }
-
-// extension StringPathExtensions on String {
-//   bool get isImage => endsWith('.jpg') || endsWith('.png');
-// }

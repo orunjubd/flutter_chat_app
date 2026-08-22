@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:chat_app/core/media/models/media_draft.dart';
+import 'package:chat_app/core/media/models/media_type.dart';
 import 'package:flutter/material.dart';
 
 class ImagePreviewScreen extends StatefulWidget {

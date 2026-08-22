@@ -16,7 +16,7 @@ class FileMessageBubble extends ConsumerStatefulWidget {
     required this.isMe,
   });
 
-  final Message message;
+  final LegacyMessage message;
   final bool isMe;
 
   @override
@@ -90,7 +90,7 @@ class _FileMessageBubbleState extends ConsumerState<FileMessageBubble> {
     }
   }
 
-  String _resolveFileName(Message message) {
+  String _resolveFileName(LegacyMessage message) {
     final caption = message.caption?.trim();
 
     if (caption != null && caption.isNotEmpty) {

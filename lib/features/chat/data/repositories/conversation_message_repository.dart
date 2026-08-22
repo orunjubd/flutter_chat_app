@@ -35,32 +35,12 @@ class ConversationMessageRepository {
   }) async {
     final document = _messageRepository.createMessageDocument(conversationId);
 
-    final forwardedMessage = Message(
-      id: document.id,
-
+    final forwardedMessage = originalMessage.asForwarded(
+      newId: document.id,
       senderId: currentUserId,
       senderName: currentUserName,
-
-      text: originalMessage.text,
-
       createdAt: Timestamp.now(),
-
       readBy: [currentUserId],
-
-      type: originalMessage.type,
-
-      deletedForEveryone: false,
-      deletedBy: const [],
-      deletedAt: null,
-
-      // Reply fields are NOT copied.
-      replyToMessageId: null,
-      replyToSenderId: null,
-      replyToSenderName: null,
-      replyToText: null,
-
-      // New forward metadata
-      forwarded: true,
       forwardedFromUserId: originalMessage.senderId,
       forwardedFromUserName: originalMessage.senderName,
     );

@@ -1,7 +1,9 @@
 import 'dart:io';
-//import 'package:chat_app/core/audio/providers/audio_recorder_provider.dart';
-import 'package:chat_app/core/audio/models/voice_recording.dart';
-//import 'package:chat_app/core/extensions/theme_extensions.dart';
+import 'package:chat_app/core/video/providers/video_message_sender_provider.dart';
+import 'package:chat_app/core/video/providers/video_upload_progress_provider.dart';
+import 'package:chat_app/core/video/widgets/video_send_preview.dart';
+//import 'package:chat_app/core/video/providers/video_player_provider.dart';
+//import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -16,9 +18,15 @@ import '../models/attachment_action.dart';
 import '../providers/image_picker_provider.dart';
 import 'package:chat_app/core/media/providers/file_picker_service_provider.dart';
 import 'package:chat_app/core/media/providers/media_upload_provider.dart';
-//import 'package:chat_app/core/audio/providers/audio_recorder_provider.dart';
 import 'package:chat_app/core/audio/widgets/voice_recorder_widget.dart';
+import 'package:chat_app/core/audio/models/voice_recording.dart';
+import 'package:chat_app/core/media/models/media_type.dart';
+import 'package:chat_app/core/video/providers/video_picker_provider.dart';
+import 'package:chat_app/core/video/providers/video_thumbnail_provider.dart';
+//import 'package:chat_app/core/video/providers/video_upload_repository_provider.dart';
+//import 'package:chat_app/features/chat/data/models/message.dart';
 
+//import 'package:chat_app/core/video/models/video_message.dart';
 class AttachmentActions {
   const AttachmentActions._();
 
@@ -28,10 +36,6 @@ class AttachmentActions {
     required String conversationId,
   }) {
     final currentUser = FirebaseAuth.instance.currentUser;
-    // We create an asynchronous task runner helper, or read the synchronous value from cache!
-    // Since build() is synchronous, we read the current state snapshot instantly:
-    final appUserState = ref.read(currentUserProvider);
-    final String verifiedSenderName = appUserState.value?.username ?? 'Unknown';
 
     final conversationRepository = ref.read(
       conversationMessageRepositoryProvider(conversationId),
@@ -101,6 +105,10 @@ class AttachmentActions {
           //==================================================
 
           if (!context.mounted) return;
+
+          // Fresh read, at send time — not a stale sheet-open snapshot.
+          final appUserState = ref.read(currentUserProvider);
+          final verifiedSenderName = appUserState.value?.username ?? 'Unknown';
 
           final sender = ref.read(
             mediaMessageSenderProvider(conversationRepository),
@@ -313,7 +321,7 @@ class AttachmentActions {
 
           final appUserState = ref.read(currentUserProvider);
 
-          final senderName = appUserState.value?.username ?? 'Unknown';
+          final verifiedSenderName = appUserState.value?.username ?? 'Unknown';
 
           final conversationRepository = ref.read(
             conversationMessageRepositoryProvider(conversationId),
@@ -340,7 +348,7 @@ class AttachmentActions {
               //uploadResult: uploadResult,
               draft: mediaDraft,
               senderId: currentUser.uid,
-              senderName: senderName,
+              senderName: verifiedSenderName,
               durationMs: recording.durationMs,
             );
 
@@ -348,6 +356,95 @@ class AttachmentActions {
           } catch (e, stackTrace) {
             debugPrint('❌ Voice upload/send failed: $e');
             debugPrint('$stackTrace');
+          }
+        },
+      ),
+
+      AttachmentAction(
+        id: 'video',
+        title: 'Video',
+        icon: Icons.videocam,
+        color: Colors.red,
+        enabled: true,
+        onTap: () async {
+          if (currentUser == null) {
+            debugPrint('Video send aborted: no signed-in user.');
+            return;
+          }
+
+          try {
+            final videoPicker = ref.read(videoPickerProvider);
+            final MediaDraft? draft = await videoPicker.pickVideo();
+
+            if (draft == null) {
+              debugPrint('Video picker cancelled.');
+              return;
+            }
+
+            final thumbnailService = ref.read(videoThumbnailServiceProvider);
+            await thumbnailService.generate(draft.file);
+
+            final appUser = await ref.read(currentUserProvider.future);
+            final senderName = appUser?.username ?? 'Unknown';
+
+            if (!context.mounted) return;
+
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => VideoSendPreview(
+                  draft: draft,
+                  onSend: (updatedDraft) async {
+                    final videoMessageSender = ref.read(
+                      videoMessageSenderProvider(conversationId),
+                    );
+
+                    final progressNotifier = ref.read(
+                      videoUploadProgressProvider.notifier,
+                    );
+
+                    progressNotifier.start(
+                      totalBytes:
+                          updatedDraft.fileSize ??
+                          await updatedDraft.file.length(),
+                    );
+
+                    try {
+                      final sentMessage = await videoMessageSender.sendVideo(
+                        draft: updatedDraft,
+                        senderId: currentUser.uid,
+                        senderName: senderName,
+                        onUploadProgress: (sentBytes, totalBytes) {
+                          progressNotifier.update(
+                            sentBytes: sentBytes,
+                            totalBytes: totalBytes,
+                          );
+                        },
+                      );
+
+                      progressNotifier.complete();
+
+                      debugPrint('✅ Video message sent.');
+                      debugPrint(
+                        '🔥 [VideoPipeline] Message ID: ${sentMessage.id}',
+                      );
+                    } catch (e) {
+                      progressNotifier.reset();
+                      rethrow;
+                    }
+                  },
+                ),
+              ),
+            );
+            debugPrint('✅ Video message sent successfully.');
+          } catch (e, stackTrace) {
+            debugPrint('❌ Video send failed: $e');
+            debugPrintStack(stackTrace: stackTrace);
+
+            if (!context.mounted) return;
+
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Video send failed: $e')));
           }
         },
       ),

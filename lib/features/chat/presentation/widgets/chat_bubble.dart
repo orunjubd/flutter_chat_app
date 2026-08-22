@@ -1,6 +1,9 @@
 //import 'package:cloud_firestore/cloud_firestore.dart';
 //import 'package:firebase_auth/firebase_auth.dart';
+//import 'package:chat_app/core/video/models/video_message.dart';
+import 'package:chat_app/core/video/widgets/fullscreen_video_player.dart';
 import 'package:chat_app/features/chat/presentation/widgets/file_message_bubble.dart';
+import 'package:chat_app/features/chat/presentation/widgets/video_message_bubble.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -185,6 +188,21 @@ class ChatBubble extends ConsumerWidget {
                 //------------------------------------
                 // Message
                 //------------------------------------
+                // _deleted
+                //     ? Text(
+                //         _displayMessage,
+                //         style: context.bodyText?.copyWith(
+                //           fontStyle: FontStyle.italic,
+                //           color: context.textSecondaryColor,
+                //         ),
+                //       )
+                //     : messageData.type == 'file'
+                //     ? FileMessageBubble(message: messageData, isMe: isMe)
+                //     : MediaContent(
+                //         message:
+                //             messageData, // Passes your non-nullable Message data model token down seamlessly! [INDEX]
+                //         isMe: isMe,
+                //       ),
                 _deleted
                     ? Text(
                         _displayMessage,
@@ -193,13 +211,32 @@ class ChatBubble extends ConsumerWidget {
                           color: context.textSecondaryColor,
                         ),
                       )
-                    : messageData.type == 'file'
-                    ? FileMessageBubble(message: messageData, isMe: isMe)
-                    : MediaContent(
-                        message:
-                            messageData, // Passes your non-nullable Message data model token down seamlessly! [INDEX]
-                        isMe: isMe,
-                      ),
+                    : switch (messageData) {
+                        VideoMessage m => VideoMessageBubble(
+                          message: m,
+                          isMe: isMe,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    FullscreenVideoPlayer(message: m),
+                              ),
+                            );
+                          },
+                        ),
+                        TextMessage() => Text(
+                          _displayMessage,
+                          style: context.bodyText?.copyWith(
+                            color: isMe
+                                ? context.myBubbleTextPrimary
+                                : context.colorScheme.onSurface,
+                          ),
+                        ),
+                        LegacyMessage m when m.type == 'file' =>
+                          FileMessageBubble(message: m, isMe: isMe),
+                        LegacyMessage m => MediaContent(message: m, isMe: isMe),
+                      },
 
                 const SizedBox(height: 8),
 

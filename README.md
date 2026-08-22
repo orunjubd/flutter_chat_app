@@ -217,3 +217,68 @@ The project continues to evolve with new messaging features, improved architectu
 # License
 
 This project is intended for educational and personal development purposes.
+
+---------------------------------------------------
+# 🚀 ECE Chat v1.7.0
+## [1.7.0] — Video Architecture
+--------------------------------------------------- 
+The video messaging architecture is now complete.
+
+### Video Messaging
+
+- Video selection and attachment
+- Video metadata extraction
+- Video thumbnail generation
+- Cloudinary video upload
+- Video compression
+- H.264 compatibility
+- Maximum 1080-resolution compression target
+- Firestore `VideoMessage` persistence
+- Video captions
+- Real upload progress
+- Video message bubble
+- Fullscreen video player
+- Responsive portrait and landscape playback
+
+### Video Playback
+
+The video player supports:
+
+- Play
+- Pause
+- Resume
+- Seek
+- Mute / Unmute
+- Duration
+- Current position
+- Buffering indicator
+- Completion handling
+- Lifecycle and controller disposal
+- Portrait and landscape videos
+- Fullscreen playback
+
+### Video Pipeline
+
+Video Selection
+      ↓
+MediaDraft
+      ↓
+Video Metadata
+      ↓
+Video Compression
+      ↓
+H.264 / 1080 Target
+      ↓
+Cloudinary Upload
+      ↓
+Upload Progress
+      ↓
+VideoMessage
+      ↓
+ConversationMessageRepository
+      ↓
+Firestore
+      ↓
+VideoMessageBubble
+      ↓
+FullscreenVideoPlayer

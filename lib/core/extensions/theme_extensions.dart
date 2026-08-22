@@ -157,7 +157,6 @@ extension ThemeContextExtension on BuildContext {
   // ===========================================================================
 
   /// High-contrast text color for my outgoing chat bubbles (Always crisp and legible).
-  /// ✅ ফিক্সড: চ্যাট বাবল ডিরেক্ট কালার চিনবে না, সে এক্সটেনশন হয়ে অ্যাপ-কালার টোকেন রিড করবে
   Color get myBubbleTextPrimary => AppColors.white;
 
   /// Soft, semi-translucent metadata color for my outgoing timestamps and clock details.

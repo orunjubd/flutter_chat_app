@@ -904,3 +904,85 @@ MessageRepository
 Firestore
         ↓
 VoiceMessageBubble    
+
+---------------------------------------------------
+# 🚀 ECE Chat v1.7.0
+## [Unreleased]
+### — Phase 4 — Media Engine 
+#### Added — Video Messages Complete
+---------------------------------------------------
+
+---
+
+# `ARCHITECTURE.md`
+
+For the architecture document, I would add this under the current architecture/release section:
+
+```md
+## v1.7.0 — Video Architecture
+
+The video messaging architecture is now complete.
+
+### Video Module
+
+```text
+lib/
+│
+├── core/
+│   ├── media/
+│   │   	├── models/
+│   │       	├── media_draft.dart		# Holds the uncompressed local file path on the phone's disk before upload
+│   │      	└── upload_result.dart		# A universal model that catches the final Cloudinary link after upload
+│   └── video/
+│       ├── models/
+│       │   ├── video_attachment.dart		# Holds raw link assets for incoming/outgoing multimedia files [INDEX
+│       │   └── video_message_payload.dart	 # Combines the VideoUploadResult together with the user's custom text caption string
+│       │   ├── video_message.dart		 # The final, safe data packet serialized into Firestore database collections
+│       │   └── video_upload_result.dart	 # Extends UploadResult specifically to add movie width, height, and duration metrics
+│       │
+│       ├── providers/
+│       │   ├── video_compression_service_provider.dart
+│       │   ├── video_message_sender_provider.dart	<-- Global anchors that feed network routes straight to your 
+│       │							chat screen buttons
+│       │   ├── video_picker_provider.dart
+│       │   ├── video_player_provider.dart		<-- A family provider that boots up isolated player instances 
+│       │							 matching specific file links
+│       │   ├── video_upload_provider.dart
+│       │   ├── video_upload_progress_provider.dart	<-- Tracks the live, real-time download/upload numbers 
+│       │ 							(0% to 100% rereding ring loader)
+│       │   ├── video_upload_repository_provider.dart	<-- Global anchors that feed network routes straight to your 
+│       │							chat screen buttons
+│       │   └── video_thumbnail_provider.dart
+│       │
+│       ├── repositories/
+│       │   └── video_upload_repository.dart		# Coordinates between your local storage workers and cloud network endpoints	
+│       │
+│       ├── services/
+│       │   ├── video_upload_service.dart 
+│       │   ├── video_compression_plugin_service.dart	<-- The concrete class that uses flutter_compress to shrink massive video 
+│       │													bytes down before transmission
+│       │   ├── video_compression_service.dart	<-- The parent interface blueprint contract rule sheet.
+│       │   ├── video_message_sender.dart		<-- Gathers up your files, thumbnails, and captions, and commits the clean node 
+│       │											payload directly into Firestore pipelines 
+│       │   ├── video_metadata_service.dart
+│       │   ├── video_picker_service.dart		<-- Triggers the phone's native system camera or media gallery selection sheets 
+│       │   ├── video_thumbnail_service.dart		<-- Generates the lightweight preview image frame instantly so the chat layout doesn't lag
+│       │   └── cloudinary_video_upload_service.dart	#Pipes the binary streams chunk-by-chunk up onto Cloudinary multimedia tracks
+│       │
+│       └── widgets/
+│           ├── video_send_preview.dart	<-- The full-screen black overlay dialog where users watch their clip preview 
+│											and type their captions before sending
+│           ├── video_message_bubble_controller.dart 	<-- The lazy-loaded core engine that boots up native video 
+│														streams only when the user taps play
+│           └── fullscreen_video_player.dart	<-- Opens a full landscape view layout for immersive, uninterrupted video watching	 
+│												
+│												
+├── features/
+│   └── chat/
+│       └── presentation/
+│           └── widgets/
+│               ├── chat_bubble.dart
+│               ├── voice_message_bubble.dart
+│               └── video_message_bubble.dart	<-- The message wrapper floating inside the chat feed layout that 
+│														displays the lightweight thumbnail preview
+│ 

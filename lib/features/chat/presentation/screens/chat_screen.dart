@@ -86,15 +86,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
 
     final document = repository.createMessageDocument();
 
-    final draftMessage = Message(
+    final draftMessage = TextMessage(
       id: document.id,
       senderId: firebaseUser.uid,
       senderName: appUser.username,
       text: text,
       createdAt: Timestamp.now(),
       readBy: [firebaseUser.uid],
-      type: 'text',
 
+      //type: 'text',
       deletedForEveryone: false,
       deletedBy: const [],
       deletedAt: null,

@@ -54,6 +54,9 @@ dependencies:
   url_launcher: ^6.3.2
   share_plus: ^10.1.2
   record: ^6.2.1
+  video_player: ^2.9.2
+  video_thumbnail: ^0.5.3
+  flutter_compress: ^1.1.2  
   just_audio: ^0.10.6
 
 dev_dependencies:

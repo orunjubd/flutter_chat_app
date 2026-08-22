@@ -8,19 +8,7 @@ class ReplyRepository {
       return draft;
     }
 
-    return Message(
-      id: draft.id,
-      senderId: draft.senderId,
-      senderName: draft.senderName,
-      text: draft.text,
-      createdAt: draft.createdAt,
-      readBy: draft.readBy,
-      type: draft.type,
-
-      deletedForEveryone: draft.deletedForEveryone,
-      deletedBy: draft.deletedBy,
-      deletedAt: draft.deletedAt,
-
+    return draft.withReply(
       replyToMessageId: reply.id,
       replyToSenderId: reply.senderId,
       replyToSenderName: reply.senderName,
