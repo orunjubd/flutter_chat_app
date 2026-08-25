@@ -62,4 +62,25 @@ class MediaConfig {
     'mkv',
     'webm',
   };
+
+  /// Convenience getter — bytes derived from MB, matching the video
+  /// pattern (maxVideoSizeInBytes).
+  static int get maxImageSizeInBytes => maxImageSizeInMB * 1024 * 1024;
+
+  static const Set<String> allowedImageMimeTypes = {
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/heic',
+    'image/heif',
+  };
+
+  static const Set<String> allowedImageExtensions = {
+    'jpg',
+    'jpeg',
+    'png',
+    'webp',
+    'heic',
+    'heif',
+  };
 }

@@ -914,7 +914,7 @@ VoiceMessageBubble
 
 ---
 
-# `ARCHITECTURE.md`
+c
 
 For the architecture document, I would add this under the current architecture/release section:
 
@@ -986,3 +986,135 @@ lib/
 │               └── video_message_bubble.dart	<-- The message wrapper floating inside the chat feed layout that 
 │														displays the lightweight thumbnail preview
 │ 
+
+=================
+Video Data Flow
+=================
+
+VideoPickerService
+        ↓
+     MediaDraft
+        ↓
+VideoMetadataService
+        ↓
+VideoCompressionService
+        ↓
+VideoUploadService
+        ↓
+Cloudinary
+        ↓
+VideoMessageSender
+        ↓
+ConversationMessageRepository
+        ↓
+MessageRepository
+        ↓
+Firestore
+        ↓
+VideoMessage
+        ↓
+VideoMessageBubble
+        ↓
+FullscreenVideoPlayer
+
+============================
+Shared Message Architecture
+============================
+Video messages do not use a separate repository for common message persistence.
+
+The shared flow is:
+
+await _messageRepository.sendMessage(
+  conversationId: conversationId,
+  message: message,
+);
+
+"
+await _conversationRepository.updateConversationAfterMessage(
+  conversationId: conversationId,
+  lastMessage: switch (message.type) {
+    'image' => '📷 Photo',
+    'video' => '🎥 Video',
+    'voice' => '🎤 Voice message',
+    'file' => '📎 File',
+    _ => message.text,
+  },
+);
+"
+This ensures video messages participate in the same:
+
+conversation activity updates
+latest-message ordering
+conversation preview
+unread-message behavior
+message persistence
+
+as other message types.
+
+===========================
+Video Compression
+===========================
+The compression layer follows an abstraction-first design:
+
+VideoCompressionService
+        ↑
+FlutterCompressVideoCompressionService
+
+The application therefore depends on the compression contract rather than directly coupling callers to a specific compression implementation.
+
+Current compression behavior:
+
+Maximum target: 1080 × 1080
+H.264 codec
+Downscale-only
+Already optimized videos can bypass compression
+Metadata is re-extracted from the compressed output
+Original media remains untouched
+
+============================
+Video Player Architecture
+============================
+VideoMessage
+      ↓
+VideoMessageBubble
+      ↓
+FullscreenVideoPlayer
+      ↓
+VideoMessageBubbleController
+      ↓
+VideoPlayerController
+
+The player supports:
+
+initialization
+playback
+pause/resume
+seeking
+mute/unmute
+duration
+position
+buffering
+completion
+lifecycle/disposal
+portrait/landscape rendering
+
+The rendering layer uses responsive fitting rather than assuming a fixed video orientation, preventing layout overflow when portrait videos are rotated.
+
+=======================
+Video Upload Progress
+=======================
+Upload progress is handled as part of the video sending pipeline rather than being implemented as a second upload mechanism.
+
+Video Selection
+      ↓
+Compression
+      ↓
+Upload
+      ↓
+Progress
+      ↓
+VideoMessage
+      ↓
+Firestore
+
+The UI can therefore display upload progress while maintaining the same underlying message pipeline.

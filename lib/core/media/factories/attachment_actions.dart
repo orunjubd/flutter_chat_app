@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:chat_app/core/camera/providers/camera_capture_service_provider.dart';
 import 'package:chat_app/core/video/providers/video_message_sender_provider.dart';
 import 'package:chat_app/core/video/providers/video_upload_progress_provider.dart';
 import 'package:chat_app/core/video/widgets/video_send_preview.dart';
@@ -23,10 +24,7 @@ import 'package:chat_app/core/audio/models/voice_recording.dart';
 import 'package:chat_app/core/media/models/media_type.dart';
 import 'package:chat_app/core/video/providers/video_picker_provider.dart';
 import 'package:chat_app/core/video/providers/video_thumbnail_provider.dart';
-//import 'package:chat_app/core/video/providers/video_upload_repository_provider.dart';
-//import 'package:chat_app/features/chat/data/models/message.dart';
 
-//import 'package:chat_app/core/video/models/video_message.dart';
 class AttachmentActions {
   const AttachmentActions._();
 
@@ -43,20 +41,152 @@ class AttachmentActions {
 
     return [
       AttachmentAction(
-        id: 'camera',
-        title: 'Camera',
-        icon: Icons.photo_camera,
-        color: Colors.red,
+        id: 'camera_photo',
+        title: 'Photo (Camera)',
+        icon: Icons.camera_alt,
+        color: Colors.blue,
+        enabled: true,
         onTap: () async {
-          final picker = ref.read(imagePickerProvider);
-
-          final File? file = await picker.pickFromCamera();
-
-          if (file == null) {
+          if (currentUser == null) {
+            debugPrint('Camera photo capture aborted: no signed-in user.');
             return;
           }
 
-          debugPrint('Camera');
+          try {
+            final cameraService = ref.read(cameraCaptureServiceProvider);
+
+            final draft = await cameraService.capturePhoto();
+
+            if (draft == null) {
+              debugPrint('📷 Camera photo capture cancelled.');
+              return;
+            }
+
+            debugPrint('📷 Camera photo captured.');
+            debugPrint('Path: ${draft.file.path}');
+            debugPrint('Size: ${draft.fileSize}');
+            debugPrint('MIME: ${draft.mimeType}');
+            debugPrint('Type: ${draft.type}');
+            debugPrint('Dimensions: ${draft.width}x${draft.height}');
+
+            if (!context.mounted) return;
+
+            // Send the photo through your existing image pipeline.
+            //
+            // Use your existing image preview screen here,
+            // exactly like the Gallery image flow.
+            final MediaDraft? result = await Navigator.push<MediaDraft>(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ImagePreviewScreen(imageFile: draft.file),
+              ),
+            );
+
+            if (result == null) {
+              debugPrint('📷 Camera photo preview cancelled.');
+              return;
+            }
+
+            final compressed = await ref
+                .read(mediaCompressionProvider)
+                .compress(result);
+
+            if (!context.mounted) return;
+
+            final appUser = await ref.read(currentUserProvider.future);
+
+            final senderName = appUser?.username ?? 'Unknown';
+
+            final sender = ref.read(
+              mediaMessageSenderProvider(conversationRepository),
+            );
+
+            await sender.sendImage(
+              draft: compressed,
+              senderId: currentUser.uid,
+              senderName: senderName,
+            );
+
+            debugPrint('✅ Camera photo message sent successfully.');
+          } catch (e, stackTrace) {
+            debugPrint('❌ Camera photo send failed: $e');
+            debugPrintStack(stackTrace: stackTrace);
+
+            if (!context.mounted) return;
+
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Camera photo failed: $e')));
+          }
+        },
+      ),
+      AttachmentAction(
+        id: 'camera_video',
+        title: 'Video (Camera)',
+        icon: Icons.videocam,
+        color: Colors.blue,
+        enabled: true,
+        onTap: () async {
+          if (currentUser == null) {
+            debugPrint('Video capture aborted: no signed-in user.');
+            return;
+          }
+
+          try {
+            final cameraService = ref.read(cameraCaptureServiceProvider);
+
+            final draft = await cameraService.captureVideo();
+
+            if (draft == null) {
+              debugPrint('📷 Camera capture cancelled.');
+              return;
+            }
+
+            debugPrint('📷 Camera photo captured.');
+            debugPrint('Path: ${draft.file.path}');
+            debugPrint('Size: ${draft.fileSize}');
+            debugPrint('MIME: ${draft.mimeType}');
+            debugPrint('Type: ${draft.type}');
+            debugPrint('Dimensions: ${draft.width}x${draft.height}');
+            final thumbnailService = ref.read(videoThumbnailServiceProvider);
+            final thumbnailFile = await thumbnailService.generate(draft.file);
+
+            final appUser = await ref.read(currentUserProvider.future);
+            final senderName = appUser?.username ?? 'Unknown';
+
+            if (!context.mounted) return;
+
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => VideoSendPreview(
+                  draft: draft,
+                  thumbnailFile: thumbnailFile,
+                  onSend: (updatedDraft) async {
+                    final videoMessageSender = ref.read(
+                      videoMessageSenderProvider(conversationId),
+                    );
+                    final sentMessage = await videoMessageSender.sendVideo(
+                      draft: updatedDraft,
+                      senderId: currentUser.uid,
+                      senderName: senderName,
+                    );
+                    debugPrint(
+                      '✅ Camera video message sent: ${sentMessage.id}',
+                    );
+                  },
+                ),
+              ),
+            );
+          } catch (e, stackTrace) {
+            debugPrint('❌ Camera capture failed: $e');
+            debugPrintStack(stackTrace: stackTrace);
+
+            if (!context.mounted) return;
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Camera capture failed: $e')),
+            );
+          }
         },
       ),
 
@@ -68,59 +198,68 @@ class AttachmentActions {
         onTap: () async {
           if (currentUser == null) return;
 
-          final picker = ref.read(imagePickerProvider);
-          final File? file = await picker.pickFromGallery();
+          try {
+            final picker = ref.read(imagePickerProvider);
+            final File? file = await picker.pickFromGallery();
 
-          // 🛡️ SECURITY SHIELD A: Early return if user cancelled picking!
-          if (file == null) {
-            debugPrint('🖼️ Gallery picking cancelled by user.');
-            return;
+            // 🛡️ SECURITY SHIELD A: Early return if user cancelled picking!
+            if (file == null) {
+              debugPrint('🖼️ Gallery picking cancelled by user.');
+              return;
+            }
+
+            // 🛡️ SECURITY SHIELD B: ASYNC LIFE CYCLE GUARD (Clears the BuildContext across async gaps warning)
+            if (!context.mounted) return;
+
+            final MediaDraft? result = await Navigator.push<MediaDraft>(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ImagePreviewScreen(imageFile: file),
+              ),
+            );
+
+            if (result == null) {
+              debugPrint('Preview cancelled');
+              return;
+            }
+
+            //==================================================
+            // Compress
+            //==================================================
+
+            final compressed = await ref
+                .read(mediaCompressionProvider)
+                .compress(result);
+
+            //==================================================
+            // Upload + Send Message
+            //==================================================
+
+            if (!context.mounted) return;
+
+            // Fresh read, at send time — not a stale sheet-open snapshot.
+            final appUser = await ref.read(currentUserProvider.future);
+            final senderName = appUser?.username ?? 'Unknown';
+
+            final sender = ref.read(
+              mediaMessageSenderProvider(conversationRepository),
+            );
+
+            await sender.sendImage(
+              draft: compressed,
+              senderId: currentUser.uid,
+              senderName: senderName,
+            );
+
+            debugPrint('✅ Image message sent successfully.');
+          } catch (e, stackTrace) {
+            debugPrint('❌ Gallery image send failed: $e');
+            debugPrintStack(stackTrace: stackTrace);
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Image send failed: $e')));
           }
-
-          // 🛡️ SECURITY SHIELD B: ASYNC LIFE CYCLE GUARD (Clears the BuildContext across async gaps warning)
-          if (!context.mounted) return;
-
-          final MediaDraft? result = await Navigator.push<MediaDraft>(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ImagePreviewScreen(imageFile: file),
-            ),
-          );
-
-          if (result == null) {
-            debugPrint('Preview cancelled');
-            return;
-          }
-
-          //==================================================
-          // Compress
-          //==================================================
-
-          final compressed = await ref
-              .read(mediaCompressionProvider)
-              .compress(result);
-
-          //==================================================
-          // Upload + Send Message
-          //==================================================
-
-          if (!context.mounted) return;
-
-          // Fresh read, at send time — not a stale sheet-open snapshot.
-          final appUserState = ref.read(currentUserProvider);
-          final verifiedSenderName = appUserState.value?.username ?? 'Unknown';
-
-          final sender = ref.read(
-            mediaMessageSenderProvider(conversationRepository),
-          );
-
-          await sender.sendImage(
-            draft: compressed,
-            senderId: currentUser.uid,
-            senderName: verifiedSenderName,
-          );
-
-          debugPrint('✅ Image message sent successfully.');
         },
       ),
 

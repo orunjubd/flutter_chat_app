@@ -1,3 +1,4 @@
+import 'package:chat_app/core/media/providers/media_cache_cleanup_service_provider.dart';
 import 'package:chat_app/core/providers/theme_provider.dart';
 import 'package:chat_app/core/theme/app_theme.dart';
 import 'package:chat_app/features/authentication/presentation/gate/auth_gate.dart';
@@ -21,6 +22,12 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ProviderScope.containerOf(
+        context,
+      ).read(mediaCacheCleanupServiceProvider).clearAll();
+    });
 
     return MaterialApp(
       title: 'ECE Chat',

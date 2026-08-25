@@ -22,51 +22,94 @@ class _ImagePreviewScreenState extends State<ImagePreviewScreen> {
     super.dispose();
   }
 
+  void _continue() {
+    Navigator.pop(
+      context,
+      MediaDraft(
+        file: widget.imageFile,
+        type: MediaType.image,
+        caption: _captionController.text.trim(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Image Preview')),
-      body: Column(
-        children: [
-          Expanded(
-            child: InteractiveViewer(
-              child: Image.file(widget.imageFile, fit: BoxFit.contain),
-            ),
-          ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ----------------------------------------------------------
+            // FIXED PREVIEW REGION
+            // ----------------------------------------------------------
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SizedBox(
+                    width: constraints.maxWidth,
+                    height: constraints.maxHeight,
+                    child: InteractiveViewer(
+                      minScale: 1.0,
+                      maxScale: 4.0,
+                      child: Center(
+                        child: Image.file(
+                          widget.imageFile,
+                          fit: BoxFit.contain,
 
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _captionController,
-              decoration: const InputDecoration(
-                hintText: 'Add a caption...',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-            ),
-          ),
+                          // Keep the image constrained to the preview
+                          // region instead of allowing its intrinsic
+                          // dimensions to affect the Column layout.
+                          width: constraints.maxWidth,
+                          height: constraints.maxHeight,
 
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                icon: const Icon(Icons.arrow_forward),
-                label: const Text('Next'),
-                onPressed: () {
-                  Navigator.pop(
-                    context,
-                    MediaDraft(
-                      file: widget.imageFile,
-                      type: MediaType.image,
-                      caption: _captionController.text.trim(),
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Center(
+                              child: Icon(
+                                Icons.broken_image_outlined,
+                                size: 64,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ),
                   );
                 },
               ),
             ),
-          ),
-        ],
+
+            // ----------------------------------------------------------
+            // CAPTION
+            // ----------------------------------------------------------
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: TextField(
+                controller: _captionController,
+                decoration: const InputDecoration(
+                  hintText: 'Add a caption...',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+            ),
+
+            // ----------------------------------------------------------
+            // NEXT
+            // ----------------------------------------------------------
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  icon: const Icon(Icons.arrow_forward),
+                  label: const Text('Next'),
+                  onPressed: _continue,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

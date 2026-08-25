@@ -176,11 +176,20 @@ class _FileMessageBubbleState extends ConsumerState<FileMessageBubble> {
     if (shouldShare != true || !mounted) return;
 
     try {
-      await Share.shareXFiles([
-        XFile(file.path),
-      ], subject: widget.message.fileName ?? 'Chat attachment');
-    } catch (e) {
+      debugPrint('📤 [ShareEngine] Sharing file: ${file.path}');
+
+      final result = await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          subject: widget.message.fileName ?? 'Chat attachment',
+        ),
+      );
+
+      debugPrint('✅ [ShareEngine] File share completed: ${result.status}');
+    } catch (e, stackTrace) {
       debugPrint('❌ File sharing failed: $e');
+
+      debugPrintStack(stackTrace: stackTrace);
 
       if (!mounted) return;
 

@@ -4,6 +4,7 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 
 class VideoThumbnailService {
   const VideoThumbnailService();
+  static const cacheDirName = 'video_thumbnails';
 
   /// Generates a local JPEG thumbnail for [videoFile].
   ///
@@ -56,5 +57,13 @@ class VideoThumbnailService {
     }
 
     return thumbnailFile;
+  }
+
+  Future<void> clearCache() async {
+    final tempDir = await getTemporaryDirectory();
+    final dir = Directory('${tempDir.path}/$cacheDirName');
+    if (await dir.exists()) {
+      await dir.delete(recursive: true);
+    }
   }
 }
