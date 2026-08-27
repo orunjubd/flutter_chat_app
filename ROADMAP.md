@@ -591,3 +591,43 @@ Build ECE into a production-grade messaging platform with:
 * Secure communication
 * Cross-platform consistency
 * Production deployment readiness
+
+=========================================
+# Roadmap
+
+> **Numbering note:** "Live location" and "Contact" were both informally
+> referred to as "phase 4.8" at different points during planning. This
+> document uses the resolved numbering below — Live Location as a
+> deferred 4.8, Contact as the active 4.9 — to avoid ambiguity going
+> forward.
+
+## Phase 4 — Media & Attachments
+
+- [x] 4.1 Image messages
+- [x] 4.2 Fullscreen image viewer (zoom, save, share)
+- [x] 4.3 Document/file messages
+- [x] 4.4 Voice messages
+- [x] 4.5 Video capture/pick, compression, upload
+- [x] 4.6 Video send, playback, progress, share/save
+- [x] Camera integration (photo + video capture, shared pipelines)
+- [x] 4.7 Location messages (one-time share, adjustable pin, address)
+- [ ] 4.8 Live location (continuous share, expiring) — **deferred,
+      scoped separately, not started**
+- [ ] 4.9 Contact messages — **in progress**
+  - [x] 4.9.1 `ContactDraft` model
+  - [x] 4.9.2 Native device contact picker service
+  - [x] 4.9.3 `ContactMessage` sealed subtype
+  - [x] 4.9.4 Preview screen, bubble, message-engine wiring
+  - [ ] Sharing an in-app ECE user profile as a "contact" (distinct
+        feature — deferred, not the device-contact flow above)
+
+## Future / not yet scheduled
+
+- Migrate `LegacyMessage`'s image/voice/file fields into their own
+  sealed subtypes (`ImageMessage`, `VoiceMessage`, `FileMessage`),
+  retiring `LegacyMessage` once empty
+- Local temp-file cleanup on app startup (service exists, not wired to
+  `main.dart` yet)
+- Save-to-gallery device verification pass (image + video)
+- Contact-photo support (if the app later wants to store/display
+  device-contact avatars — currently intentionally text-only)

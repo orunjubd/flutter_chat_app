@@ -282,3 +282,73 @@ Firestore
 VideoMessageBubble
       ↓
 FullscreenVideoPlayer
+
+---------------------------------------------------
+# 🚀 ECE Chat v1.7.2
+## [1.7.2] — Location Architecture
+--------------------------------------------------- 
+# chat_app
+
+A Flutter chat application built on Firebase (Auth, Firestore) with
+rich media messaging.
+
+## Features
+
+- Real-time text messaging, reply, forward, reactions, read receipts
+- Image messages — camera or gallery, with fullscreen viewer,
+  save-to-gallery, and share
+- Document/file messages
+- Voice messages with waveform-style playback controls
+- Video messages — camera or gallery, automatic compression, upload
+  progress, fullscreen playback, save/share
+- **Location messages** *(new in v1.7.2)* — share your current
+  location with an adjustable pin and a live map preview; recipients
+  can view it full-screen or open it in their device's Maps app
+- Contact sharing *(in progress)*
+
+## Getting started
+
+```bash
+flutter pub get
+flutter run
+```
+
+### Required native permissions
+
+**Android** (`android/app/src/main/AndroidManifest.xml`):
+```xml
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+```
+
+**iOS** (`ios/Runner/Info.plist`):
+```xml
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>This app uses your location to share it in chat when you choose to.</string>
+```
+
+### Notable dependencies
+
+| Package | Used for |
+|---|---|
+| `geolocator` | GPS capture |
+| `flutter_map` + `latlong2` | Interactive map rendering (OpenStreetMap-based, no API key) |
+| `flutter_compress` | Video compression before upload |
+| `video_player` | Video playback |
+| `photo_view` | Fullscreen image zoom/pan |
+| `share_plus` | Sharing media/files/links |
+| `gal` | Saving media to the device gallery |
+
+### Map tiles & attribution
+
+Map previews are served from CARTO's free basemap tiles
+(`https://{s}.basemaps.cartocdn.com/...`), built on OpenStreetMap data.
+If you rename this app's `applicationId`/bundle id, update the
+`userAgentPackageName` passed to `TileLayer` to match — generic or
+shared identifiers are more likely to be rate-limited by tile
+providers. Attribution to OpenStreetMap contributors and CARTO is
+displayed on-screen and must not be removed per their usage terms.
+
+## Documentation
+
+See `ProjectRoot.md` for a full index of project documentation.

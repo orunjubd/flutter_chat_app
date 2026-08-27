@@ -64,6 +64,7 @@ class ConversationMessageRepository {
         'video' => '🎥 Video',
         'voice' => '🎤 Voice message',
         'file' => '📎 File',
+        'location' => '📍 Location',
         _ => message.text,
       },
     );

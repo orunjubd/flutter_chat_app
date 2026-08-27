@@ -1118,3 +1118,119 @@ VideoMessage
 Firestore
 
 The UI can therefore display upload progress while maintaining the same underlying message pipeline.
+
+---------------------------------------------------
+# 🚀 ECE Chat v1.7.2
+## [Unreleased]
+### — Phase 4 — Media Engine 
+#### Added — # Architecture — Phase 4.7: Location Messages
+---------------------------------------------------
+## Overview
+
+Location messages let a user share a one-time coordinate (optionally with a
+human-readable address) inside a conversation. The feature follows the same
+layered pattern established by Video (4.6) and reuses the existing message
+engine — no new Firestore collections, no new repository class.
+
+```
+core/location/
+├── models/
+│   ├── location_draft.dart      ← pre-send, local-only data
+│   └── location_message.dart    ← part of message.dart (sealed subtype)
+├── providers/
+│   ├── location_service_provider.dart
+│   └── location_message_sender_provider.dart   (Provider.family<_, conversationId>)
+├── screens/
+│   └── location_preview_screen.dart   ← draggable-pin confirm screen
+├── services/
+│   └── location_service.dart          ← GPS capture + reverse geocoding
+└── widgets/
+    └── location_message_bubble.dart
+
+core/media/widgets/  (shared, not location-specific)
+└── fullscreen_map_viewer.dart
+
+## Data flow
+
+AttachmentActions
+      │  (tap "Location")
+      ▼
+LocationService.getCurrentLocation()
+      │  geolocator → coordinates
+      │  LocationService.reverseGeocode() → OSM Nominatim → address
+      ▼
+LocationDraft (latitude, longitude, address?)
+      │
+      ▼
+LocationPreviewScreen
+      │  flutter_map, draggable center-pin, live re-geocode on drag
+      ▼
+LocationDraft (final, user-confirmed)
+      │
+      ▼
+LocationMessageSender.sendLocation()
+      │
+      ▼
+ConversationMessageRepository.sendMessage()
+      │  (same repository every message type uses — no separate
+      │   location repository; there is nothing location-specific
+      │   about writing a message document or updating conversation
+      │   preview/unread counts)
+      ▼
+Firestore: conversations/{id}/messages/{id}
+      │
+      ▼
+Message.fromMap() → LocationMessage (sealed subtype)
+      │
+      ▼
+ChatBubble → LocationMessageBubble
+      │  tap
+      ▼
+FullscreenMapViewer (flutter_map, interactive pan/zoom,
+                     "open in native Maps app")
+
+## Key decisions
+
+- **`LocationMessage` was built as its own sealed `Message` subtype from
+  day one** — never routed through `LegacyMessage`. Unlike image/audio/
+  document, there is no existing production Firestore data for this type
+  to stay backward-compatible with, so there was no cost to doing it
+  correctly immediately.
+- **No repository layer specific to location.** `ConversationMessageRepository`
+  already handles "write a message + update conversation preview/unread
+  count" generically for every type. A location-specific repository would
+  have duplicated that logic without doing anything location needs that
+  the shared one doesn't already provide.
+- **Reverse geocoding uses OSM Nominatim over HTTP, not the `geocoding`
+  package.** The on-device Android `Geocoder` backend this package wraps
+  depends on Google Play Services and is frequently unavailable (confirmed
+  via emulator/device testing: `ex = ipiw: UNAVAILABLE`). Nominatim has no
+  such dependency. Usage is rate-limited (~1 req/sec) and requires a real,
+  identifying `User-Agent` header per OSM's policy.
+- **Map tiles are served from CARTO's basemap CDN, not raw
+  `tile.openstreetmap.org`.** Hitting OSM's tile servers directly under a
+  generic `userAgentPackageName` (e.g. the default `com.example.*`
+  template id) triggers OSM's fair-use blocking, which presented as a
+  blank/white map with only the marker visible. CARTO's free tier is more
+  tolerant of small/hobby-scale apps. Attribution is still required and
+  displayed via `RichAttributionWidget`.
+- **The draggable-pin UX uses a fixed screen-centered icon over a
+  pannable map**, not a draggable `Marker` (flutter_map has no built-in
+  marker drag). The map moves under a stationary pin; whatever sits at
+  the exact center on release becomes the selected coordinate, debounced
+  before triggering a re-geocode.
+- **"Live location" (continuously updating shared position, matching
+  WhatsApp/Telegram's separate live-share feature) is explicitly out of
+  scope for this phase.** It requires background location streaming, a
+  running Firestore update loop, an expiry window, and its own privacy
+  UX — deferred to a future phase rather than folded into this one-time
+  share.
+
+## Known limitations (tracked, not blocking)
+
+- Address resolution depends on a third-party public service (Nominatim)
+  with rate limits; failures degrade gracefully to lat/long text, never
+  block sending.
+- No cleanup job yet for any locally cached data this feature might
+  produce (none currently written to disk — flagged for parity with the
+  existing video-thumbnail/share-cache cleanup debt already tracked).

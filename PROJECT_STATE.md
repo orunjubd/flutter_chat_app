@@ -560,7 +560,6 @@ Phase 5 will resume after Phase 4.6 is completed.
 
 Media follows:
 
-```text
 UI
  ↓
 MediaDraft
@@ -574,3 +573,56 @@ Repository
 Firestore
  ↓
 Media-specific UI
+
+=====================================================
+# Project State
+
+_Last updated: v1.7.2 — Phase 4.7 (Location) complete._
+=====================================================
+
+## Phase 4 — Media & Attachments
+
+| Phase | Feature              | Status              |
+|-------|-----------------------|----------------------|
+| 4.1   | Image messages         | ✅ Done (sends via `LegacyMessage`, not yet migrated to its own sealed subtype) |
+| 4.2   | Fullscreen image viewer, save/share | ✅ Done |
+| 4.3   | Document/file messages | ✅ Done (`LegacyMessage`) |
+| 4.4   | Voice messages         | ✅ Done (`LegacyMessage`) |
+| 4.5   | Video: capture/pick, compression, upload | ✅ Done |
+| 4.6   | Video: send, playback, share/save, progress | ✅ Done — first type built as its own sealed `Message` subtype (`VideoMessage`) |
+| 4.7   | Location messages      | ✅ Done (this release) — sealed `LocationMessage` |
+| —     | Camera (photo + video capture) | ✅ Done, shares the existing image/video pipelines |
+| 4.8   | **Live location** (continuous share) | 🕓 Deferred — scoped as a distinct future phase, not started |
+| 4.9   | Contact messages       | 🚧 In progress — starting now |
+
+## Known open items (not blocking, tracked)
+
+- **`LegacyMessage` still holds image, voice, and file fields.** The
+  sealed-message migration was intentionally done type-by-type
+  (`Message` → `TextMessage` / `VideoMessage` / `LocationMessage` first,
+  since those had no existing production data). Image/voice/file remain
+  on the flat legacy shape until their turn.
+- **No cleanup job for local temp files.** Video thumbnails
+  (`video_thumbnails/`) and downloaded share-cache files
+  (`share_cache/`) accumulate in the app's temp directory. A
+  `MediaCacheCleanupService` exists and is ready to wire into app
+  startup; the exact call site depends on `main.dart`, which hasn't
+  been reviewed yet.
+- **No "save to gallery" wiring confirmed end-to-end on-device** — code
+  is in place (`gal` package) for both image and video fullscreen
+  viewers; needs a device test pass.
+- **Contact photos are intentionally out of scope** for the contact
+  message feature — text-only (name/phone/email) to avoid adding a new
+  upload step.
+
+## Package/tooling notes worth remembering
+
+- `ffmpeg_kit_flutter` — deprecated by its maintainer; not used.
+- `flutter_compress` is used for video compression; new/less
+  battle-tested than older alternatives — watch for regressions.
+- Map tiles: CARTO basemap CDN (not raw OSM `tile.openstreetmap.org`,
+  which rate-limits generic/shared app identifiers).
+- Reverse geocoding: OSM Nominatim direct HTTP call (not the `geocoding`
+  package — its on-device backend is unreliable on many Android
+  configurations).
+

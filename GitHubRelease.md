@@ -537,10 +537,8 @@ Implemented:
 - Portrait and landscape rendering
 
 ### 🏗 Architecture
-
 Video messages use the existing shared conversation message architecture.
 
-```text
 MediaDraft
    ↓
 VideoCompressionService
@@ -556,3 +554,53 @@ Firestore
 VideoMessageBubble
    ↓
 FullscreenVideoPlayer
+
+---------------------------------------------------
+# 🚀 ECE Chat v1.7.2
+## v1.7.2 — Location Messages
+--------------------------------------------------- 
+## Highlights
+
+📍 **Share your location in chat.** Tap the location attachment, confirm
+or adjust the pin on an interactive map, and send — recipients see a
+real map preview and can open it full-screen or in their native Maps
+app.
+
+## What's new
+
+- One-time location sharing with a draggable-pin confirmation screen
+- Reverse-geocoded address display (falls back to coordinates if
+  unavailable)
+- Full-screen, pannable/zoomable map view for received locations
+
+## Fixes in this release
+
+- Fixed an intermittent crash (`Using "ref" ... unmounted`) that could
+  occur when quickly navigating away from a chat screen
+- Fixed sender name occasionally showing as "Unknown" on media/location
+  sends
+- Fixed location previews rendering as a blank white map on some
+  devices/networks
+- Consolidated two duplicate location-capture code paths into one
+
+## Upgrade notes
+
+- New dependencies: `geolocator`, `flutter_map`, `latlong2`
+- Removed dependency: `geocoding` (no longer used)
+- Android: requires `ACCESS_FINE_LOCATION` / `ACCESS_COARSE_LOCATION` in
+  `AndroidManifest.xml`
+- iOS: requires `NSLocationWhenInUseUsageDescription` in `Info.plist`
+- If your `applicationId`/bundle id is still the default Flutter
+  template value (`com.example.*`), rename it before wide release — it
+  is used as the map tile provider's identifying User-Agent and generic
+  values are more likely to be rate-limited
+
+## Known limitations
+
+- "Live" (continuously updating) location sharing is not included in
+  this release — planned for a future phase
+- Address resolution depends on a public third-party service and may
+  occasionally be unavailable; the app degrades to showing coordinates
+  in that case
+
+**Full changelog:** see `CHANGELOG.md` — `[1.7.2]`

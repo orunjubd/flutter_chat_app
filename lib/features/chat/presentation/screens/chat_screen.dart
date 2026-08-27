@@ -44,24 +44,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await clearUnread();
-      await _setOnline();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _initializeChatScreen();
     });
 
     WidgetsBinding.instance.addObserver(this);
   }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _scrollController.dispose();
-    super.dispose();
+  Future<void> _initializeChatScreen() async {
+    await clearUnread();
+    if (!mounted) return;
+    await _setOnline();
   }
 
   Future<void> clearUnread() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
+    if (!mounted) return;
+
     await ref
         .read(conversationRepositoryProvider)
         .clearUnread(conversationId: conversation.id, userId: currentUser.uid);
@@ -83,9 +84,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     );
 
     final replyRepository = ref.read(replyRepositoryProvider);
-
     final document = repository.createMessageDocument();
-
     final draftMessage = TextMessage(
       id: document.id,
       senderId: firebaseUser.uid,
@@ -141,11 +140,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
 
   Future<void> _setOnline() async {
     final user = FirebaseAuth.instance.currentUser;
-
     if (user == null) return;
+    if (!mounted) return;
 
     final repository = ref.read(presenceRepositoryProvider);
-
     await repository.updatePresence(
       Presence(userId: user.uid, isOnline: true, lastSeen: Timestamp.now()),
     );
@@ -153,11 +151,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
 
   Future<void> _setOffline() async {
     final user = FirebaseAuth.instance.currentUser;
-
     if (user == null) return;
+    if (!mounted) return;
 
     final repository = ref.read(presenceRepositoryProvider);
-
     await repository.setOffline(user.uid);
   }
 
@@ -185,6 +182,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
       case AppLifecycleState.hidden:
         break;
     }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override

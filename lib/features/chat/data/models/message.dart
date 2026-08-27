@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 //import 'package:flutter/material.dart';
 
 part 'package:chat_app/core/video/models/video_message.dart';
+part 'package:chat_app/core/location/models/location_message.dart';
 
 /// Shared envelope for every message, regardless of content type.
 /// Fields here are genuinely universal — true for every message,
@@ -111,7 +112,9 @@ sealed class Message {
       case 'text':
         return TextMessage._fromMap(documentId, data);
       case 'video':
-        return VideoMessage.fromMap(documentId, data);
+        return VideoMessage._fromMap(documentId, data);
+      case 'location':
+        return LocationMessage._fromMap(documentId, data);
       default:
         // image, voice, file — not yet migrated off the flat shape.
         return LegacyMessage._fromMap(documentId, data);

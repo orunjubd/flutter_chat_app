@@ -1,6 +1,7 @@
 //import 'package:cloud_firestore/cloud_firestore.dart';
 //import 'package:firebase_auth/firebase_auth.dart';
 //import 'package:chat_app/core/video/models/video_message.dart';
+import 'package:chat_app/core/location/widgets/location_message_bubble.dart';
 import 'package:chat_app/core/video/widgets/fullscreen_video_player.dart';
 import 'package:chat_app/features/chat/presentation/widgets/file_message_bubble.dart';
 import 'package:chat_app/features/chat/presentation/widgets/video_message_bubble.dart';
@@ -224,6 +225,10 @@ class ChatBubble extends ConsumerWidget {
                               ),
                             );
                           },
+                        ),
+                        LocationMessage m => LocationMessageBubble(
+                          message: m,
+                          isMe: isMe,
                         ),
                         TextMessage() => Text(
                           _displayMessage,

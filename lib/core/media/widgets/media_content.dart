@@ -74,7 +74,7 @@ class MediaContent extends StatelessWidget {
                             child: Center(child: CircularProgressIndicator()),
                           );
                         },
-                        errorBuilder: (_, __, ___) => const ColoredBox(
+                        errorBuilder: (_, _, _) => const ColoredBox(
                           color: Colors.black12,
                           child: Center(child: Icon(Icons.broken_image)),
                         ),

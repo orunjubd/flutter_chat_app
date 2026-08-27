@@ -1,11 +1,10 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chat_app/core/media/providers/media_cache_cleanup_service_provider.dart';
 import 'package:chat_app/core/providers/theme_provider.dart';
 import 'package:chat_app/core/theme/app_theme.dart';
 import 'package:chat_app/features/authentication/presentation/gate/auth_gate.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'firebase_options.dart';
 
 Future<void> main() async {

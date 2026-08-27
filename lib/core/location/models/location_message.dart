@@ -1,7 +1,7 @@
 part of 'package:chat_app/features/chat/data/models/message.dart';
 
-class VideoMessage extends Message {
-  const VideoMessage({
+class LocationMessage extends Message {
+  const LocationMessage({
     required super.id,
     required super.senderId,
     required super.senderName,
@@ -19,27 +19,20 @@ class VideoMessage extends Message {
     super.forwardedFromUserId,
     super.forwardedFromUserName,
     super.reactions,
-    required this.videoUrl,
-    this.videoWidth,
-    this.videoHeight,
-    this.videoDurationMs,
-    this.thumbnailUrl,
-    this.mimeType,
-    this.mediaBytes,
-    this.caption,
-  }) : super(type: 'video');
+    required this.latitude,
+    required this.longitude,
+    this.address,
+  }) : super(type: 'location');
 
-  final String videoUrl;
-  final double? videoWidth;
-  final double? videoHeight;
-  final int? videoDurationMs;
-  final String? thumbnailUrl;
-  final String? mimeType;
-  final int? mediaBytes;
-  final String? caption;
+  final double latitude;
+  final double longitude;
+  final String? address;
 
-  factory VideoMessage._fromMap(String documentId, Map<String, dynamic> data) {
-    return VideoMessage(
+  factory LocationMessage._fromMap(
+    String documentId,
+    Map<String, dynamic> data,
+  ) {
+    return LocationMessage(
       id: documentId,
       senderId: data['senderId'] as String? ?? '',
       senderName: data['senderName'] as String? ?? '',
@@ -57,31 +50,19 @@ class VideoMessage extends Message {
       forwardedFromUserId: data['forwardedFromUserId'] as String?,
       forwardedFromUserName: data['forwardedFromUserName'] as String?,
       reactions: Message.parseReactions(data['reactions']),
-      videoUrl: data['videoUrl'] as String? ?? '',
-      videoWidth: (data['videoWidth'] as num?)?.toDouble(),
-      videoHeight: (data['videoHeight'] as num?)?.toDouble(),
-      videoDurationMs: (data['videoDurationMs'] as num?)?.toInt(),
-      thumbnailUrl: data['thumbnailUrl'] as String?,
-      mimeType: data['mimeType'] as String?,
-      mediaBytes: data['mediaBytes'] as int?,
-      caption: data['caption'] as String?,
+      latitude: (data['latitude'] as num?)?.toDouble() ?? 0,
+      longitude: (data['longitude'] as num?)?.toDouble() ?? 0,
+      address: data['address'] as String?,
     );
   }
 
   @override
-  Map<String, dynamic> toMap() {
-    return {
-      ...baseMap(),
-      'videoUrl': videoUrl,
-      'videoWidth': videoWidth,
-      'videoHeight': videoHeight,
-      'videoDurationMs': videoDurationMs,
-      'thumbnailUrl': thumbnailUrl,
-      'mimeType': mimeType,
-      'mediaBytes': mediaBytes,
-      'caption': caption,
-    };
-  }
+  Map<String, dynamic> toMap() => {
+    ...baseMap(),
+    'latitude': latitude,
+    'longitude': longitude,
+    'address': address,
+  };
 
   @override
   Message withReply({
@@ -90,7 +71,7 @@ class VideoMessage extends Message {
     required String replyToSenderName,
     required String replyToText,
   }) {
-    return VideoMessage(
+    return LocationMessage(
       id: id,
       senderId: senderId,
       senderName: senderName,
@@ -108,14 +89,9 @@ class VideoMessage extends Message {
       forwardedFromUserId: forwardedFromUserId,
       forwardedFromUserName: forwardedFromUserName,
       reactions: reactions,
-      videoUrl: videoUrl,
-      videoWidth: videoWidth,
-      videoHeight: videoHeight,
-      videoDurationMs: videoDurationMs,
-      thumbnailUrl: thumbnailUrl,
-      mimeType: mimeType,
-      mediaBytes: mediaBytes,
-      caption: caption,
+      latitude: latitude,
+      longitude: longitude,
+      address: address,
     );
   }
 
@@ -129,7 +105,7 @@ class VideoMessage extends Message {
     required String forwardedFromUserId,
     required String forwardedFromUserName,
   }) {
-    return VideoMessage(
+    return LocationMessage(
       id: newId,
       senderId: senderId,
       senderName: senderName,
@@ -147,14 +123,9 @@ class VideoMessage extends Message {
       forwardedFromUserId: forwardedFromUserId,
       forwardedFromUserName: forwardedFromUserName,
       reactions: const {},
-      videoUrl: videoUrl,
-      videoWidth: videoWidth,
-      videoHeight: videoHeight,
-      videoDurationMs: videoDurationMs,
-      thumbnailUrl: thumbnailUrl,
-      mimeType: mimeType,
-      mediaBytes: mediaBytes,
-      caption: caption,
+      latitude: latitude,
+      longitude: longitude,
+      address: address,
     );
   }
 }

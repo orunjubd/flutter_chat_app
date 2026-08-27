@@ -1,5 +1,8 @@
 import 'dart:io';
 import 'package:chat_app/core/camera/providers/camera_capture_service_provider.dart';
+import 'package:chat_app/core/location/providers/location_message_sender_provider.dart';
+import 'package:chat_app/core/location/providers/location_service_provider.dart';
+import 'package:chat_app/core/location/screen/location_preview_screen.dart';
 import 'package:chat_app/core/video/providers/video_message_sender_provider.dart';
 import 'package:chat_app/core/video/providers/video_upload_progress_provider.dart';
 import 'package:chat_app/core/video/widgets/video_send_preview.dart';
@@ -380,9 +383,56 @@ class AttachmentActions {
         id: 'location',
         title: 'Location',
         icon: Icons.location_on,
-        color: Colors.orange,
-        enabled: false,
-        onTap: () async {},
+        color: Colors.red,
+        enabled: true,
+        onTap: () async {
+          // if (currentUser == null) {
+          //   debugPrint('📍 Location send aborted: no signed-in user.');
+          //   return;
+          // }
+          final user = currentUser;
+
+          if (user == null) {
+            debugPrint('📍 Location send aborted: no signed-in user.');
+            return;
+          }
+
+          try {
+            final locationService = ref.read(locationServiceProvider);
+            final draft = await locationService.getCurrentLocation();
+
+            final appUser = await ref.read(currentUserProvider.future);
+            final senderName = appUser?.username ?? 'Unknown';
+
+            if (!context.mounted) return;
+
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => LocationPreviewScreen(
+                  draft: draft,
+                  onSend: (updatedDraft) async {
+                    final sender = ref.read(
+                      locationMessageSenderProvider(conversationId),
+                    );
+                    final sentMessage = await sender.sendLocation(
+                      draft: updatedDraft,
+                      senderId: user.uid,
+                      senderName: senderName,
+                    );
+                    debugPrint('✅ Location message sent: ${sentMessage.id}');
+                  },
+                ),
+              ),
+            );
+          } catch (e, stackTrace) {
+            debugPrint('❌ Location send failed: $e');
+            debugPrintStack(stackTrace: stackTrace);
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Unable to send location: $e')),
+            );
+          }
+        },
       ),
 
       AttachmentAction(

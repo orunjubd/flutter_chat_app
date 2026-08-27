@@ -921,3 +921,67 @@ Phase 4 File Attachment: COMPLETE ✅
 - Android emulator testing.
 - Pixel 6 testing.
 - Vivo Android device testing.
+
+# Changelog
+--------------------------------------------------------------
+## v1.7.2 — Phase 4.7: Location Messages
+--------------------------------------------------------------
+### Added
+- `LocationDraft` / `LocationMessage` — location as a first-class, sealed
+  `Message` subtype (no legacy/flat-shape fallback).
+- `LocationService` — GPS capture via `geolocator`, with permission and
+  service-enabled checks, a 15s timeout guard, and reverse geocoding via
+  OSM Nominatim.
+- `LocationPreviewScreen` — interactive map with a fixed center-pin;
+  dragging the map re-centers the pin and re-resolves the address
+  (debounced).
+- `LocationMessageBubble` — chat-bubble map preview (non-interactive,
+  `IgnorePointer`-wrapped `flutter_map`), tap opens full screen.
+- `FullscreenMapViewer` — interactive pan/zoom map with an "open in
+  native Maps app" action.
+- Conversation list preview text: `📍 Location`.
+- `AttachmentActions` wiring: capture → preview/adjust → send, using the
+  existing `ConversationMessageRepository` (no new repository class).
+
+### Fixed
+- **Duplicate service implementations.** `LocationCaptureService` and
+  `LocationService` were two independent implementations of the same
+  capture logic. Consolidated to `LocationService`; the duplicate and its
+  provider were removed.
+- **Sender name resolved to "Unknown" intermittently.** Root cause was a
+  Riverpod `AsyncValue` read via `.value` before the underlying
+  `FutureProvider` had resolved. Fixed by awaiting `provider.future`
+  instead of snapshotting a possibly-still-loading value. (This pattern
+  affected the video and image send paths too and was fixed there in
+  the same pass.)
+- **`Bad state: Using "ref" ... unmounted` crash in `ChatScreen`.** A
+  `postFrameCallback` chained `clearUnread()` → `_setOnline()`; if the
+  widget was disposed mid-await, the second call still touched `ref`.
+  Fixed with `mounted` guards immediately before every `ref` read, not
+  just once at method entry.
+- **Reverse geocoding always returned null on-device.** The `geocoding`
+  package's Android backend depends on Google Play Services'
+  `Geocoder`, which is frequently unavailable (`UNAVAILABLE` from
+  `getFromLocation`). Replaced with a direct Nominatim HTTP call, which
+  has no such dependency.
+- **Map rendered blank/white with only the marker visible.** Caused by
+  OSM's tile servers rate-limiting/blocking requests carrying a generic,
+  shared `userAgentPackageName` (the default Flutter template package
+  id). Switched to CARTO's basemap tiles and flagged the need to rename
+  the app's real `applicationId` before shipping.
+- **Location pin was not adjustable.** Original flow sent the raw
+  GPS-captured coordinate unconditionally. Added a draggable-pin preview
+  step so the user can correct GPS drift before sending.
+
+### Changed
+- Dropped the `geocoding` package dependency (superseded by the direct
+  Nominatim call above).
+
+### Deferred
+- **"Live location" (continuously updating shared position).** Agreed
+  to scope as its own future phase — meaningfully different feature
+  (background updates, expiry, streaming writes) from the one-time
+  share shipped here.
+- **Sharing an in-app ECE user profile as a "contact"** (as opposed to a
+  device phone contact) — distinct feature, deferred alongside the start
+  of the Contact phase.
