@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:chat_app/core/camera/providers/camera_capture_service_provider.dart';
+import 'package:chat_app/core/contact/providers/contact_message_sender_provider.dart';
+import 'package:chat_app/core/contact/screens/contact_preview_screen.dart';
 import 'package:chat_app/core/location/providers/location_message_sender_provider.dart';
 import 'package:chat_app/core/location/providers/location_service_provider.dart';
 import 'package:chat_app/core/location/screen/location_preview_screen.dart';
@@ -440,8 +442,45 @@ class AttachmentActions {
         title: 'Contact',
         icon: Icons.person,
         color: Colors.teal,
-        enabled: false,
-        onTap: () async {},
+        enabled: true,
+        onTap: () async {
+          if (currentUser == null) return;
+          try {
+            final draft = await ref
+                .read(contactPickerServiceProvider)
+                .pickContact();
+            if (draft == null) return;
+
+            final appUser = await ref.read(currentUserProvider.future);
+            final senderName = appUser?.username ?? 'Unknown';
+
+            if (!context.mounted) return;
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ContactPreviewScreen(
+                  draft: draft,
+                  onSend: (updatedDraft) async {
+                    final sender = ref.read(
+                      contactMessageSenderProvider(conversationId),
+                    );
+                    await sender.sendContact(
+                      draft: updatedDraft,
+                      senderId: currentUser.uid,
+                      senderName: senderName,
+                    );
+                  },
+                ),
+              ),
+            );
+          } catch (e, stackTrace) {
+            debugPrint('❌ Contact send failed: $e');
+            debugPrintStack(stackTrace: stackTrace);
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Unable to send contact: $e')),
+            );
+          }
+        },
       ),
 
       AttachmentAction(

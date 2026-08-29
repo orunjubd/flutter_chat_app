@@ -585,15 +585,18 @@ _Last updated: v1.7.2 — Phase 4.7 (Location) complete._
 | Phase | Feature              | Status              |
 |-------|-----------------------|----------------------|
 | 4.1   | Image messages         | ✅ Done (sends via `LegacyMessage`, not yet migrated to its own sealed subtype) |
-| 4.2   | Fullscreen image viewer, save/share | ✅ Done |
-| 4.3   | Document/file messages | ✅ Done (`LegacyMessage`) |
-| 4.4   | Voice messages         | ✅ Done (`LegacyMessage`) |
-| 4.5   | Video: capture/pick, compression, upload | ✅ Done |
-| 4.6   | Video: send, playback, share/save, progress | ✅ Done — first type built as its own sealed `Message` subtype (`VideoMessage`) |
-| 4.7   | Location messages      | ✅ Done (this release) — sealed `LocationMessage` |
-| —     | Camera (photo + video capture) | ✅ Done, shares the existing image/video pipelines |
+| 4.1   | Fullscreen image viewer, save/share | ✅ Done |
+| 4.2   | Document/file messages | ✅ Done (`LegacyMessage`) |
+| 4.3   | Voice messages         | ✅ Done (`LegacyMessage`) |
+| 4.4   | Video: capture/pick, compression, upload | ✅ Done |
+| 4.4   | Video: send, playback, share/save, progress | ✅ Done — first type built as its own sealed `Message` subtype (`VideoMessage`) |
+| 4.6   | Location messages      | ✅ Done (this release) — sealed `LocationMessage` |
+| 4.5     | Camera (photo + video capture) | ✅ Done, shares the existing image/video pipelines |
+| 4.7   | Contact messages       | 🚧 In progress — starting now |
+| 4.8   | Contacts / People-discovery screen | Invite Friends, Recent Calls
+App Users, Sorting, Search, + New Contact, New Group, New Community,not | 
+| 4.8   | Call  |  |
 | 4.8   | **Live location** (continuous share) | 🕓 Deferred — scoped as a distinct future phase, not started |
-| 4.9   | Contact messages       | 🚧 In progress — starting now |
 
 ## Known open items (not blocking, tracked)
 

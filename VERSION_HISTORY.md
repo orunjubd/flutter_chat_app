@@ -149,10 +149,11 @@ Highlights
 
 | Version | Summary |
 |---|---|
+| v1.7.3 | Phase 4.8 — Contact sharing: native contact picker, name/phone/email/address, preview, sealed `ContactMessage`. |
 | v1.7.2 | Phase 4.7 — Location messages: capture, adjustable-pin preview, address resolution, full-screen map view. Fixed sender-name race condition, a `ref`-after-dispose crash in `ChatScreen`, and blank/white map tiles. |
-| v1.7.1 | Video messages complete: send, playback (play/pause/seek/mute/buffering), upload progress indicator, save-to-gallery and share (file or link) for both image and video fullscreen viewers. |
-| v1.7.0 | Video capture, compression (`flutter_compress`, H.264, downscale-only to a configurable max dimension), and Cloudinary upload pipeline. |
-| v1.6.x | Camera integration — photo and video capture routed through the existing image/video pipelines, with shared validation. |
+| v1.7.1 | Phase 4.5 —  Video messages complete: send, playback (play/pause/seek/mute/buffering), upload progress indicator, save-to-gallery and share (file or link) for both image and video fullscreen viewers. |
+| v1.7.0 | Phase 4.5 — Video capture, compression (`flutter_compress`, H.264, downscale-only to a configurable max dimension), and Cloudinary upload pipeline. |
+| v1.6.x | Phase 4.6 — Camera integration — photo and video capture routed through the existing image/video pipelines, with shared validation. |
 | v1.5.x | Sealed `Message` migration begins — `TextMessage` and `VideoMessage` built as proper subtypes; `LegacyMessage` introduced as a temporary holding type for image/voice/file. |
 | v1.4.x | Voice messages — recording, upload, waveform-style playback bubble. |
 | v1.3.x | Document/file messages — picker, upload, download-and-open, share. |

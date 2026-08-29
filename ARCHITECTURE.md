@@ -1234,3 +1234,81 @@ FullscreenMapViewer (flutter_map, interactive pan/zoom,
 - No cleanup job yet for any locally cached data this feature might
   produce (none currently written to disk — flagged for parity with the
   existing video-thumbnail/share-cache cleanup debt already tracked).
+
+---------------------------------------------------
+# 🚀 ECE Chat v1.7.3
+## [Unreleased]
+### — Phase 4 — Media Engine 
+#### Added — # Architecture — Phase 4.7: Contact (Share)
+---------------------------------------------------
+
+This phase is **only** the in-conversation "share a device contact as a
+message" feature. It is deliberately separate from Phase 4.8
+(Contacts / People-discovery screen — a navigation surface for finding
+and starting conversations with people, living in the Drawer, not in
+`ChatScreen`). The two share a name; they do not share code, screens,
+or data model. Do not merge them.
+
+## Folder structure
+
+core/contact/
+├── models/
+│   ├── contact_draft.dart      ← pre-send, local-only
+│   └── contact_message.dart    ← part of message.dart (sealed subtype)
+├── providers/
+│   ├── contact_picker_service_provider.dart
+│   └── contact_message_sender_provider.dart
+├── screens/
+│   └── contact_preview_screen.dart
+├── services/
+│   └── contact_picker_service.dart
+└── widgets/
+    └── contact_message_bubble.dart
+
+## Data flow
+
+AttachmentActions ("Contact")
+      │
+      ▼
+ContactPickerService.pickContact()
+      │  1. request READ_CONTACTS at runtime (declaration alone is
+      │     insufficient — flutter_contacts v2 enforces this explicitly)
+      │  2. FlutterContacts.native.showPicker() — native OS picker
+      ▼
+ContactDraft (name, phone, email?, address?)
+      │
+      ▼
+ContactPreviewScreen  → confirm/send
+      │
+      ▼
+ContactMessageSender.sendContact()
+      │
+      ▼
+ConversationMessageRepository.sendMessage()
+      │  (same repository every message type uses)
+      ▼
+Firestore → Message.fromMap() → ContactMessage
+      │
+      ▼
+ChatBubble → ContactMessageBubble
+
+## Key decisions
+
+- **Built as its own sealed `Message` subtype immediately** — same
+  reasoning as Video and Location: no existing production data to stay
+  backward-compatible with, so no reason to route through
+  `LegacyMessage`.
+- **No contact photo, no upload pipeline.** Deliberately text-only
+  (name/phone/email/address) to avoid adding a new Cloudinary/upload
+  step for a feature that doesn't need one.
+- **No dedicated repository.** `ConversationMessageRepository` already
+  handles message write + conversation preview/unread updates
+  generically; nothing about sharing a contact needs different
+  behavior there.
+- **`flutter_contacts` v2 API, not v1.** `FlutterContacts.openExternalPick()`
+  (v1) does not exist in v2 — the equivalent is
+  `FlutterContacts.native.showPicker()`, a different namespace, not a
+  renamed method. Permission must be explicitly requested via
+  `FlutterContacts.permissions.request(PermissionType.readWrite)`
+  before calling the picker; the Android manifest entry alone does not
+  satisfy the runtime check.

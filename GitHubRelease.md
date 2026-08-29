@@ -604,3 +604,34 @@ app.
   in that case
 
 **Full changelog:** see `CHANGELOG.md` — `[1.7.2]`
+
+---------------------------------------------------
+# 🚀 ECE Chat v1.7.3
+## v1.7.3 — Contact Sharing
+--------------------------------------------------- 
+## Highlights
+
+👤 **Share a contact in chat.** Pick anyone from your device's contacts
+and send their name, phone number, email, and address directly in a
+conversation — recipients see the full contact card without needing
+access to your address book.
+
+## What's new
+- Native contact picker (no in-app contact list UI — uses the OS's own
+  picker)
+- Contact preview before sending
+- Full contact card rendered in the chat bubble
+
+## Upgrade notes
+- New dependency: `flutter_contacts: ^2.0.0`
+- Android: requires `READ_CONTACTS` / `WRITE_CONTACTS` in
+  `AndroidManifest.xml`, **and** the app must request the permission at
+  runtime before picking (declaring it alone is not sufficient with
+  this package version)
+- iOS: requires `NSContactsUsageDescription` in `Info.plist`
+
+## Known limitations
+- Contact photos are not included by design — text fields only
+- This is a one-time "share this contact" action, distinct from the
+  planned Contacts/People-discovery screen (a different, upcoming
+  feature for finding and starting new conversations)

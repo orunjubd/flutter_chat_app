@@ -985,3 +985,39 @@ Phase 4 File Attachment: COMPLETE ✅
 - **Sharing an in-app ECE user profile as a "contact"** (as opposed to a
   device phone contact) — distinct feature, deferred alongside the start
   of the Contact phase.
+
+# Changelog
+--------------------------------------------------------------
+## v1.7.3 — Phase 4.8: Contact (Share)
+--------------------------------------------------------------
+### Added
+- `ContactDraft` / `ContactMessage` — contact sharing as a first-class,
+  sealed `Message` subtype from day one (no legacy/flat-shape fallback,
+  matching the approach taken for Video and Location).
+- `ContactPickerService` — native OS contact picker via
+  `flutter_contacts` v2 (`FlutterContacts.native.showPicker()`), with
+  explicit runtime permission request.
+- Captured fields: name, phone, email, full formatted address.
+- `ContactPreviewScreen` and `ContactMessageBubble`.
+- Conversation list preview text: `👤 Contact`.
+- `AttachmentActions` wiring: pick → preview → send, through the
+  existing `ConversationMessageRepository` — no new repository class.
+
+### Explicit non-goals (by design)
+- No contact-photo upload, no Cloudinary, no additional cloud
+  operation for this feature — text fields only.
+
+### Fixed
+- `flutter_contacts` v1→v2 API migration: `openExternalPick()` (v1) is
+  `FlutterContacts.native.showPicker()` in v2 — not a same-name method,
+  a different namespace entirely.
+- `PlatformException` on Android (`showPicker(properties: …) requires
+  READ_CONTACTS`) — manifest declaration alone is insufficient; added
+  an explicit `FlutterContacts.permissions.request(...)` call before
+  invoking the picker.
+
+### Notes
+- This release corrects an internal documentation gap: "full formatted
+  address" had been checked off as complete before it was actually
+  wired into the model/service/UI. It is genuinely implemented as of
+  this version.

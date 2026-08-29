@@ -1,6 +1,7 @@
 //import 'package:cloud_firestore/cloud_firestore.dart';
 //import 'package:firebase_auth/firebase_auth.dart';
 //import 'package:chat_app/core/video/models/video_message.dart';
+import 'package:chat_app/core/contact/widgets/contact_message_bubble.dart';
 import 'package:chat_app/core/location/widgets/location_message_bubble.dart';
 import 'package:chat_app/core/video/widgets/fullscreen_video_player.dart';
 import 'package:chat_app/features/chat/presentation/widgets/file_message_bubble.dart';
@@ -213,6 +214,11 @@ class ChatBubble extends ConsumerWidget {
                         ),
                       )
                     : switch (messageData) {
+                        // ChatBubble switch
+                        ContactMessage m => ContactMessageBubble(
+                          message: m,
+                          isMe: isMe,
+                        ),
                         VideoMessage m => VideoMessageBubble(
                           message: m,
                           isMe: isMe,

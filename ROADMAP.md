@@ -604,20 +604,31 @@ Build ECE into a production-grade messaging platform with:
 ## Phase 4 — Media & Attachments
 
 - [x] 4.1 Image messages
-- [x] 4.2 Fullscreen image viewer (zoom, save, share)
-- [x] 4.3 Document/file messages
-- [x] 4.4 Voice messages
-- [x] 4.5 Video capture/pick, compression, upload
-- [x] 4.6 Video send, playback, progress, share/save
+- [x] 4.1 Fullscreen image viewer (zoom, save, share)
+- [x] 4.2 Document/file messages
+- [x] 4.3 Voice messages
+- [x] 4.4 Video capture/pick, compression, upload
+- [x] 4.4 Video send, playback, progress, share/save
 - [x] Camera integration (photo + video capture, shared pipelines)
-- [x] 4.7 Location messages (one-time share, adjustable pin, address)
+- [x] 4.6 Location messages (one-time share, adjustable pin, address)
 - [ ] 4.8 Live location (continuous share, expiring) — **deferred,
       scoped separately, not started**
-- [ ] 4.9 Contact messages — **in progress**
-  - [x] 4.9.1 `ContactDraft` model
-  - [x] 4.9.2 Native device contact picker service
-  - [x] 4.9.3 `ContactMessage` sealed subtype
-  - [x] 4.9.4 Preview screen, bubble, message-engine wiring
+- [x] 4.7 Contact messages — **in progress**
+  - [x] 4.7.1 `ContactDraft` model
+  - [x] 4.7.2 Native device contact picker service
+  - [x] 4.7.3 `ContactMessage` sealed subtype
+  - [x] 4.7.4 Preview screen, bubble, message-engine wiring
+  - [ ] 4.8 Contacts / People-discovery screen — next
+  - [ ] 4.8.1 Screen shell 
+  - [ ] 4.8.2 App users (reuse existing ConversationListScreen search/user-selection logic — do not reimplement)
+  - [ ] 4.8.3 Search
+  - [ ] 4.8.4 Sorting
+  - [ ] 4.8.5 Invite friends
+  - [ ] 4.8.6 Recent calls — blocked on 4.9; ship this screen with the section omitted or placeholder-only until calling exists 
+  - [ ] 4.8.7 + New Contact
+  - [ ] 4.8.8 New Group — future module, not part of 4.8
+  - [ ] 4.8.9 New Community — future module, not part of 4.8  
+  - [ ] 4.9 Call — not started; no groundwork exists yet (no WebRTC/Agora/Twilio integration, no signaling, no call UI anywhere in the codebase). Requires its own scoping pass, including a real backend/cost decision, before implementation begins.
   - [ ] Sharing an in-app ECE user profile as a "contact" (distinct
         feature — deferred, not the device-contact flow above)
 

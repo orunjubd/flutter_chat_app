@@ -71,7 +71,9 @@
 	<string>Select photos to send.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Take photos to send.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-<string>This app uses your location to share it in chat when you choose to.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>	
+	<string>This app uses your location to share it in chat when you choose to.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>We need access to your contacts to...</string>
 </dict>
 </plist>
