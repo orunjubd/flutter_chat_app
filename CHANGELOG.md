@@ -924,7 +924,7 @@ Phase 4 File Attachment: COMPLETE ✅
 
 # Changelog
 --------------------------------------------------------------
-## v1.7.2 — Phase 4.7: Location Messages
+## v1.7.2 — Phase 4.6: Location Messages
 --------------------------------------------------------------
 ### Added
 - `LocationDraft` / `LocationMessage` — location as a first-class, sealed
@@ -988,7 +988,7 @@ Phase 4 File Attachment: COMPLETE ✅
 
 # Changelog
 --------------------------------------------------------------
-## v1.7.3 — Phase 4.8: Contact (Share)
+## v1.7.3 — Phase 4.7: Contact (Share)
 --------------------------------------------------------------
 ### Added
 - `ContactDraft` / `ContactMessage` — contact sharing as a first-class,
@@ -1021,3 +1021,30 @@ Phase 4 File Attachment: COMPLETE ✅
   address" had been checked off as complete before it was actually
   wired into the model/service/UI. It is genuinely implemented as of
   this version.
+
+# Changelog
+--------------------------------------------------------------
+## v1.7.4 — Phase 4.8: People Discovery
+--------------------------------------------------------------
+
+## Highlights
+
+👥 Find and start conversations with people more easily: search, sort,
+invite friends who aren't on the app yet, and save someone's contact
+info to your device — all from the existing "Select User" screen.
+
+## What's new
+- Search and sort the people list (name or online status)
+- Invite friends via the native share sheet
+- Save a new device contact (name, phone with country code, email,
+  address) without leaving the app
+
+## Upgrade notes
+- New dependency: `share_plus` (already present for other features;
+  confirm version supports `ShareParams`)
+- Uses the same `flutter_contacts` permission setup added in v1.7.3
+
+## Known limitations
+- "Recent Calls" and "New Group"/"New Community" are visible but
+  intentionally non-functional — each depends on a future phase
+  (Call, and Group Chat respectively)  

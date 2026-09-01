@@ -628,4 +628,19 @@ App Users, Sorting, Search, + New Contact, New Group, New Community,not |
 - Reverse geocoding: OSM Nominatim direct HTTP call (not the `geocoding`
   package — its on-device backend is unreliable on many Android
   configurations).
+-------------------------------------------------------------------
+## Project State
 
+## Last updated: v1.7.4 — Phase 4.8 (Peoples) complete; Phase 4.9 (Call) architecture underway.
+-------------------------------------------------------------------
+## Phase 4.9 decisions made so far
+RTC provider: LiveKit (livekit_client), starting on its free tier for two-device testing.
+Access tokens must be issued server-side (e.g. a Firebase Cloud Function signing a JWT) — never generated inside the Flutter app, or the LiveKit API secret would ship inside the APK.
+No custom signaling server needed — LiveKit's SDK handles media/room signaling internally. Firestore is still used, but only for app-level call invitations (notifying the callee a call is starting), not RTC signaling itself.
+Config-driven provider swap, matching the existing api_config.dart/app_config.dart pattern: an abstract CallService interface + concrete LiveKitCallService, so switching providers later (Agora, self-hosted, etc.) means writing one new class, not touching call UI or Firestore signaling code.
+## Known open items (not blocking, carried forward)
+LegacyMessage still holds image/voice/file fields (unchanged).
+No cleanup job wired to app startup for local temp files (unchanged).
+Save-to-gallery not yet verified end-to-end on-device (unchanged).
+4.9.7 (Incoming Call) will require native CallKit/ConnectionService work beyond the Dart layer — flagged now so it isn't discovered late.
+TURN server decision (self-hosted vs. managed) not yet made — needed before Call can be considered production-reliable, not before initial two-device testing.

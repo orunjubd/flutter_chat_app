@@ -642,3 +642,28 @@ Build ECE into a production-grade messaging platform with:
 - Save-to-gallery device verification pass (image + video)
 - Contact-photo support (if the app later wants to store/display
   device-contact avatars — currently intentionally text-only)
+
+------------------------------------------------------------------------
+## v1.7.4 Phase 4.9 — Call
+-----------------------------------------------------------------------
+
+Chosen RTC provider: LiveKit (free self-hosted or LiveKit Cloud free tier for testing; livekit_client package).
+
+ 4.9.1 Call Foundation — CallType, CallState, CallDirection, CallSession models (no cost, no package dependency)
+ 4.9.2 Call UI (screens/widgets scaffolded, not wired)
+ 4.9.3 Signaling — Firestore call-invitation documents (caller/callee/status/metadata); LiveKit itself handles media signaling internally and does not need a custom signaling server
+ 4.9.4 Voice Call
+ 4.9.5 Video Call
+ 4.9.6 WebRTC / ICE — handled by LiveKit's SDK; no direct raw WebRTC/ICE code expected
+ 4.9.7 Incoming Call — note: requires FCM push + native CallKit (iOS) / ConnectionService (Android) integration for calls to ring when the app is backgrounded or killed; not automatic, must be built explicitly
+ 4.9.8 Call Lifecycle
+ 4.9.9 Call History
+ 4.9.10 Recent Calls (surfaces inside the existing People screen, built in 4.8, once call history data exists)
+## Cost note
+
+STUN and Firestore-based invitation signaling are free. LiveKit itself is free to self-host or via its free testing tier. Production-grade call reliability across arbitrary real-world networks will very likely require TURN relay, which is usage-based and not free at scale — this is a deliberate future decision point, not assumed to be free indefinitely.
+
+## Future / not yet scheduled
+Phase 6 — Group Chat (see PROJECT_STATE.md)
+New Community (beyond Phase 6)
+LegacyMessage migration for image/voice/file

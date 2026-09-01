@@ -1312,3 +1312,62 @@ ChatBubble → ContactMessageBubble
   `FlutterContacts.permissions.request(PermissionType.readWrite)`
   before calling the picker; the Android manifest entry alone does not
   satisfy the runtime check.
+
+---------------------------------------------------
+# 🚀 ECE Chat v1.7.4
+## [Unreleased]
+### — Phase 4 — Media Engine 
+#### Added — # Architecture — Phase 4.8: Peoples (People-discovery)
+---------------------------------------------------  
+
+## Scope note
+
+"Peoples" (this phase) and "Contact" (Phase 4.7, an in-conversation
+message type sharing a device contact) are unrelated features that
+happen to share a common English word. They share no code, screens, or
+data model. Do not merge them.
+
+## Key decision: no new screen
+
+People-discovery was built by extending the **existing**
+`UserSelectionScreen` (search field, sort button, invite tile, new-
+contact FAB, overflow menu) rather than creating a separate
+`PeoplesScreen` route. This avoids a second, parallel "list of users"
+UI and keeps `startConversationWithUser()` as the single path from
+"tap a person" to "open a chat," used identically whether the person
+is browsing or forwarding a message.
+
+## Provider layering
+
+```
+usersDirectoryProvider (existing)
+        │
+        ▼
+peoplesProvider            — excludes current user
+        │
+        ▼
+filteredPeopleProvider     — text search (username/email contains)
+        │
+        ▼
+sortedPeopleProvider       — name/online-status ordering
+```
+
+Each layer only does one job. Sorting was deliberately NOT merged into
+the search provider — they compose instead of being combined into one
+provider that does both.
+
+## Reused vs. new
+
+| Reused as-is | New this phase |
+|---|---|
+| `AppUser` model | `PeopleSearchField`, `PeopleSortButton` |
+| `usersDirectoryProvider` | `InviteFriendsTile`, `InviteFriendService` |
+| `ConversationRepository.createOrOpenConversation` | `NewContactScreen`/`NewContactService` (device contact storage) |
+| `ConversationMessageRepository.forwardMessage` | `PeopleMoreOptionsMenu` (Group/Community stubs) |
+
+## Deferred features, explicitly
+
+- **Recent Calls** — held pending Phase 4.9 (Call); no data exists to
+  show yet.
+- **New Group / New Community** — entry points exist (overflow menu),
+  actual functionality is Phase 6/beyond, not built here.

@@ -149,8 +149,9 @@ Highlights
 
 | Version | Summary |
 |---|---|
-| v1.7.3 | Phase 4.8 — Contact sharing: native contact picker, name/phone/email/address, preview, sealed `ContactMessage`. |
-| v1.7.2 | Phase 4.7 — Location messages: capture, adjustable-pin preview, address resolution, full-screen map view. Fixed sender-name race condition, a `ref`-after-dispose crash in `ChatScreen`, and blank/white map tiles. |
+| v1.7.4 | Phase 4.8 — Peoples: search, sort, invite friends, save new device contact, Group/Community entry-point stubs. |
+| v1.7.3 | Phase 4.7 — Contact sharing: native contact picker, name/phone/email/address, preview, sealed `ContactMessage`. |
+| v1.7.2 | Phase 4.6 — Location messages: capture, adjustable-pin preview, address resolution, full-screen map view. Fixed sender-name race condition, a `ref`-after-dispose crash in `ChatScreen`, and blank/white map tiles. |
 | v1.7.1 | Phase 4.5 —  Video messages complete: send, playback (play/pause/seek/mute/buffering), upload progress indicator, save-to-gallery and share (file or link) for both image and video fullscreen viewers. |
 | v1.7.0 | Phase 4.5 — Video capture, compression (`flutter_compress`, H.264, downscale-only to a configurable max dimension), and Cloudinary upload pipeline. |
 | v1.6.x | Phase 4.6 — Camera integration — photo and video capture routed through the existing image/video pipelines, with shared validation. |
