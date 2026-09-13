@@ -5,7 +5,7 @@ class CountryCode {
   final String dialCode;
 }
 
-// TODO: replace with the country list already used by PhoneAuthScreen
+// `TODO: replace with the country list already used by PhoneAuthScreen`
 // (or wherever login's country-code picker lives) — don't maintain
 // two separate country lists in the same app.
 const kCountryCodes = [

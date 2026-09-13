@@ -19,7 +19,7 @@ class VideoThumbnailService {
   /// file exists only on this device — the real, shareable thumbnailUrl
   /// comes from Cloudinary's upload response.
   ///
-  /// TODO: no cleanup path exists yet for these files. Once
+  /// `TODO: no cleanup path exists yet for these files. Once`
   /// MediaMessageSender.sendVideo() confirms the Cloudinary thumbnail is
   /// available, the local file this method returns should be deleted.
   Future<File?> generate(File videoFile) async {

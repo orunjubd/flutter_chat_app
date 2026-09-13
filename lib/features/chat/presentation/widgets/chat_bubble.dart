@@ -4,6 +4,7 @@
 import 'package:chat_app/core/contact/widgets/contact_message_bubble.dart';
 import 'package:chat_app/core/location/widgets/location_message_bubble.dart';
 import 'package:chat_app/core/video/widgets/fullscreen_video_player.dart';
+import 'package:chat_app/features/calls/widgets/call_system_message_bubble.dart';
 import 'package:chat_app/features/chat/presentation/widgets/file_message_bubble.dart';
 import 'package:chat_app/features/chat/presentation/widgets/video_message_bubble.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -186,25 +187,6 @@ class ChatBubble extends ConsumerWidget {
                 ],
 
                 const SizedBox(height: 6),
-
-                //------------------------------------
-                // Message
-                //------------------------------------
-                // _deleted
-                //     ? Text(
-                //         _displayMessage,
-                //         style: context.bodyText?.copyWith(
-                //           fontStyle: FontStyle.italic,
-                //           color: context.textSecondaryColor,
-                //         ),
-                //       )
-                //     : messageData.type == 'file'
-                //     ? FileMessageBubble(message: messageData, isMe: isMe)
-                //     : MediaContent(
-                //         message:
-                //             messageData, // Passes your non-nullable Message data model token down seamlessly! [INDEX]
-                //         isMe: isMe,
-                //       ),
                 _deleted
                     ? Text(
                         _displayMessage,
@@ -214,6 +196,10 @@ class ChatBubble extends ConsumerWidget {
                         ),
                       )
                     : switch (messageData) {
+                        CallSystemMessage m => CallSystemMessageBubble(
+                          message: m,
+                          isMe: isMe,
+                        ),
                         // ChatBubble switch
                         ContactMessage m => ContactMessageBubble(
                           message: m,

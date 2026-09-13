@@ -2,6 +2,11 @@ import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:chat_app/core/theme/app_colors.dart';
 import 'package:chat_app/core/utils/date_time_formatter.dart';
 import 'package:chat_app/core/widgets/app_scaffold.dart';
+import 'package:chat_app/features/calls/providers/call_provider.dart';
+import 'package:chat_app/features/calls/screens/call_screen.dart';
+import 'package:chat_app/features/calls/screens/outgoing_call_screen.dart';
+//import 'package:chat_app/features/calls/screens/livekit_test_screen.dart';
+//import 'package:chat_app/features/calls/widgets/incoming_voice_call_dialog.dart';
 import 'package:chat_app/features/chat/presentation/widgets/reply_preview.dart';
 import 'package:chat_app/features/chat/providers/reply_repository_provider.dart';
 import 'package:chat_app/features/chat/search/screens/search_messages_screen.dart';
@@ -196,146 +201,157 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     final typingAsync = ref.watch(typingProvider);
     final currentUserId = ref.watch(currentUserIdProvider);
     final conversationId = widget.conversation.id;
-
-    // 1. Safely extract the other user's ID
     final otherUserId = conversation.participantIds.firstWhere(
       (id) => id != currentUserId,
       orElse: () => '',
     );
-
+    ref.listen<CallState>(callProvider, (previous, next) {
+      if (previous?.status != CallConnectionStatus.connected &&
+          next.status == CallConnectionStatus.connected) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => CallScreen(otherUserId: otherUserId),
+          ),
+        );
+      }
+    });
     final presenceAsync = ref.watch(userPresenceProvider(otherUserId));
-
-    // 2. Safely watch the user profile data locally inside the build tree
     final otherUserAsync = ref.watch(userByIdProvider(otherUserId));
+    final callState = ref.watch(callProvider);
 
-    return AppScaffold(
-      backgroundColor: context.scaffoldBackgroundColor,
-      // 🚀 1. THE APPBAR ENGINE
-      appBar: AppBar(
-        elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            otherUserAsync.when(
-              loading: () => Text('Loading...', style: context.titleText),
-              error: (_, _) => Text('Unknown User', style: context.titleText),
-              data: (user) => Text(
-                user?.username ?? 'Unknown User',
-                style: context.titleText?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
+    return Stack(
+      children: [
+        AppScaffold(
+          backgroundColor: context.scaffoldBackgroundColor,
+          appBar: AppBar(
+            elevation: 0,
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                otherUserAsync.when(
+                  loading: () => Text('Loading...', style: context.titleText),
+                  error: (_, _) =>
+                      Text('Unknown User', style: context.titleText),
+                  data: (user) => Text(
+                    user?.username ?? 'Unknown User',
+                    style: context.titleText?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                presenceAsync.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
+                  data: (presence) {
+                    if (presence == null) {
+                      return const SizedBox.shrink();
+                    }
+                    return Text(
+                      presence.isOnline
+                          ? '● Online'
+                          : 'Last seen ${DateTimeFormatter.formatLastSeen(presence.lastSeen)}',
+                      style: context.captionText?.copyWith(
+                        color: presence.isOnline
+                            ? AppColors.lastSeen
+                            : context.textSecondaryColor,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.call_outlined),
+                tooltip: 'Voice Call',
+                onPressed:
+                    callState.status == CallConnectionStatus.connecting ||
+                        callState.status == CallConnectionStatus.ringing ||
+                        callState.status == CallConnectionStatus.connected
+                    ? null
+                    : () async {
+                        await ref
+                            .read(callProvider.notifier)
+                            .startVoiceCall(calleeId: otherUserId);
+
+                        if (!context.mounted) return;
+
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                OutgoingCallScreen(calleeId: otherUserId),
+                          ),
+                        );
+                      },
+              ),
+              IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: () async {
+                  final selectedMessage = await Navigator.push<Message>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          SearchMessagesScreen(conversationId: conversationId),
+                    ),
+                  );
+                  if (!context.mounted || selectedMessage == null) {
+                    return;
+                  }
+                  await _jumpToMessage(selectedMessage);
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+          body: Column(
+            children: [
+              Expanded(
+                child: MessageList(
+                  scrollController: _scrollController,
+                  conversationId: widget.conversation.id,
+                  highlightMessageId: _highlightMessageId,
                 ),
               ),
-            ),
-            presenceAsync.when(
-              loading: () => const SizedBox.shrink(),
-
-              error: (_, _) => const SizedBox.shrink(),
-
-              data: (presence) {
-                if (presence == null) {
-                  return const SizedBox.shrink();
-                }
-
-                return Text(
-                  presence.isOnline
-                      ? '● Online'
-                      : 'Last seen ${DateTimeFormatter.formatLastSeen(presence.lastSeen)}',
-                  style: context.captionText?.copyWith(
-                    color: presence.isOnline
-                        ? AppColors.lastSeen
-                        : context.textSecondaryColor,
-                  ),
-                );
-              },
-            ),
-          ],
+              typingAsync.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
+                data: (typingUsers) {
+                  final others = typingUsers
+                      .where(
+                        (user) => user.userId != currentUserId && user.isTyping,
+                      )
+                      .toList();
+                  if (others.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
+                    child: Text(
+                      '${others.first.username} is typing...',
+                      style: context.captionText?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        color: context.textSecondaryColor,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const ReplyPreview(),
+              MessageInput(
+                conversationId: widget.conversation.id,
+                onSend: _sendMessage,
+              ),
+            ],
+          ),
         ),
-
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () async {
-              // Read the current stream data items from cache instantly before navigating [INDEX]
-              // final messagesAsyncValue = ref.read(
-              //   conversationMessagesProvider(
-              //     conversation.id,
-              //   ), // ✅ FIXED: Uses conversation.id
-              // );
-
-              // messagesAsyncValue.whenData((items) async {
-              final selectedMessage = await Navigator.push<Message>(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      SearchMessagesScreen(conversationId: conversationId),
-                ),
-              );
-
-              if (!context.mounted || selectedMessage == null) {
-                return;
-              }
-              await _jumpToMessage(selectedMessage);
-              //});
-            },
-          ),
-          const SizedBox(width: 8), // Elegant minimal side margin padding
-        ],
-      ),
-
-      // 🚀 2. THE EMPTY MESSAGE LIST PLACEHOLDER CONTAINER (For now)
-      body: Column(
-        children: [
-          Expanded(
-            child: MessageList(
-              scrollController: _scrollController,
-              conversationId: widget.conversation.id,
-              highlightMessageId: _highlightMessageId,
-            ),
-          ),
-
-          typingAsync.when(
-            loading: () => const SizedBox.shrink(),
-
-            error: (_, _) => const SizedBox.shrink(),
-
-            data: (typingUsers) {
-              final others = typingUsers
-                  .where(
-                    (user) => user.userId != currentUserId && user.isTyping,
-                  )
-                  .toList();
-
-              if (others.isEmpty) {
-                return const SizedBox.shrink();
-              }
-
-              return Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 6,
-                ),
-                child: Text(
-                  '${others.first.username} is typing...',
-                  style: context.captionText?.copyWith(
-                    fontStyle: FontStyle.italic,
-                    color: context.textSecondaryColor,
-                  ),
-                ),
-              );
-            },
-          ),
-
-          const ReplyPreview(),
-
-          MessageInput(
-            conversationId: widget.conversation.id,
-            onSend: _sendMessage,
-          ),
-        ],
-      ),
+        //const IncomingVoiceCallDialog(),
+      ],
     );
   }
 }

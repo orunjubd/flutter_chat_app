@@ -65,6 +65,7 @@ class ConversationMessageRepository {
         'voice' => '🎤 Voice message',
         'file' => '📎 File',
         'location' => '📍 Location',
+        'call_system' => '📞 Call',
         _ => message.text,
       },
     );

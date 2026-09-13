@@ -8,7 +8,7 @@ import 'package:path_provider/path_provider.dart';
 /// shared as actual bytes (via share_plus's `files:`), not a bare
 /// link — matching how WhatsApp/Telegram share media.
 ///
-/// TODO: no cleanup exists yet for these temp files — same open item
+/// `TODO: no cleanup exists yet for these temp files — same open item`
 /// as VideoThumbnailService's local thumbnails. Worth revisiting
 /// together at some point (e.g. periodic temp-dir sweep on app start).
 class MediaShareService {

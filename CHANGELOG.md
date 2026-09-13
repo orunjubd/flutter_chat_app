@@ -1048,3 +1048,113 @@ info to your device — all from the existing "Select User" screen.
 - "Recent Calls" and "New Group"/"New Community" are visible but
   intentionally non-functional — each depends on a future phase
   (Call, and Group Chat respectively)  
+
+
+--------------------------------------------------------------------
+# Changelog
+
+## [1.8.0] — Phase 4.9: Voice Call
+--------------------------------------------------------------------
+
+### Added
+- Real-time voice calling via **LiveKit** (`livekit_client`), with a
+  config-driven `CallService` abstraction (`LiveKitCallService`) so a
+  future provider swap touches one class, not the call UI or
+  signaling logic.
+- `CallSession` / `CallState` / `CallType` / `CallDirection` — call
+  foundation models.
+- `CallSignalingRepository` — Firestore-based call invitation
+  signaling (`calls/{callId}`): create, watch (incoming/outgoing/
+  active), update state, one-shot fetch.
+- `CallProvider` (`CallNotifier`) — full state machine: start, accept,
+  reject, end, auto-timeout-to-missed, auth-aware incoming-call
+  listening.
+- `OutgoingCallScreen`, `IncomingVoiceCallDialog`,
+  `GlobalIncomingCallListener` (mounted via `MaterialApp.builder`, so
+  it renders above every route, not just the initial one),
+  `CallScreen`.
+- `CallHistory` + `CallHistoryRepository` — permanent call records,
+  separate from the live signaling document.
+- `CallSystemMessage` — a proper sealed `Message` subtype (built from
+  day one, no legacy fallback, matching Video/Location/Contact),
+  rendered as a centered system pill in the chat timeline (e.g.
+  "Voice call · 0:37", "Missed voice call", "Call declined").
+- Conversation-list preview text for call messages (`📞 Call`).
+- FCM token registration (`FcmTokenService`), a Cloud Function
+  (`onCallRinging`) to push incoming-call notifications, and native
+  CallKit/ConnectionService integration
+  (`flutter_callkit_incoming_maintained`) for background/killed-app
+  incoming calls, including a `SharedPreferences`-backed
+  `PendingCallService` bridge so an Accept tapped on the native call
+  UI can be resumed once the app cold-launches.
+
+### Fixed
+- No re-entrancy guard on `startVoiceCall`/`acceptVoiceCall` allowed a
+  double-tap (or a slow rebuild) to create two Firestore call sessions
+  and two LiveKit connections for one call attempt.
+- The 30-second missed-call `Timer` was never cancelled on any exit
+  path (call answered, rejected, ended) — stale timers from earlier
+  test calls could fire mid-way through a later, unrelated call and
+  incorrectly mark it missed within seconds of it starting.
+- `GlobalIncomingCallListener` was mounted via `MaterialApp.home`,
+  which only keeps it visible for the app's very first route — after
+  any navigation, the overlay was still computing correctly but
+  buried underneath every subsequently pushed screen. Fixed by moving
+  it into `MaterialApp.builder`, which wraps the `Navigator` itself.
+- `CallState` originally only had `ended` for every terminal outcome,
+  making "receiver declined," "caller cancelled before answer," and
+  "call connected then ended normally" indistinguishable after the
+  fact. Split into distinct `ended` / `rejected` / `cancelled` /
+  `missed` / `failed` states, each mapped to its own
+  `CallHistoryStatus`.
+- Accepting a call from the in-app dialog and a background/killed-app
+  CallKit resume both attempted to navigate to the call screen
+  independently, risking a double-navigation race. Consolidated to a
+  single reactive `ref.listen` in `GlobalIncomingCallListener`.
+- Two independent methods (`getCall`, `fetchCallOnce`) on
+  `CallSignalingRepository` did the identical Firestore read —
+  consolidated to one.
+- `PendingCallService`'s original in-memory static field could not
+  survive the process restart that happens when a killed app is
+  cold-launched from a native CallKit Accept — switched to
+  `SharedPreferences` so the "which call was just accepted" signal
+  actually persists across that boundary.
+
+### Known limitation (not a bug — deliberately paused)
+- **Background/killed-app incoming call notifications are fully
+  coded but not yet operational.** The Cloud Function that triggers
+  them requires Firebase's Blaze (pay-as-you-go) plan, which in turn
+  requires billing details on file — this is a Google account
+  requirement, not a usage cost (expected usage stays within the free
+  quota). Deliberately paused pending billing setup; foreground
+  (in-app) voice calling is fully functional and tested independent of
+  this.
+  📞 ECE Chat — Voice Call Complete Status
+1. Call Architecture
+ 2. Call Session Model ✅
+3. Call State Machine ✅
+4. Outgoing Voice Call ✅
+5. Incoming Voice Call Detection ✅
+6. Incoming Call UI — Foreground Architecture ✅
+7. Global Incoming Call Listener ✅
+8. Accept Call ✅
+9. Reject Call ✅
+10. Call Cancellation / End Call ✅
+11. 30-Second Missed Call Timeout ✅
+12. Duplicate Call Protection ✅
+13. LiveKit Integration ✅
+14. Microphone Handling ✅
+15. Active Call Watcher ✅
+16. Outgoing Call Watcher ✅
+17. Call History Architecture ✅
+18. Call System Messages ✅
+19. Duplicate History Protection ✅
+20. CallKit Integration ✅
+21. Foreground CallKit Event Handling ✅
+22. FCM Token Registration ✅
+23. FCM Incoming Call Handler ✅
+24. Background CallKit Handler Architecture ✅
+25. Persistent Pending Accepted Call Bridge ✅
+26. fetchCallOnce() ✅
+27. Background Accepted Call Resume ⚠️
+28. Current Background Incoming Call Problem ⚠️

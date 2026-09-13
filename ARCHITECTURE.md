@@ -1339,7 +1339,6 @@ is browsing or forwarding a message.
 
 ## Provider layering
 
-```
 usersDirectoryProvider (existing)
         │
         ▼
@@ -1350,12 +1349,52 @@ filteredPeopleProvider     — text search (username/email contains)
         │
         ▼
 sortedPeopleProvider       — name/online-status ordering
-```
 
 Each layer only does one job. Sorting was deliberately NOT merged into
 the search provider — they compose instead of being combined into one
 provider that does both.
 
+lib/
+│
+└── features/
+    └── chat/
+        └── presentation/
+        │   └── screen/
+        │   	└── user_selection_screen.dart	
+        └── utils/
+        │       └── start_conversation.dart
+    └── people/
+        ├── data/
+        │   ├── models/
+        │ 		├── country_code.dart
+        │ 		├── new_contact_draft.dart
+        │   │	└── people_sort_option.dart	
+        │   └── repositories/
+        ├── services/
+        │ 		├── invite_friend_service.dart
+        │ 		└── new_contact_service.dart
+        ├── providers/
+        │ 		├── invite_friend_provider.dart
+        │ 		├── new_contact_provider.dart
+        │ 		├── people_search_provider.dart
+        │ 		├── people_sort_provider.dart
+        │ 		└── peoples_provider.dart		
+        └── presentation/
+            ├── screens/ 
+            │ 	├── new_contact_screen.dart
+            │	└── peoples_screen.dart
+            └── widgets/
+			├── people_sort_button.dart
+			├── people_more_options_menu.dart
+			├── new_contact_form.dart
+			├── invite_friends_tile.dart
+			├── country_code_picker.dart
+			├── app_user_tile.dart
+			├── app_users_list.dart		
+			├── people_search_field.dart 	
+			├── peoples_header.dart
+			└── peoples_section_title.dart
+                  
 ## Reused vs. new
 
 | Reused as-is | New this phase |
@@ -1371,3 +1410,145 @@ provider that does both.
   show yet.
 - **New Group / New Community** — entry points exist (overflow menu),
   actual functionality is Phase 6/beyond, not built here.
+
+-----------------------------------------------------------
+# Architecture — Phase 4.9: Voice Call
+
+## Provider: LiveKit, behind an abstraction
+
+-----------------------------------------------------------
+
+abstract class CallService {
+  Future<void> connect({required String roomToken});
+  Future<void> setMicrophoneEnabled(bool enabled);
+  Future<void> setCameraEnabled(bool enabled);
+  Future<void> disconnect();
+}
+
+`LiveKitCallService` is the only current implementation. Swapping
+providers later means writing one new class and changing one line in
+`liveKitCallServiceProvider` — nothing in `CallProvider`, the call
+screens, or Firestore signaling needs to change.
+
+**Tokens are never generated client-side.** LiveKit access tokens are
+signed JWTs requiring the API secret; embedding that secret in the app
+would ship it inside the APK. Development/testing uses LiveKit
+Cloud's built-in Sandbox Token Server (`DevelopmentTokenSource`,
+explicitly scoped, not the raw secret). Production must mint tokens
+from a real backend (a Cloud Function, once Blaze billing is active).
+
+## Two kinds of "signaling," not to be confused
+
+1. **RTC/media signaling** — handled entirely inside LiveKit's SDK.
+   No custom WebRTC/ICE code exists or is needed in this app.
+2. **Call invitation signaling** — this app's own concern, via
+   Firestore (`calls/{callId}`): does a call exist, who's calling
+   whom, is it ringing/connected/ended. `CallSignalingRepository` owns
+   this; LiveKit knows nothing about it.
+
+## Data flow — outgoing call
+
+
+ChatScreen (tap call icon)
+      │
+      ▼
+CallNotifier.startVoiceCall()
+      │  1. CallSignalingRepository.createOutgoingCall()
+      │     → resolves/creates the conversation via
+      │       ConversationRepository.createOrOpenConversation()
+      │       (reused, not re-derived) → calls/{callId} doc created,
+      │       state: dialing → ringing
+      │  2. CallTokenService.fetchDevelopmentToken()
+      │  3. LiveKitCallService.connect() — mic disabled until accepted
+      │  4. 30s missed-call Timer armed
+      ▼
+OutgoingCallScreen (shown by the tapping screen, not reactively)
+      │  watches callProvider; on `connected` → pushReplacement(CallScreen)
+      │  on Cancel → CallNotifier.endCurrentCall()
+
+
+## Data flow — incoming call (foreground / app already running)
+
+
+Firestore calls/{callId} state → ringing
+      │
+      ▼
+CallNotifier.listenForIncomingCalls()
+      │  (driven by FirebaseAuth.authStateChanges(), not a one-time
+      │  synchronous check — auth may not have finished restoring
+      │  yet on a fresh app start)
+      ▼
+CallState.incomingCall populated
+      │
+      ▼
+GlobalIncomingCallListener (mounted via MaterialApp.builder — wraps
+the Navigator itself, so it renders above every route, not just the
+first one)
+      │  shows IncomingVoiceCallDialog when incomingCall != null AND
+      │  status is NOT already busy (connecting/connected/ringing)
+      ▼
+User taps Accept/Reject
+      │  Accept: CallNotifier.acceptVoiceCall() only — does NOT
+      │  navigate itself. GlobalIncomingCallListener's ref.listen is
+      │  the single place that navigates to CallScreen once status
+      │  actually reaches `connected` (avoids a double-navigation
+      │  race between the dialog and a reactive listener).
+      ▼
+CallScreen
+
+
+## Data flow — incoming call (backgrounded / killed app)
+
+
+Firestore calls/{callId} state → ringing
+      │
+      ▼
+Cloud Function onCallRinging (⚠️ not yet deployable — needs Blaze)
+      │  looks up callee's fcmToken, sends an FCM DATA message
+      │  (data messages only — notification messages never invoke
+      │  app code)
+      ▼
+firebaseMessagingBackgroundHandler / registerForegroundCallListener
+      │
+      ▼
+IncomingCallService.showIncomingCall() → native CallKit /
+ConnectionService UI, rendered by the OS, outside the Flutter window
+      │
+      ▼
+User taps Accept on the NATIVE screen
+      │
+      ▼
+callKitBackgroundHandler(CallEvent)  ← runs with NO Riverpod access;
+      │  writes calls/{callId} state → connecting directly via
+      │  FirebaseFirestore.instance, and persists the accepted callId
+      │  via PendingCallService (SharedPreferences — an in-memory
+      │  static field would not survive the process restart a killed-
+      │  app cold-launch causes)
+      ▼
+App cold-launches → CallNotifier.build() checks
+PendingCallService.consumeAcceptedCall() → resumes the call exactly
+as a foreground accept would (acceptVoiceCall), landing on the same
+GlobalIncomingCallListener-driven navigation to CallScreen
+
+## Terminal state handling
+
+`CallState` has five distinct terminal values —`ended`, `rejected`,
+`cancelled`, `missed`, `failed` — each mapped by
+`CallHistory.fromCallState()` to a matching `CallHistoryStatus`. Both
+`_listenForOutgoingCall` and `_listenForActiveCall` handle all five
+identically: create the `CallHistory` record, send the matching
+`CallSystemMessage`, cancel the missed-call timer, disconnect LiveKit,
+clear local IDs. Both caller and callee independently observe the same
+Firestore terminal state and both attempt these writes — safe, since
+`CallHistory`/`CallSystemMessage` use the call's own ID as the
+document ID, making both writes naturally idempotent.
+
+## Known cost boundaries
+
+- STUN (Google's public servers) and Firestore signaling: free.
+- LiveKit: free tier sufficient for current two-device testing.
+- Cloud Functions: free-tier-eligible, but requires the Blaze plan
+  (billing details on file) — currently paused for this reason.
+- **TURN relay is not yet configured** and remains a real, unresolved
+  cost/reliability decision for production use across arbitrary
+  real-world networks (~20–30% of connections typically need it).  

@@ -75,5 +75,9 @@
 	<string>This app uses your location to share it in chat when you choose to.</string>
 	<key>NSContactsUsageDescription</key>
 	<string>We need access to your contacts to...</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs camera access for video calls.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs microphone access for voice and video calls.</string>
 </dict>
 </plist>

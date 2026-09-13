@@ -7,25 +7,10 @@ import 'package:chat_app/features/authentication/presentation/screens/verify_ema
 import 'package:chat_app/features/chat/presentation/screens/conversation_list_screen.dart';
 //import 'package:chat_app/features/chat/presentation/screens/chat_screen.dart';
 import 'package:chat_app/core/utils/firebase_error_mapper.dart';
+import 'package:chat_app/core/notifications/fcm_token_service.dart';
 // ========================================================
 // Auth_Gate is not a screen—it's a router/decision widget.
 // =========================================================
-
-// Temporary Home Screen
-// class HomeScreen extends StatelessWidget {
-//   const HomeScreen({super.key});
-//   @override
-//   Widget build(BuildContext context) {
-//     return const Scaffold(
-//       body: Center(
-//         child: Text(
-//           'Welcome! You are logged in.',
-//           style: TextStyle(fontSize: 22),
-//         ),
-//       ),
-//     );
-//   }
-// }
 
 class AuthGate extends ConsumerWidget {
   const AuthGate({super.key});
@@ -59,6 +44,16 @@ class AuthGate extends ConsumerWidget {
 
           data: (verified) {
             if (verified) {
+              // Fire-and-forget — registering the FCM token shouldn't
+              // block entry into the app, and any failure here is
+              // non-fatal (worst case, this device just won't receive
+              // background call pushes until it succeeds on a later
+              // launch).
+
+              FcmTokenService().registerToken(user.uid).catchError((e) {
+                debugPrint('⚠️ Failed to register FCM token: $e');
+              });
+
               return const ConversationListScreen();
             }
 

@@ -10,7 +10,7 @@ import 'package:chat_app/features/chat/providers/user_directory_provider.dart';
 /// user from the list (a real user shouldn't see themself here).
 ///
 /// ASSUMPTION: userDirectoryProvider is a Stream/FutureProvider
-/// returning AsyncValue<List<AppUser>>. Adjust if it's shaped
+/// returning AsyncValue `<List<AppUser>>`. Adjust if it's shaped
 /// differently.
 final peoplesProvider = Provider<AsyncValue<List<AppUser>>>((ref) {
   final directory = ref.watch(usersDirectoryProvider);

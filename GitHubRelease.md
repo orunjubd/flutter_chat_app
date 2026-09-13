@@ -635,3 +635,44 @@ access to your address book.
 - This is a one-time "share this contact" action, distinct from the
   planned Contacts/People-discovery screen (a different, upcoming
   feature for finding and starting new conversations)
+
+----------------------------------------------------------
+# v1.8.0 — Voice Call
+----------------------------------------------------------
+
+> Ready-to-paste release note content — not published automatically.
+
+## Highlights
+
+📞 **Real-time voice calling**, powered by LiveKit. Call anyone from
+their chat screen — ring, accept, decline, talk, and see a proper call
+log entry in the conversation afterward, just like a normal message.
+
+## What's new
+- One-tap voice calling from any conversation
+- Incoming-call screen while the app is open
+- Call history entries inline in the chat ("Voice call · 0:37",
+  "Missed voice call", "Call declined")
+- Native background/killed-app incoming-call support is built in, but
+  **not yet active** — see Known Limitations below
+
+## Upgrade notes
+- New dependencies: `livekit_client`, `flutter_callkit_incoming_maintained`,
+  `firebase_messaging`, `shared_preferences`
+- Requires a LiveKit Cloud project (free tier sufficient for testing)
+  and its Sandbox Token Server ID configured in `CallConfig`
+- Android/iOS native CallKit setup (permissions, background modes) —
+  see project setup notes
+
+## Known limitations
+- **Background/killed-app incoming call notifications are not yet
+  live.** The triggering Cloud Function requires Firebase's Blaze
+  (pay-as-you-go) plan, which requires billing details on file — this
+  is a Google account-tier requirement, not a usage cost, and is
+  deliberately paused pending that setup. Foreground calling is fully
+  functional and device-tested independent of this.
+- No TURN relay configured yet — call connection reliability across
+  arbitrary real-world networks (symmetric NAT, carrier-grade NAT,
+  corporate firewalls) is not yet guaranteed; STUN-only connections
+  cover the common cases tested so far.
+- Video calling UI is not yet built (voice-only in this release).
