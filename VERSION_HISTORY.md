@@ -143,12 +143,44 @@ Highlights
 ✓ Firestore soft delete
 ✓ Deleted placeholder
 ✓ Future-ready delete architecture
+## GitHub v1.8.1
+
+**Project:** ECE Chat\
+**Phase:** Phase 4 --- Media\
+**Completed step:** 4.9 --- Voice Call\
+**Status:** COMPLETE / STABLE
+
+### Step 4.9 --- Voice Call
+
+The current implementation includes the complete one-to-one voice-call
+flow: - outgoing call - incoming call - accept - reject - LiveKit
+connection - microphone control - speaker control - call termination -
+repeated calls - call history - call system messages -
+CallKit/background acceptance support - incoming listener restoration
+
+### Next Version Work
+
+The next development target is:
+
+**Phase 4 → Step 4.10 --- Video Call**
+
+The first video-call task is:
+
+**Step 4.10.1 --- Video Call Signaling**
+
+### Versioning Rule
+
+Future releases should extend this current baseline rather than
+restoring obsolete roadmap states from older documentation.
 
 ===========================================
 # Version History
 
 | Version | Summary |
 |---|---|
+| v1.8.1 | Phase 4.9 —  Voice Call: Speaker, mute/unmute, incomingCallScreen correction, Black Screen / Red Screen correction, use copyWith.State, update GlobalIncomingCalllistner, few method update CallProvider |
+| v1.8.0 | Phase 4.9 —  Voice Call: includes the complete one-to-one voice-call; flow: - outgoing call - incoming call - accept - reject - LiveKit
+connection - microphone control - speaker control - call termination - repeated calls - call history - call system messages - CallKit/background acceptance support - incoming listener restoration|
 | v1.7.4 | Phase 4.8 — Peoples: search, sort, invite friends, save new device contact, Group/Community entry-point stubs. |
 | v1.7.3 | Phase 4.7 — Contact sharing: native contact picker, name/phone/email/address, preview, sealed `ContactMessage`. |
 | v1.7.2 | Phase 4.6 — Location messages: capture, adjustable-pin preview, address resolution, full-screen map view. Fixed sender-name race condition, a `ref`-after-dispose crash in `ChatScreen`, and blank/white map tiles. |

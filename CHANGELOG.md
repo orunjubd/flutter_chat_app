@@ -1158,3 +1158,47 @@ info to your device — all from the existing "Select User" screen.
 26. fetchCallOnce() ✅
 27. Background Accepted Call Resume ⚠️
 28. Current Background Incoming Call Problem ⚠️
+
+--------------------------------------------------------------------
+# Changelog
+## [1.8.1] — Phase 4.9: Voice Call
+--------------------------------------------------------------------
+## ECE Chat --- Current Baseline
+
+## \[v1.8.1\] --- Current Baseline
+
+### Phase 4 --- Media
+
+#### Completed --- Step 4.9 Voice Call
+
+-   Two-way voice calling.
+-   Incoming call handling.
+-   Accept and reject flow.
+-   LiveKit room connection.
+-   Microphone mute/unmute.
+-   Speaker/internal and loudspeaker behavior.
+-   Call end handling.
+-   Repeated consecutive calls.
+-   Incoming-call listener restoration after a call ends.
+-   Call history.
+-   Call system messages.
+-   Background/CallKit acceptance handling.
+
+#### Stability
+
+Voice calling is considered complete and stable for the implemented
+scope.
+
+### Next Development
+
+#### Step 4.10 --- Video Call
+
+The next work begins with video-call signaling and must preserve the
+stable voice-call implementation.
+
+### Architecture Rule
+
+The common signaling/session layer is shared. Voice-specific and
+video-specific provider/UI behavior remain separated so future
+customization can disable or change one call type without rewriting the
+other.

@@ -676,3 +676,90 @@ log entry in the conversation afterward, just like a normal message.
   corporate firewalls) is not yet guaranteed; STUN-only connections
   cover the common cases tested so far.
 - Video calling UI is not yet built (voice-only in this release).
+
+----------------------------------------------------------
+# v1.8.1 — Voice Call Stabilization & State Management Fix
+----------------------------------------------------------
+## Release Status
+**Current working baseline**
+## Project Position
+
+-   **Phase:** 4 --- Media
+-   **Completed step:** 4.9 --- Voice Call
+-   **Voice call status:** COMPLETE / STABLE
+-   **Next development:** 4.10 --- Video Call
+
+## ✨ Features
+- **Voice Call System** — Complete end-to-end voice calling with LiveKit integration
+  - Outgoing call initiation with ringing state
+  - Incoming call UI with accept/reject
+  - Call connection and microphone control
+  - Call history tracking and system messages
+
+## 🐛 Bug Fixes
+- Fixed incoming call state preservation during accept flow
+- Fixed receiver navigation to CallScreen after accept
+- Fixed call state cleanup on terminal states
+- Fixed repeated calls not appearing on receiver side
+- Fixed IncomingCallScreen reappearing after call end
+- Improved state management with `copyWith` pattern
+
+## 🔧 Technical Changes
+- Refactored `CallState` with explicit `clearIncomingCall` flag
+- Added `activeCallId` tracking for reliable call lifecycle
+- Improved `GlobalIncomingCallListener` navigation logic
+- Fixed Riverpod listener context issues
+- Added comprehensive debug logging for call flow
+
+## 📱 Testing
+- ✅ Caller initiates → Receiver accepts → Both connected
+- ✅ Caller ends call → Both pop to previous screen
+- ✅ Receiver rejects → IncomingCallScreen disappears
+- ✅ Two-device testing (Pixel 6 ↔ Pixel 8)
+## v1.8.1 Highlights
+
+### Voice Call
+
+-   One-to-one voice calling.
+-   Firestore signaling.
+-   LiveKit real-time audio.
+-   Incoming call handling.
+-   Accept/reject.
+-   Mute/unmute.
+-   Speaker controls.
+-   End-call handling.
+-   Repeated consecutive calls.
+-   Call history.
+-   Call system messages.
+-   CallKit/background acceptance support.
+-   Incoming-call listener restoration after terminal call cleanup.
+
+## Architecture
+
+The call engine uses a shared session/signaling foundation.
+
+``` text
+CallSession
+    │
+    ├── CallType.voice
+    │
+    └── CallType.video
+```
+
+Voice and video share signaling/session infrastructure but keep
+type-specific provider and UI behavior separate.
+
+## Next Development
+
+### Phase 4 --- Step 4.10 Video Call
+
+First implementation task:
+
+**4.10.1 --- Video Call Signaling**
+
+The video-call work must preserve the stable voice-call behavior.
+
+## Release Boundary
+
+This file intentionally documents the **current v1.8.1 baseline only**.
+Older release-by-release history is not reproduced here.

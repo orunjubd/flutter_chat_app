@@ -7,8 +7,8 @@ import 'package:chat_app/features/calls/services/call_service.dart';
 class LiveKitCallService implements CallService {
   Room? _room;
   // final _listeners = <RoomListener>{};
-  @override
-  Room? get room => _room;
+  //@override
+  //Room? get room => _room;
 
   @override
   Future<void> connect({required String roomToken}) async {
@@ -58,6 +58,22 @@ class LiveKitCallService implements CallService {
       '📷 [LiveKit] Camera '
       '${enabled ? 'enabled' : 'disabled'}.',
     );
+  }
+
+  @override
+  Future<void> setSpeakerphoneEnabled(bool enabled) async {
+    try {
+      await AudioManager.instance.setSpeakerOutputPreferred(
+        enabled,
+        force: enabled,
+      );
+      debugPrint(
+        '🔊 [LiveKit] Speakerphone ${enabled ? 'enabled' : 'disabled'} (force: $enabled).',
+      );
+    } catch (e, stackTrace) {
+      debugPrint('❌ [LiveKit] Failed to set speakerphone: $e');
+      debugPrintStack(stackTrace: stackTrace);
+    }
   }
 
   @override

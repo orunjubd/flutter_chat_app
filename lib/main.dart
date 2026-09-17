@@ -1,3 +1,4 @@
+import 'package:chat_app/core/navigation/app_navigator_key.dart';
 import 'package:chat_app/features/calls/widgets/global_incoming_call_listener.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -34,6 +35,7 @@ class MyApp extends ConsumerWidget {
     });
 
     return MaterialApp(
+      navigatorKey: appNavigatorKey,
       title: 'ECE Chat',
       debugShowCheckedModeBanner: false,
 
@@ -52,7 +54,11 @@ class MyApp extends ConsumerWidget {
         // Wraps the entire Navigator — every pushed route, at any
         // depth — not just the initial `home` route's content. This
         // is what actually makes the incoming-call overlay global.
-        return GlobalIncomingCallListener(child: child!);
+        return GlobalIncomingCallListener(
+          child: child ?? const SizedBox.shrink(),
+        );
+        //final safeChild = child ?? const SizedBox.shrink();
+        // return GlobalIncomingCallListener(child: safeChild);
       },
     );
   }

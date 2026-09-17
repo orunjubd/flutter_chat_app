@@ -1412,6 +1412,7 @@ lib/
   actual functionality is Phase 6/beyond, not built here.
 
 -----------------------------------------------------------
+# Chat v1.8.0
 # Architecture — Phase 4.9: Voice Call
 
 ## Provider: LiveKit, behind an abstraction
@@ -1552,3 +1553,121 @@ document ID, making both writes naturally idempotent.
 - **TURN relay is not yet configured** and remains a real, unresolved
   cost/reliability decision for production use across arbitrary
   real-world networks (~20–30% of connections typically need it).  
+
+-----------------------------------------------------------
+# Chat v1.8.1
+# Architecture — Phase 4.9: Voice Call
+## Provider: LiveKit, behind an abstraction
+-----------------------------------------------------------
+# ECE Chat --- Architecture
+
+## Current Baseline --- GitHub v1.8.1
+
+**Current Phase:** Phase 4 --- Media\
+**Current completed step:** 4.9 --- Voice Call\
+**Status:** Voice Call COMPLETE / STABLE\
+**Next:** 4.10 --- Video Call
+
+### Architecture Principles
+
+-   Enterprise Feature-First architecture.
+-   Riverpod state management.
+-   Repository → Provider → UI flow.
+-   Firebase Authentication and Cloud Firestore.
+-   Conversation-scoped message persistence.
+-   Shared infrastructure should be reused where the domain is common.
+-   Voice and video call behavior should remain type-specific at the
+    provider/UI layer while sharing the signaling/session foundation.
+
+### Call Architecture
+
+``` text
+Call UI
+   ↓
+Call Provider
+   ↓
+Call Signaling Repository
+   ↓
+Cloud Firestore Call Session
+   ↓
+LiveKit
+```
+
+### Shared Call Model
+
+``` dart
+enum CallType {
+  voice,
+  video,
+}
+```
+
+The call session carries the call type so voice and video can use the
+same signaling/session infrastructure.
+
+### Voice Call --- Step 4.9
+
+Voice call currently uses: - Firestore call sessions - CallType.voice -
+LiveKit room connection - Call state transitions - Incoming-call
+listener - CallKit integration - Call history - Call system messages -
+microphone enable/disable - terminal-state cleanup - incoming-listener
+restoration for subsequent calls
+
+The current implementation uses the CallSession ID as the LiveKit room
+name.
+
+### Voice Stability
+
+The implemented voice-call flow has been tested through repeated calls,
+including subsequent calls after a previous call has ended. The
+incoming-call listener is restored after terminal cleanup.
+
+### Video Call Direction --- Step 4.10
+
+Video calling will reuse: - CallSession - CallType - call ID -
+caller/callee IDs - conversation ID - room name - Firestore signaling -
+LiveKit connection - call history/system-message infrastructure
+
+Video-specific behavior will be isolated in video-specific provider/UI
+logic so future voice-only or video-only customization remains possible.
+
+### Existing Video Message Architecture
+
+Video messages are separate from video calling. The existing
+video-message pipeline is:
+
+
+VideoPickerService
+        ↓
+MediaDraft
+        ↓
+VideoMetadataService
+        ↓
+VideoCompressionService
+        ↓
+VideoUploadService
+        ↓
+Cloudinary
+        ↓
+VideoMessageSender
+        ↓
+ConversationMessageRepository
+        ↓
+Firestore
+        ↓
+VideoMessage
+        ↓
+VideoMessageBubble
+        ↓
+FullscreenVideoPlayer
+
+
+The video-message system already supports metadata, compression, upload
+progress, thumbnails and playback.
+
+### Important Boundary
+
+**Video Message ≠ Video Call**
+
+Video messages use the media-upload pipeline. Video calls use LiveKit
+real-time communication plus Firestore call signaling.

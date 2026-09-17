@@ -272,6 +272,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                         callState.status == CallConnectionStatus.connected
                     ? null
                     : () async {
+                        debugPrint(
+                          '📞 [UI-Test] Call button tapped! Current status map: ${callState.status}',
+                        );
                         await ref
                             .read(callProvider.notifier)
                             .startVoiceCall(calleeId: otherUserId);

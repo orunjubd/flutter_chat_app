@@ -17,11 +17,12 @@ class CallScreen extends ConsumerStatefulWidget {
 
 class _CallScreenState extends ConsumerState<CallScreen> {
   Timer? _callTimer;
-
   Duration _elapsed = Duration.zero;
   bool _isMicrophoneEnabled = true;
+  bool _isSpeakerEnabled = false;
   bool _isEndingCall = false;
 
+  // ...initState/dispose/_formatDuration unchanged...
   @override
   void initState() {
     super.initState();
@@ -58,32 +59,75 @@ class _CallScreenState extends ConsumerState<CallScreen> {
 
   Future<void> _toggleMicrophone() async {
     final newState = !_isMicrophoneEnabled;
-
-    setState(() {
-      _isMicrophoneEnabled = newState;
-    });
-
+    setState(() => _isMicrophoneEnabled = newState);
     await ref.read(callProvider.notifier).setMicrophoneEnabled(newState);
+  }
+
+  Future<void> _toggleSpeaker() async {
+    final newState = !_isSpeakerEnabled;
+    setState(() => _isSpeakerEnabled = newState);
+    await ref.read(callProvider.notifier).setSpeakerphoneEnabled(newState);
   }
 
   Future<void> _endCall() async {
     if (_isEndingCall) return;
-    setState(() {
-      _isEndingCall = true;
-    });
+    setState(() => _isEndingCall = true);
     await ref.read(callProvider.notifier).endCurrentCall();
-    if (!mounted) return;
-    Navigator.of(context).pop();
+    // if (!mounted) return;
+    // Navigator.of(context).pop();
+  }
+
+  String _statusLabel(CallConnectionStatus status) {
+    return switch (status) {
+      CallConnectionStatus.connecting => 'Calling...',
+      CallConnectionStatus.ringing => 'Ringing...',
+      CallConnectionStatus.connected => 'Connected',
+      CallConnectionStatus.failed => 'Call failed',
+      CallConnectionStatus.ended => 'Call ended',
+      CallConnectionStatus.idle => '',
+    };
+  }
+
+  void _startTimer() {
+    if (_callTimer != null) return; // Prevent multiple timers
+    _callTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _elapsed += const Duration(seconds: 1);
+      });
+    });
+  }
+
+  void _stopTimer() {
+    _callTimer?.cancel();
+    _callTimer = null;
   }
 
   @override
   Widget build(BuildContext context) {
     final otherUserAsync = ref.watch(userByIdProvider(widget.otherUserId));
+    final callState = ref.watch(callProvider);
+
+    // ref.listen<CallState>(callProvider, (previous, next) {
+    //   if (next.status == CallConnectionStatus.ended &&
+    //       previous?.status != CallConnectionStatus.ended) {
+    //     if (mounted) Navigator.of(context).pop();
+    //   }
+    // });
 
     ref.listen<CallState>(callProvider, (previous, next) {
-      if (next.status == CallConnectionStatus.ended &&
-          previous?.status != CallConnectionStatus.ended) {
-        if (mounted) {
+      // Start timer on connected
+      if (next.status == CallConnectionStatus.connected &&
+          previous?.status != CallConnectionStatus.connected) {
+        _startTimer();
+      }
+
+      // Stop timer and pop on ended/failed
+      if ((next.status == CallConnectionStatus.ended ||
+              next.status == CallConnectionStatus.failed) &&
+          previous?.status != next.status) {
+        _stopTimer();
+        if (mounted && Navigator.of(context).canPop()) {
           Navigator.of(context).pop();
         }
       }
@@ -97,14 +141,11 @@ class _CallScreenState extends ConsumerState<CallScreen> {
           child: Column(
             children: [
               const Spacer(),
-
               const CircleAvatar(
                 radius: 48,
                 child: Icon(Icons.person, size: 48),
               ),
-
               const SizedBox(height: 20),
-
               Text(
                 otherUserAsync.when(
                   loading: () => 'Calling...',
@@ -114,20 +155,18 @@ class _CallScreenState extends ConsumerState<CallScreen> {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-
               const SizedBox(height: 12),
-
-              Text('Connected', style: Theme.of(context).textTheme.bodyLarge),
-
-              const SizedBox(height: 8),
-
               Text(
-                _formatDuration(_elapsed),
-                style: Theme.of(context).textTheme.titleMedium,
+                _statusLabel(callState.status),
+                style: Theme.of(context).textTheme.bodyLarge,
               ),
-
+              const SizedBox(height: 8),
+              if (callState.status == CallConnectionStatus.connected)
+                Text(
+                  _formatDuration(_elapsed),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               const Spacer(),
-
               Padding(
                 padding: const EdgeInsets.all(24),
                 child: Row(
@@ -140,17 +179,15 @@ class _CallScreenState extends ConsumerState<CallScreen> {
                       label: _isMicrophoneEnabled ? 'Mute' : 'Unmute',
                       onPressed: _toggleMicrophone,
                     ),
-
                     const SizedBox(width: 24),
-
                     _CallControlButton(
-                      icon: Icons.volume_up_outlined,
+                      icon: _isSpeakerEnabled
+                          ? Icons.volume_up
+                          : Icons.volume_up_outlined,
                       label: 'Speaker',
-                      onPressed: () {},
+                      onPressed: _toggleSpeaker,
                     ),
-
                     const SizedBox(width: 24),
-
                     _CallControlButton(
                       icon: Icons.call_end_outlined,
                       label: 'End',
@@ -173,11 +210,9 @@ class _CallControlButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
   });
-
   final IconData icon;
   final String label;
   final VoidCallback? onPressed;
-
   @override
   Widget build(BuildContext context) {
     return Column(

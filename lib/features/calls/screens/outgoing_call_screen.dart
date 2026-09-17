@@ -14,6 +14,7 @@ class OutgoingCallScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final callState = ref.watch(callProvider);
     final calleeAsync = ref.watch(userByIdProvider(calleeId));
 
     final size = MediaQuery.sizeOf(context);
@@ -94,16 +95,14 @@ class OutgoingCallScreen extends ConsumerWidget {
                         // -------------------------------------------------
                         // CALL STATUS
                         // -------------------------------------------------
-                        Text(
-                          'Ringing...',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
+                        Text(switch (callState.status) {
+                          CallConnectionStatus.connecting => 'Calling...',
+                          CallConnectionStatus.ringing => 'Ringing...',
+                          CallConnectionStatus.connected => 'Connected',
+                          CallConnectionStatus.failed => 'Call failed',
+                          CallConnectionStatus.ended => 'Call ended',
+                          _ => 'Calling...',
+                        }, style: Theme.of(context).textTheme.bodyMedium),
 
                         const Spacer(),
 

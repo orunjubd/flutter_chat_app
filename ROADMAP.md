@@ -667,3 +667,51 @@ STUN and Firestore-based invitation signaling are free. LiveKit itself is free t
 Phase 6 — Group Chat (see PROJECT_STATE.md)
 New Community (beyond Phase 6)
 LegacyMessage migration for image/voice/file
+
+--------------------------------------------------------------------
+## Current Baseline --- GitHub v1.8.1
+
+## Phase 4 --- Media , Step 4.9 Voice Call
+### Completed
+-------------------------------------------------------------------
+
+-   4.1 Profile Photos --- COMPLETE
+-   4.2 Image Messages --- COMPLETE
+-   4.3 File Attachments --- COMPLETE
+-   4.4 Voice Messages --- COMPLETE
+-   Video Messages --- COMPLETE
+-   4.9 Voice Call --- COMPLETE / STABLE
+
+### Current Development
+
+## 4.10 Video Call
+
+### 4.10.1 Video Call Signaling
+
+Goal: - Reuse the existing CallSession and CallType architecture. -
+Create/use video call sessions with `CallType.video`. - Preserve
+caller/callee identity and conversation linkage. - Reuse Firestore
+call-state signaling. - Keep existing voice-call signaling behavior
+unchanged.
+
+### Future 4.10.x Scope
+
+The exact substeps will be added as implementation progresses. Expected
+areas include: - video call provider flow - camera enable/disable -
+local/remote video rendering - incoming video call UI - accept/reject -
+call controls - call termination and cleanup - repeated video calls -
+video call history/system messages - background/CallKit behavior where
+required
+
+### Architecture Rule
+
+Use one shared signaling/session foundation, with separate voice/video
+provider and UI behavior.
+
+``` text
+Shared Call Signaling
+        │
+        ├── Voice Call
+        │
+        └── Video Call
+```
