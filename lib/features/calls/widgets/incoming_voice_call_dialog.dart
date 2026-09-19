@@ -1,3 +1,6 @@
+//import 'dart:async';
+
+//import 'package:chat_app/features/calls/core/services/call_audio_service.dart';
 import 'package:chat_app/features/calls/data/models/call_session.dart';
 //import 'package:chat_app/features/calls/screens/call_screen.dart';
 import 'package:flutter/material.dart';
@@ -92,21 +95,6 @@ class IncomingVoiceCallDialog extends ConsumerWidget {
                     // ✅ Give Accept a finite share of the width.
                     Expanded(
                       child: FilledButton(
-                        // onPressed: () async {
-                        //   final callerId = incomingCall.callerId;
-                        //   await ref
-                        //       .read(callProvider.notifier)
-                        //       .acceptVoiceCall(
-                        //         callId: incomingCall.id,
-                        //         roomName: incomingCall.roomName,
-                        //       );
-                        //   if (!context.mounted) return;
-                        //   Navigator.of(context).push(
-                        //     MaterialPageRoute(
-                        //       builder: (_) => CallScreen(otherUserId: callerId),
-                        //     ),
-                        //   );
-                        // },
                         onPressed: () {
                           ref
                               .read(callProvider.notifier)
@@ -114,9 +102,6 @@ class IncomingVoiceCallDialog extends ConsumerWidget {
                                 callId: incomingCall.id,
                                 roomName: incomingCall.roomName,
                               );
-                          // No navigation here — GlobalIncomingCallListener's ref.listen
-                          // handles it once status actually becomes `connected`, whether
-                          // this was a foreground accept or a resumed background one.
                         },
                         child: const Text('Accept'),
                       ),

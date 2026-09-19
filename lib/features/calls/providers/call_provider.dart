@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:chat_app/features/calls/core/services/call_audio_coordinator.dart';
+import 'package:chat_app/features/calls/core/services/call_audio_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_callkit_incoming_maintained/entities/call_event.dart';
@@ -91,9 +93,18 @@ class CallNotifier extends Notifier<CallState> {
   late final CallSignalingRepository _signalingRepository;
   late final CallHistoryRepository _historyRepository;
 
+  // ============================================================
+  late final CallAudioService _audio;
+  late final CallAudioCoordinator _audioCoordinator;
+
+  // ============================================================
+
   bool _startVoiceCallInProgress = false;
   bool _acceptVoiceCallInProgress = false;
   bool _callWasConnected = false;
+  // ===========================================================
+  bool _speakerOn = false;
+  // ============================================================
 
   CallHistoryStatus _historyStatusFor(call_model.CallState state) {
     return CallHistory.fromCallState(state);
@@ -122,10 +133,26 @@ class CallNotifier extends Notifier<CallState> {
         _incomingCallSubscription?.cancel();
         _incomingCallSubscription = null;
         _incomingCall = null;
+        // =======================================================================
+        unawaited(_audioCoordinator.reset());
+        // =======================================================================
+
         state = const CallState(status: CallConnectionStatus.idle);
       }
     });
+    // ==============================================================
+    _audio = ref.read(callAudioServiceProvider);
+    _audioCoordinator = CallAudioCoordinator(
+      audio: _audio,
+      localUserId: FirebaseAuth.instance.currentUser?.uid ?? '',
+      // Your in-app IncomingVoiceCallDialog is the foreground ringtone
+      // fallback, so this coordinator only ever runs while that's the path
+      // in play — CallKit's native screen isn't tracked here. If you later
+      // add a real "CallKit is currently showing" flag, wire it in instead.
+      isNativeIncomingUiVisible: () => false,
+    );
 
+    // ============================================================
     const incomingCallService = IncomingCallService();
     _callKitEventSubscription = incomingCallService.events.listen((
       event,
@@ -186,8 +213,10 @@ class CallNotifier extends Notifier<CallState> {
       _outgoingCallSubscription?.cancel();
       _activeCallSubscription?.cancel();
       _callKitEventSubscription?.cancel();
-
       _callService.disconnect();
+      // =============================================================
+      unawaited(_audioCoordinator.dispose());
+      // =============================================================
     });
 
     Future.microtask(_checkForPendingAcceptedCall);
@@ -592,7 +621,9 @@ class CallNotifier extends Notifier<CallState> {
           (callSession) async {
             if (callSession == null) {
               _incomingCall = null;
-
+              // =======================================================================
+              unawaited(_audioCoordinator.reset());
+              // =======================================================================
               state = const CallState(status: CallConnectionStatus.idle);
 
               return;
@@ -602,24 +633,12 @@ class CallNotifier extends Notifier<CallState> {
               return;
             }
 
-            // final callAge = DateTime.now().difference(
-            //   callSession.createdAt.toDate(),
-            // );
-            // if (callAge > _incomingCallTimeout) {
-            //   debugPrint('⏰ [CallProvider] Incoming call expired.');
-            //   debugPrint('🆔 [CallProvider] Call ID: ${callSession.id}');
-            //   debugPrint('⌛ [CallProvider] Call age: ${callAge.inSeconds}s');
-            //   await _signalingRepository.updateCallState(
-            //     callId: callSession.id,
-            //     state: call_model.CallState.ended,
-            //   );
-            //   _incomingCall = null;
-            //   state = state.copyWith(clearIncomingCall: true);
-            //   return;
-            // }
-
             _incomingCall = callSession;
-
+            // =======================================================================
+            unawaited(
+              _audioCoordinator.onSession(callSession, speakerOn: _speakerOn),
+            );
+            // =======================================================================
             state = state.copyWith(incomingCall: callSession);
 
             debugPrint(
@@ -654,7 +673,11 @@ class CallNotifier extends Notifier<CallState> {
             if (callSession == null) {
               return;
             }
-
+            // =======================================================================
+            unawaited(
+              _audioCoordinator.onSession(callSession, speakerOn: _speakerOn),
+            );
+            // =======================================================================
             debugPrint(
               '📡 [CallProvider] Outgoing call state: '
               '${callSession.state.name}',
@@ -753,6 +776,10 @@ class CallNotifier extends Notifier<CallState> {
         .listen(
           (callSession) async {
             if (callSession == null) return;
+
+            unawaited(
+              _audioCoordinator.onSession(callSession, speakerOn: _speakerOn),
+            );
 
             debugPrint(
               '📡 [CallProvider] Active call state: '
@@ -1187,6 +1214,7 @@ class CallNotifier extends Notifier<CallState> {
   Future<void> setSpeakerphoneEnabled(bool enabled) async {
     try {
       await _callService.setSpeakerphoneEnabled(enabled);
+      _speakerOn = enabled;
       debugPrint(
         '🔊 [CallProvider] Speakerphone: ${enabled ? 'ENABLED' : 'DISABLED'}',
       );

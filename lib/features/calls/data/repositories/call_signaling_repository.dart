@@ -165,20 +165,4 @@ class CallSignalingRepository {
       return null;
     }
   }
-
-  // Future<CallSession?> getCall({required String callId}) async {
-  //   final doc = await _firestore.collection('calls').doc(callId).get();
-
-  //   if (!doc.exists) {
-  //     return null;
-  //   }
-
-  //   final data = doc.data();
-
-  //   if (data == null) {
-  //     return null;
-  //   }
-
-  //   return CallSession.fromMap(doc.id, data);
-  // }
 }

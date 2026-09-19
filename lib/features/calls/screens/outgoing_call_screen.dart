@@ -1,5 +1,8 @@
 // features/calls/screens/outgoing_call_screen.dart
 
+//import 'dart:async';
+
+//import 'package:chat_app/features/calls/core/services/call_audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -21,6 +24,8 @@ class OutgoingCallScreen extends ConsumerWidget {
     final isSmallScreen = size.height < 650;
 
     ref.listen<CallState>(callProvider, (previous, next) {
+      // 1. Start playing the "beep... beep..." ringback sound the moment the call changes to ringing
+
       if (next.status == CallConnectionStatus.connected) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => CallScreen(otherUserId: calleeId)),
@@ -30,6 +35,12 @@ class OutgoingCallScreen extends ConsumerWidget {
 
       if (next.status == CallConnectionStatus.ended ||
           next.status == CallConnectionStatus.failed) {
+        debugPrint(
+          '🔇 [OutgoingCallScreen] '
+          'Call became terminal → stopping ringback',
+        );
+
+        //unawaited(callAudio.stop());
         if (Navigator.of(context).canPop()) {
           Navigator.of(context).pop();
         }

@@ -17,6 +17,7 @@ class CallSession {
     required this.createdAt,
     this.connectedAt,
     this.endedAt,
+    this.endReason,
   });
 
   final String id;
@@ -30,7 +31,7 @@ class CallSession {
   final Timestamp createdAt;
   final Timestamp? connectedAt;
   final Timestamp? endedAt;
-
+  final CallEndReason? endReason;
   CallSession.fromMap(String id, Map<String, dynamic> data)
     : this(
         id: id,
@@ -46,6 +47,7 @@ class CallSession {
         createdAt: data['createdAt'] as Timestamp,
         connectedAt: data['connectedAt'] as Timestamp?,
         endedAt: data['endedAt'] as Timestamp?,
+        endReason: CallEndReasonX.parse(data['endReason'] as String?),
       );
 
   Duration? get duration {
