@@ -1,8 +1,10 @@
+import 'dart:collection';
 import 'dart:async';
 import 'package:chat_app/features/calls/core/services/call_audio_coordinator.dart';
 import 'package:chat_app/features/calls/core/services/call_audio_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+//import 'package:flutter/material.dart';
 import 'package:flutter_callkit_incoming_maintained/entities/call_event.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -33,8 +35,8 @@ enum CallConnectionStatus {
   ended,
 }
 
-class CallState {
-  const CallState({
+class CallUiState {
+  const CallUiState({
     this.status = CallConnectionStatus.idle,
     this.errorMessage,
     this.incomingCall,
@@ -44,13 +46,13 @@ class CallState {
   final String? errorMessage;
   final CallSession? incomingCall;
 
-  CallState copyWith({
+  CallUiState copyWith({
     CallConnectionStatus? status,
     String? errorMessage,
     CallSession? incomingCall,
     bool clearIncomingCall = false,
   }) {
-    return CallState(
+    return CallUiState(
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,
       incomingCall: clearIncomingCall
@@ -76,17 +78,19 @@ final callSignalingRepositoryProvider = Provider<CallSignalingRepository>((
   );
 });
 
-final callProvider = NotifierProvider<CallNotifier, CallState>(
+final callProvider = NotifierProvider<CallNotifier, CallUiState>(
   CallNotifier.new,
 );
 
-class CallNotifier extends Notifier<CallState> {
+class CallNotifier extends Notifier<CallUiState> {
   //static const Duration _incomingCallTimeout = Duration(seconds: 30);
   Timer? _missedCallTimer;
-  final Set<String> _historyCreatedCallIds = <String>{};
+  final LinkedHashSet<String> _historyCreatedCallIds = LinkedHashSet<String>();
+  static const _maxTrackedCallHistoryIds = 200;
 
   StreamSubscription<User?>? _authStateSubscription;
   StreamSubscription<CallEvent?>? _callKitEventSubscription;
+  StreamSubscription<void>? _peerGoneSubscription;
 
   late final CallTokenService _tokenService;
   late final LiveKitCallService _callService;
@@ -96,7 +100,7 @@ class CallNotifier extends Notifier<CallState> {
   // ============================================================
   late final CallAudioService _audio;
   late final CallAudioCoordinator _audioCoordinator;
-
+  late final IncomingCallService incomingCallService;
   // ============================================================
 
   bool _startVoiceCallInProgress = false;
@@ -105,18 +109,31 @@ class CallNotifier extends Notifier<CallState> {
   // ===========================================================
   bool _speakerOn = false;
   // ============================================================
-
+  bool _micEnabled = true;
+  bool get micEnabled => _micEnabled;
+  bool get speakerOn => _speakerOn;
   CallHistoryStatus _historyStatusFor(call_model.CallState state) {
     return CallHistory.fromCallState(state);
   }
 
   @override
-  CallState build() {
+  CallUiState build() {
     _tokenService = ref.read(callTokenServiceProvider);
     _callService = ref.read(liveKitCallServiceProvider);
     _signalingRepository = ref.read(callSignalingRepositoryProvider);
     _historyRepository = ref.read(callHistoryRepositoryProvider);
     _listenForCallKitEvents();
+    incomingCallService = IncomingCallService();
+    _audio = ref.read(callAudioServiceProvider);
+    _audioCoordinator = CallAudioCoordinator(
+      audio: _audio,
+      localUserId: () => FirebaseAuth.instance.currentUser?.uid ?? '',
+      // Your in-app IncomingVoiceCallDialog is the foreground ringtone
+      // fallback, so this coordinator only ever runs while that's the path
+      // in play — CallKit's native screen isn't tracked here. If you later
+      // add a real "CallKit is currently showing" flag, wire it in instead.
+      isNativeIncomingUiVisible: () => incomingCallService.isShowingNativeUi,
+    );
 
     // Don't rely on a synchronous currentUser check at build time —
     // Firebase Auth's persisted session may not have finished restoring
@@ -130,89 +147,87 @@ class CallNotifier extends Notifier<CallState> {
       if (user != null) {
         listenForIncomingCalls();
       } else {
+        // Signed out — no Firestore write from this client can succeed anymore.
+        // Tear down everything locally instead of routing through
+        // endCurrentCall(), which would just fail with PERMISSION_DENIED.
+        _callSubscription?.cancel();
+        _callSubscription = null;
         _incomingCallSubscription?.cancel();
         _incomingCallSubscription = null;
+        _missedCallTimer?.cancel();
+        _activeCallId = null;
         _incomingCall = null;
-        // =======================================================================
         unawaited(_audioCoordinator.reset());
-        // =======================================================================
-
-        state = const CallState(status: CallConnectionStatus.idle);
+        unawaited(_callService.disconnect());
+        state = const CallUiState(status: CallConnectionStatus.idle);
       }
     });
     // ==============================================================
-    _audio = ref.read(callAudioServiceProvider);
-    _audioCoordinator = CallAudioCoordinator(
-      audio: _audio,
-      localUserId: FirebaseAuth.instance.currentUser?.uid ?? '',
-      // Your in-app IncomingVoiceCallDialog is the foreground ringtone
-      // fallback, so this coordinator only ever runs while that's the path
-      // in play — CallKit's native screen isn't tracked here. If you later
-      // add a real "CallKit is currently showing" flag, wire it in instead.
-      isNativeIncomingUiVisible: () => false,
-    );
 
     // ============================================================
-    const incomingCallService = IncomingCallService();
-    _callKitEventSubscription = incomingCallService.events.listen((
-      event,
-    ) async {
-      if (event == null) return;
+    //final IncomingCallService incomingCallService = IncomingCallService();
+    // _callKitEventSubscription = incomingCallService.events.listen((
+    //   event,
+    // ) async {
+    //   if (event == null) return;
 
-      switch (event) {
-        case CallEventActionCallAccept(:final id):
-          debugPrint('📞 [CallProvider] CallKit accept for $id');
-          final callSession = await _signalingRepository.fetchCallOnce(
-            callId: id,
-          );
-          if (callSession == null) {
-            debugPrint(
-              '❌ [CallProvider] Could not recover CallSession for $id',
-            );
-            return;
-          }
-          await acceptVoiceCall(
-            callId: callSession.id,
-            roomName: callSession.roomName,
-          );
+    //   switch (event) {
+    //     case CallEventActionCallAccept(:final id):
+    //       debugPrint('📞 [CallProvider] CallKit accept for $id');
+    //       final callSession = await _signalingRepository.fetchCallOnce(
+    //         callId: id,
+    //       );
+    //       if (callSession == null) {
+    //         debugPrint(
+    //           '❌ [CallProvider] Could not recover CallSession for $id',
+    //         );
+    //         return;
+    //       }
+    //       await acceptVoiceCall(
+    //         callId: callSession.id,
+    //         roomName: callSession.roomName,
+    //       );
 
-        case CallEventActionCallDecline(:final id):
-          debugPrint('❌ [CallProvider] CallKit decline for $id');
-          await rejectVoiceCall(callId: id);
+    //     case CallEventActionCallDecline(:final id):
+    //       debugPrint('❌ [CallProvider] CallKit decline for $id');
+    //       await rejectVoiceCall(callId: id);
 
-        case CallEventActionCallTimeout(:final id):
-          debugPrint('⌛ [CallProvider] CallKit timeout for $id');
-          break;
+    //     case CallEventActionCallTimeout(:final id):
+    //       debugPrint('⌛ [CallProvider] CallKit timeout for $id');
+    //       break;
 
-        case CallEventActionCallEnded(:final id):
-          debugPrint('☎️ [CallProvider] CallKit ended for $id');
-          break;
+    //     case CallEventActionCallEnded(:final id):
+    //       debugPrint('☎️ [CallProvider] CallKit ended for $id');
+    //       break;
 
-        case CallEventActionCallConnected(:final id):
-          debugPrint('🔌 [CallProvider] CallKit reports connected for $id');
-          break;
+    //     case CallEventActionCallConnected(:final id):
+    //       debugPrint('🔌 [CallProvider] CallKit reports connected for $id');
+    //       break;
 
-        case CallEventActionDidUpdateDevicePushTokenVoip():
-        case CallEventActionCallIncoming():
-        case CallEventActionCallStart():
-        case CallEventActionCallCallback():
-        case CallEventActionCallToggleHold():
-        case CallEventActionCallToggleMute():
-        case CallEventActionCallToggleDmtf():
-        case CallEventActionCallToggleGroup():
-        case CallEventActionCallToggleAudioSession():
-        case CallEventActionCallCustom():
-          break;
-      }
-    });
+    //     case CallEventActionDidUpdateDevicePushTokenVoip():
+    //     case CallEventActionCallIncoming():
+    //     case CallEventActionCallStart():
+    //     case CallEventActionCallCallback():
+    //     case CallEventActionCallToggleHold():
+    //     case CallEventActionCallToggleMute():
+    //     case CallEventActionCallToggleDmtf():
+    //     case CallEventActionCallToggleGroup():
+    //     case CallEventActionCallToggleAudioSession():
+    //     case CallEventActionCallCustom():
+    //       break;
+    //   }
+    // });
 
     ref.onDispose(() {
       _missedCallTimer?.cancel();
       _authStateSubscription?.cancel();
       _incomingCallSubscription?.cancel();
-      _outgoingCallSubscription?.cancel();
-      _activeCallSubscription?.cancel();
+      // _outgoingCallSubscription?.cancel();
+      // _activeCallSubscription?.cancel();
+      _callSubscription?.cancel();
+
       _callKitEventSubscription?.cancel();
+      _peerGoneSubscription?.cancel();
       _callService.disconnect();
       // =============================================================
       unawaited(_audioCoordinator.dispose());
@@ -220,14 +235,21 @@ class CallNotifier extends Notifier<CallState> {
     });
 
     Future.microtask(_checkForPendingAcceptedCall);
-    return const CallState();
+    return const CallUiState();
   }
 
   Future<void> connectTestRoom() async {
+    if (!kDebugMode) {
+      state = const CallUiState(
+        status: CallConnectionStatus.failed,
+        errorMessage: 'Test room is unavailable outside debug builds.',
+      );
+      return;
+    }
     final currentUser = FirebaseAuth.instance.currentUser;
 
     if (currentUser == null) {
-      state = const CallState(
+      state = const CallUiState(
         status: CallConnectionStatus.failed,
         errorMessage: 'No authenticated Firebase user.',
       );
@@ -236,7 +258,7 @@ class CallNotifier extends Notifier<CallState> {
 
     final identity = currentUser.uid;
 
-    state = const CallState(status: CallConnectionStatus.connecting);
+    state = const CallUiState(status: CallConnectionStatus.connecting);
 
     debugPrint('📞 [CallProvider] Starting LiveKit foundation test...');
     debugPrint('👤 Identity: $identity');
@@ -250,14 +272,14 @@ class CallNotifier extends Notifier<CallState> {
 
       await _callService.connect(roomToken: tokenResponse.participantToken);
 
-      state = const CallState(status: CallConnectionStatus.connected);
+      state = const CallUiState(status: CallConnectionStatus.connected);
 
       debugPrint('✅ [CallProvider] LiveKit room connected.');
     } catch (e, stackTrace) {
       debugPrint('❌ [CallProvider] LiveKit connection failed: $e');
       debugPrintStack(stackTrace: stackTrace);
 
-      state = CallState(
+      state = CallUiState(
         status: CallConnectionStatus.failed,
         errorMessage: e.toString(),
       );
@@ -291,7 +313,7 @@ class CallNotifier extends Notifier<CallState> {
       final currentUser = FirebaseAuth.instance.currentUser;
 
       if (currentUser == null) {
-        state = const CallState(
+        state = const CallUiState(
           status: CallConnectionStatus.failed,
           errorMessage: 'No authenticated Firebase user.',
         );
@@ -302,7 +324,7 @@ class CallNotifier extends Notifier<CallState> {
       debugPrint('👤 Caller: ${currentUser.uid}');
       debugPrint('👤 Callee: $calleeId');
 
-      state = const CallState(status: CallConnectionStatus.connecting);
+      state = const CallUiState(status: CallConnectionStatus.connecting);
 
       // 1. Create the Firestore call session.
       final callSession = await _signalingRepository.createOutgoingCall(
@@ -330,7 +352,7 @@ class CallNotifier extends Notifier<CallState> {
 
       debugPrint('🔔 [CallProvider] Voice call is now ringing.');
 
-      _listenForOutgoingCall(callId: callSession.id);
+      _bindToCall(callId: callSession.id, isCaller: true);
 
       // 4. Request the caller's temporary LiveKit token.
       final tokenResponse = await _tokenService.fetchDevelopmentToken(
@@ -342,8 +364,15 @@ class CallNotifier extends Notifier<CallState> {
 
       // 5. Connect the caller to the LiveKit room.
       await _callService.connect(roomToken: tokenResponse.participantToken);
-
       debugPrint('✅ [CallProvider] Caller connected to LiveKit.');
+
+      _peerGoneSubscription?.cancel();
+      _peerGoneSubscription = _callService.onPeerGone.listen((_) {
+        debugPrint('👻 [CallProvider] Peer gone — ending call locally.');
+        if (_activeCallId != null) {
+          endCurrentCall();
+        }
+      });
 
       // 6. Keep microphone disabled until the call is accepted.
       await _callService.setMicrophoneEnabled(false);
@@ -356,7 +385,7 @@ class CallNotifier extends Notifier<CallState> {
       // The caller is only waiting in the LiveKit room.
       // The call becomes connected when the callee accepts it.
 
-      state = const CallState(status: CallConnectionStatus.ringing);
+      state = const CallUiState(status: CallConnectionStatus.ringing);
 
       debugPrint('⏳ [CallProvider] Waiting for callee to accept...');
 
@@ -401,7 +430,7 @@ class CallNotifier extends Notifier<CallState> {
           // 4. The Firestore listener will receive the actual
           //    CallState.missed and create CallHistory.
           // ------------------------------------------------------------
-          state = const CallState(
+          state = const CallUiState(
             status: CallConnectionStatus.ended,
             errorMessage: 'No answer.',
           );
@@ -417,7 +446,7 @@ class CallNotifier extends Notifier<CallState> {
       debugPrint('❌ [CallProvider] Failed to start voice call: $e');
       debugPrintStack(stackTrace: stackTrace);
 
-      state = CallState(
+      state = CallUiState(
         status: CallConnectionStatus.failed,
         errorMessage: e.toString(),
       );
@@ -458,7 +487,7 @@ class CallNotifier extends Notifier<CallState> {
       _incomingCallSubscription = null;
 
       _activeCallId = callId;
-      _listenForActiveCall(callId: callId);
+      _bindToCall(callId: callId, isCaller: false);
       debugPrint('📞 [CallProvider] Accepting voice call...');
       debugPrint('🆔 [CallProvider] Call ID: $callId');
       debugPrint('🏠 [CallProvider] Room: $roomName');
@@ -484,11 +513,18 @@ class CallNotifier extends Notifier<CallState> {
 
       // 3. Connect the callee to the LiveKit room.
       await _callService.connect(roomToken: tokenResponse.participantToken);
-
       debugPrint('✅ [CallProvider] Callee connected to LiveKit.');
 
+      _peerGoneSubscription?.cancel();
+      _peerGoneSubscription = _callService.onPeerGone.listen((_) {
+        debugPrint('👻 [CallProvider] Peer gone — ending call locally.');
+        if (_activeCallId != null) {
+          endCurrentCall();
+        }
+      });
+
       // ✅ REQUIREMENT MET: Track successful handshake parameters locally!
-      _callWasConnected = true;
+      _callWasConnected = false;
 
       // 4. Enable microphone for the voice call.
       await _callService.setMicrophoneEnabled(true);
@@ -549,14 +585,14 @@ class CallNotifier extends Notifier<CallState> {
       debugPrint('📡 [CallProvider] Voice call state → rejected');
 
       _incomingCall = null;
-      state = const CallState(status: CallConnectionStatus.ended);
+      state = const CallUiState(status: CallConnectionStatus.ended);
 
       debugPrint('☎️ [CallProvider] Incoming voice call rejected.');
     } catch (e, stackTrace) {
       debugPrint('❌ [CallProvider] Failed to reject voice call: $e');
       debugPrintStack(stackTrace: stackTrace);
 
-      state = CallState(
+      state = CallUiState(
         status: CallConnectionStatus.failed,
         errorMessage: e.toString(),
       );
@@ -566,7 +602,7 @@ class CallNotifier extends Notifier<CallState> {
   Future<void> setMicrophoneEnabled(bool enabled) async {
     try {
       await _callService.setMicrophoneEnabled(enabled);
-
+      _micEnabled = enabled; // NEW — track it, not just fire-and-forget
       debugPrint(
         '🎤 [CallProvider] Microphone: '
         '${enabled ? 'ENABLED' : 'DISABLED'}',
@@ -592,8 +628,10 @@ class CallNotifier extends Notifier<CallState> {
   }
 
   StreamSubscription<CallSession?>? _incomingCallSubscription;
-  StreamSubscription<CallSession?>? _outgoingCallSubscription;
-  StreamSubscription<CallSession?>? _activeCallSubscription;
+
+  // StreamSubscription<CallSession?>? _outgoingCallSubscription;
+  // StreamSubscription<CallSession?>? _activeCallSubscription;
+  StreamSubscription? _callSubscription;
 
   CallSession? _incomingCall;
   CallSession? get incomingCall => _incomingCall;
@@ -620,17 +658,34 @@ class CallNotifier extends Notifier<CallState> {
         .listen(
           (callSession) async {
             if (callSession == null) {
+              final endedCallId = _incomingCall?.id;
+              if (endedCallId != null) {
+                unawaited(incomingCallService.endCall(endedCallId));
+              }
               _incomingCall = null;
               // =======================================================================
               unawaited(_audioCoordinator.reset());
               // =======================================================================
-              state = const CallState(status: CallConnectionStatus.idle);
+              state = const CallUiState(status: CallConnectionStatus.idle);
 
               return;
             }
 
             if (callSession.type != CallType.voice) {
               return;
+            }
+            // The call stayed in the query but landed on a terminal state
+            // (e.g. explicitly written `rejected`/`cancelled` before removal) —
+            // same dismissal, different shape of arriving there.
+            const terminalStates = {
+              call_model.CallState.rejected,
+              call_model.CallState.cancelled,
+              call_model.CallState.missed,
+              call_model.CallState.failed,
+              call_model.CallState.ended,
+            };
+            if (terminalStates.contains(callSession.state)) {
+              unawaited(incomingCallService.endCall(callSession.id));
             }
 
             _incomingCall = callSession;
@@ -661,117 +716,23 @@ class CallNotifier extends Notifier<CallState> {
         );
   }
 
-  void _listenForOutgoingCall({required String callId}) {
-    _outgoingCallSubscription?.cancel();
+  // Replaces _listenForOutgoingCall AND _listenForActiveCall.
+  // Same job either way: watch the one call document that's currently ours,
+  // react to it. One method, one subscription field, no drift between roles.
+  //
+  // FIX vs the old outgoing-only behavior: _callWasConnected is now set for
+  // BOTH caller and callee. Previously only the caller side set it, so a
+  // callee who accepted, talked, then pressed "End" would have endCurrentCall()
+  // see _callWasConnected == false and misclassify the call as cancelled
+  // instead of ended.
+  void _bindToCall({required String callId, required bool isCaller}) {
+    _callSubscription?.cancel();
+    debugPrint(
+      '📡 [CallProvider] Watching call: $callId '
+      '(${isCaller ? "caller" : "callee"})',
+    );
 
-    debugPrint('📡 [CallProvider] Watching outgoing call: $callId');
-
-    _outgoingCallSubscription = _signalingRepository
-        .watchCall(callId: callId)
-        .listen(
-          (callSession) async {
-            if (callSession == null) {
-              return;
-            }
-            // =======================================================================
-            unawaited(
-              _audioCoordinator.onSession(callSession, speakerOn: _speakerOn),
-            );
-            // =======================================================================
-            debugPrint(
-              '📡 [CallProvider] Outgoing call state: '
-              '${callSession.state.name}',
-            );
-
-            // ============================================================
-            // CONNECTED
-            // ============================================================
-            if (callSession.state == call_model.CallState.connected) {
-              debugPrint(
-                '🧹_listenForOutgoingCall-1: '
-                'Cancelling previous missed-call timer',
-              );
-
-              _missedCallTimer?.cancel();
-
-              _callWasConnected = true;
-
-              debugPrint('🎉 [CallProvider] Callee accepted the voice call!');
-
-              await _callService.setMicrophoneEnabled(true);
-
-              state = const CallState(status: CallConnectionStatus.connected);
-
-              debugPrint('🎤 [CallProvider] Caller microphone enabled.');
-
-              return;
-            }
-
-            // ============================================================
-            // TERMINAL STATES
-            // ============================================================
-            if (callSession.state == call_model.CallState.ended ||
-                callSession.state == call_model.CallState.missed ||
-                callSession.state == call_model.CallState.rejected ||
-                callSession.state == call_model.CallState.cancelled ||
-                callSession.state == call_model.CallState.failed) {
-              await _createCallHistory(
-                callSession: callSession,
-                status: _historyStatusFor(callSession.state),
-              );
-              debugPrint(
-                '🧹_listenForOutgoingCall: Cancelling missed-call timer',
-              );
-              _missedCallTimer?.cancel();
-
-              debugPrint(
-                '⏳ [CallProvider] Watchdog timer cancelled due to '
-                'terminal state: ${callSession.state.name}',
-              );
-
-              await _callService.disconnect();
-
-              _activeCallId = null;
-              _incomingCall = null;
-
-              // state = callSession.state == call_model.CallState.failed
-              //     ? const CallState(
-              //         status: CallConnectionStatus.failed,
-              //         errorMessage: 'Voice call failed.',
-              //       )
-              //     : const CallState(status: CallConnectionStatus.ended);
-              // Flush state values and clear call buffers cleanly
-              state = state.copyWith(
-                status: callSession.state == call_model.CallState.failed
-                    ? CallConnectionStatus.failed
-                    : CallConnectionStatus.ended,
-                clearIncomingCall: true,
-              );
-
-              // =======================================================================
-              // 🔄 RE-SUBSCRIPTION WATCHDOG: Restart listening loop for future calls!
-              // =======================================================================
-              listenForIncomingCalls();
-
-              debugPrint(
-                '🔌 [CallProvider] Terminal state reached: ${callSession.state.name}',
-              );
-            }
-          },
-          onError: (Object error, StackTrace stackTrace) {
-            debugPrint('❌ [CallProvider] Outgoing call listener error: $error');
-
-            debugPrintStack(stackTrace: stackTrace);
-          },
-        );
-  }
-
-  void _listenForActiveCall({required String callId}) {
-    _activeCallSubscription?.cancel();
-
-    debugPrint('📡 [CallProvider] Watching active call: $callId');
-
-    _activeCallSubscription = _signalingRepository
+    _callSubscription = _signalingRepository
         .watchCall(callId: callId)
         .listen(
           (callSession) async {
@@ -782,84 +743,56 @@ class CallNotifier extends Notifier<CallState> {
             );
 
             debugPrint(
-              '📡 [CallProvider] Active call state: '
-              '${callSession.state.name}',
+              '📡 [CallProvider] Call state: ${callSession.state.name}',
             );
 
-            // ============================================================
-            // TERMINAL STATES
-            // ============================================================
-            if (callSession.state == call_model.CallState.ended ||
-                callSession.state == call_model.CallState.missed ||
-                callSession.state == call_model.CallState.rejected ||
-                callSession.state == call_model.CallState.cancelled ||
-                callSession.state == call_model.CallState.failed) {
+            if (callSession.state == call_model.CallState.connected) {
+              _missedCallTimer?.cancel();
+              _callWasConnected = true;
+              await _callService.setMicrophoneEnabled(true);
+              state = state.copyWith(status: CallConnectionStatus.connected);
+              return;
+            }
+
+            const terminalStates = {
+              call_model.CallState.ended,
+              call_model.CallState.missed,
+              call_model.CallState.rejected,
+              call_model.CallState.cancelled,
+              call_model.CallState.failed,
+            };
+            if (terminalStates.contains(callSession.state)) {
               await _createCallHistory(
                 callSession: callSession,
                 status: _historyStatusFor(callSession.state),
               );
-              // ------------------------------------------------------------
-              // 1. Cancel any pending timeout timer.
-              // ------------------------------------------------------------
               _missedCallTimer?.cancel();
+              // =======================================================================
+              // 👻 PEER-GONE WATCHDOG TERMINATION CIRCUIT-BREAKER
+              // =======================================================================
+              _peerGoneSubscription?.cancel();
+              _peerGoneSubscription = null;
 
-              // ------------------------------------------------------------
-              // 2. Create history exactly once.
-              // ------------------------------------------------------------
-              // await _createCallHistory(
-              //   callSession: callSession,
-              //   status: _historyStatusFor(callSession.state),
-              // );
-
-              // ------------------------------------------------------------
-              // 3. Disconnect LiveKit.
-              // ------------------------------------------------------------
               await _callService.disconnect();
-
-              // ------------------------------------------------------------
-              // 4. Clear local call references.
-              // ------------------------------------------------------------
               _activeCallId = null;
               _incomingCall = null;
-
-              // ------------------------------------------------------------
-              // 5. Update provider state.
-              //
-              // IMPORTANT:
-              // Do NOT navigate here.
-              // CallScreen owns its own route.
-              // ------------------------------------------------------------
               state = state.copyWith(
                 status: callSession.state == call_model.CallState.failed
                     ? CallConnectionStatus.failed
                     : CallConnectionStatus.ended,
                 clearIncomingCall: true,
               );
-
               debugPrint(
                 '🔌 [CallProvider] Terminal state reached: ${callSession.state.name}',
               );
-              // ============================================================
-              // 🔄 RESTORE INCOMING CALL LISTENER
-              // ============================================================
-              //
-              // acceptVoiceCall() cancels the incoming-call listener when
-              // the receiver accepts a call.
-              //
-              // Therefore, after this active call finishes, the receiver
-              // MUST subscribe again so the next incoming call can be
-              // detected.
-              //
-              debugPrint(
-                '🔄 [CallProvider] Restoring incoming-call listener '
-                'after active call ended...',
-              );
+              // acceptVoiceCall() cancels the incoming-call listener when the
+              // receiver accepts. Once this call finishes, restart it so the
+              // next incoming call can be detected.
               listenForIncomingCalls();
             }
           },
           onError: (Object error, StackTrace stackTrace) {
-            debugPrint('❌ [CallProvider] Active call listener error: $error');
-
+            debugPrint('❌ [CallProvider] Call listener error: $error');
             debugPrintStack(stackTrace: stackTrace);
           },
         );
@@ -868,6 +801,9 @@ class CallNotifier extends Notifier<CallState> {
   Future<void> endCurrentCall() async {
     final callId = _activeCallId;
     _missedCallTimer?.cancel();
+    unawaited(
+      _audio.stopLoop(),
+    ); // ring can't outlive the button press, whatever the write does next
 
     // The one signal that distinguishes "we hung up after talking" from
     // "caller cancelled before it was ever answered."
@@ -894,14 +830,14 @@ class CallNotifier extends Notifier<CallState> {
 
       _activeCallId = null;
 
-      state = const CallState(status: CallConnectionStatus.ended);
+      state = const CallUiState(status: CallConnectionStatus.ended);
 
       debugPrint('☎️ [CallProvider] Current call ended successfully.');
     } catch (e, stackTrace) {
       debugPrint('❌ [CallProvider] Failed to end call: $e');
       debugPrintStack(stackTrace: stackTrace);
 
-      state = CallState(
+      state = CallUiState(
         status: CallConnectionStatus.failed,
         errorMessage: e.toString(),
       );
@@ -911,7 +847,9 @@ class CallNotifier extends Notifier<CallState> {
   Future<void> disconnect() async {
     try {
       await _callService.disconnect();
-      state = const CallState(status: CallConnectionStatus.ended);
+      if (state.status != CallConnectionStatus.failed) {
+        state = state.copyWith(status: CallConnectionStatus.ended);
+      }
       debugPrint('☎️ [CallProvider] LiveKit room disconnected.');
     } catch (e, stackTrace) {
       debugPrint('❌ [CallProvider] Disconnect error: $e');
@@ -932,7 +870,9 @@ class CallNotifier extends Notifier<CallState> {
     }
 
     _historyCreatedCallIds.add(callSession.id);
-
+    if (_historyCreatedCallIds.length > _maxTrackedCallHistoryIds) {
+      _historyCreatedCallIds.remove(_historyCreatedCallIds.first);
+    }
     try {
       await _historyRepository.createFromCallSession(
         callSession: callSession,
@@ -943,7 +883,9 @@ class CallNotifier extends Notifier<CallState> {
         '📚 [CallProvider] Call history saved → '
         '${callSession.id} (${status.name})',
       );
-      await _sendCallSystemMessage(callSession: callSession, status: status);
+      if (callSession.callerId == FirebaseAuth.instance.currentUser?.uid) {
+        await _sendCallSystemMessage(callSession: callSession, status: status);
+      }
     } catch (error, stackTrace) {
       // Allow a retry if Firestore temporarily fails.
       _historyCreatedCallIds.remove(callSession.id);
@@ -1075,7 +1017,7 @@ class CallNotifier extends Notifier<CallState> {
     } catch (e) {
       debugPrint('❌ [CallProvider] Failed to resume accepted call: $e');
 
-      state = CallState(
+      state = CallUiState(
         status: CallConnectionStatus.failed,
         errorMessage: e.toString(),
       );
@@ -1182,14 +1124,7 @@ class CallNotifier extends Notifier<CallState> {
         return;
       }
 
-      await _signalingRepository.updateCallState(
-        callId: callId,
-        state: call_model.CallState.rejected,
-      );
-
-      _incomingCall = null;
-
-      state = const CallState(status: CallConnectionStatus.ended);
+      await rejectVoiceCall(callId: callId);
 
       debugPrint('📡 [CallKit] Foreground call rejected → $callId');
     } catch (e) {
@@ -1203,7 +1138,7 @@ class CallNotifier extends Notifier<CallState> {
 
       _incomingCall = null;
 
-      state = const CallState(status: CallConnectionStatus.ended);
+      state = const CallUiState(status: CallConnectionStatus.ended);
 
       debugPrint('📡 [CallKit] Foreground call missed → $callId');
     } catch (e) {

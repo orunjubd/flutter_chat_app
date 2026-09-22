@@ -1,6 +1,7 @@
 //import 'dart:async';
 
 //import 'package:chat_app/features/calls/core/services/call_audio_service.dart';
+import 'package:chat_app/features/chat/providers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 //import 'package:chat_app/features/authentication/providers/auth_provider.dart';
@@ -28,7 +29,7 @@ class GlobalIncomingCallListener extends ConsumerWidget {
     debugPrint(
       '👀 [GlobalIncomingCallListener.build] status=${callState.status}, incomingCall=$incomingCall',
     );
-    ref.listen<CallState>(callProvider, (previous, next) {
+    ref.listen<CallUiState>(callProvider, (previous, next) async {
       //final callAudio = ref.read(callAudioServiceProvider);
 
       debugPrint(
@@ -75,14 +76,35 @@ class GlobalIncomingCallListener extends ConsumerWidget {
             '🎯 [GlobalIncomingCallListener] '
             'Navigating to CallScreen for $callerId',
           );
-
+          String peerName = 'Unknown User';
+          try {
+            // 🚀 ECE DYNAMIC RESOLVER CHANNEL
+            // ✅ REQUIREMENT MET: Fetches the real profile snapshot asynchronously before pushing routes!
+            // ✅ বাংলায়: স্ক্রিন চেঞ্জের আগে রিভারপড ফিউচার রিড করে কলারের আসল ইউজারনেমটি ডাটাবেজ থেকে নিয়ে আসা হলো।
+            //final userProfile = await ref.read( userByIdProvider(callerId).future,  );
+            final userProfile = await ref.read(
+              userByIdProvider(callerId).future,
+            );
+            if (userProfile != null) {
+              peerName = userProfile.username;
+            }
+          } catch (e) {
+            debugPrint(
+              '⚠️ [GlobalIncomingCallListener] Failed to resolve peer name metadata: $e',
+            );
+          }
           WidgetsBinding.instance.addPostFrameCallback((_) {
             final navigator = appNavigatorKey.currentState;
 
             if (navigator != null) {
               navigator.push(
                 MaterialPageRoute(
-                  builder: (_) => CallScreen(otherUserId: callerId),
+                  builder: (_) => CallScreen(
+                    peerId: callerId,
+                    //peerName: otherUser?.username ?? 'Unknown User',
+                    peerName: peerName,
+                    isOutgoing: false,
+                  ),
                 ),
               );
             } else {

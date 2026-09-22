@@ -16,4 +16,15 @@ abstract class CallService {
   // Use EventsListener<RoomEvent> instead of RoomListener
   //void addListener(EventsListener<RoomEvent> listener);
   //void removeListener(EventsListener<RoomEvent> listener);
+
+  /// Fires once when the remote participant is gone and hasn't come back
+  /// within a short grace period — NOT on every raw disconnect event, which
+  /// also fires on ordinary reconnects. This is what lets a client notice
+  /// "the call is actually over" even when the *other* side never manages
+  /// to write that to Firestore (sign-out, crash, force-quit, dead network —
+  /// anything that stops their client from writing).
+  ///
+  /// Only meaningful after connect() and before disconnect(); implementers
+  /// should treat a stream event here as one-shot per call.
+  Stream<void> get onPeerGone;
 }

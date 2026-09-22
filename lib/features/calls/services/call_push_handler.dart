@@ -30,7 +30,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   final type = message.data['type'];
   if (type != 'incoming_call') return; // ignore anything that isn't a call
 
-  const service = IncomingCallService();
+  final service = IncomingCallService();
   await service.showIncomingCall(
     callId: message.data['callId'] ?? '',
     callerName: message.data['callerName'] ?? 'Unknown',
@@ -53,7 +53,7 @@ void registerForegroundCallListener() {
   FirebaseMessaging.onMessage.listen((message) async {
     if (message.data['type'] != 'incoming_call') return;
 
-    const service = IncomingCallService();
+    final service = IncomingCallService();
     await service.showIncomingCall(
       callId: message.data['callId'] ?? '',
       callerName: message.data['callerName'] ?? 'Unknown',
