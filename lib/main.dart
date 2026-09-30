@@ -1,5 +1,5 @@
 import 'package:chat_app/core/navigation/app_navigator_key.dart';
-import 'package:chat_app/features/calls/widgets/global_incoming_call_listener.dart';
+import 'package:chat_app/features/calls/core/widgets/global_incoming_call_listener.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -10,14 +10,14 @@ import 'package:chat_app/core/providers/theme_provider.dart';
 import 'package:chat_app/core/theme/app_theme.dart';
 import 'package:chat_app/features/authentication/presentation/gate/auth_gate.dart';
 import 'firebase_options.dart';
-import 'package:chat_app/features/calls/services/call_push_handler.dart';
+import 'package:chat_app/features/calls/core/services/call_push_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   await FlutterCallkitIncoming.onBackgroundMessage(callKitBackgroundHandler);
-  registerForegroundCallListener();
+  //registerForegroundCallListener();
   runApp(const ProviderScope(child: MyApp()));
 }
 

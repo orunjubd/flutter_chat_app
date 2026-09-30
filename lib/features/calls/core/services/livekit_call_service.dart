@@ -4,7 +4,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:livekit_client/livekit_client.dart';
 import 'package:chat_app/core/config/call_config.dart';
-import 'package:chat_app/features/calls/services/call_service.dart';
+import 'package:chat_app/features/calls/core/services/call_service.dart';
 
 @override
 class LiveKitCallService implements CallService {
@@ -12,6 +12,8 @@ class LiveKitCallService implements CallService {
   EventsListener<RoomEvent>? _roomListener;
   Timer? _peerGoneTimer;
   final _peerGoneController = StreamController<void>.broadcast();
+  final _reconnectingController = StreamController<void>.broadcast();
+  final _reconnectedController = StreamController<void>.broadcast();
 
   // How long to wait after the peer disconnects before treating the call as
   // actually over. Long enough to ride out a brief network blip / LiveKit's
@@ -21,7 +23,11 @@ class LiveKitCallService implements CallService {
 
   @override
   Stream<void> get onPeerGone => _peerGoneController.stream;
+  @override
+  Stream<void> get onRoomReconnecting => _reconnectingController.stream;
 
+  @override
+  Stream<void> get onRoomReconnected => _reconnectedController.stream;
   @override
   Future<void> connect({required String roomToken}) async {
     if (_room != null) {
@@ -78,6 +84,16 @@ class LiveKitCallService implements CallService {
         _peerGoneTimer?.cancel();
         _peerGoneTimer = null;
         if (!_peerGoneController.isClosed) _peerGoneController.add(null);
+      })
+      ..on<RoomReconnectingEvent>((event) {
+        debugPrint('🔄 [LiveKit] Reconnecting to room...');
+        if (!_reconnectingController.isClosed) {
+          _reconnectingController.add(null);
+        }
+      })
+      ..on<RoomReconnectedEvent>((event) {
+        debugPrint('✅ [LiveKit] Reconnected to room.');
+        if (!_reconnectedController.isClosed) _reconnectedController.add(null);
       });
   }
 
@@ -138,5 +154,7 @@ class LiveKitCallService implements CallService {
   Future<void> dispose() async {
     await disconnect();
     await _peerGoneController.close();
+    await _reconnectingController.close();
+    await _reconnectedController.close();
   }
 }

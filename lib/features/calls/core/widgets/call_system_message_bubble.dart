@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:chat_app/core/utils/date_time_formatter.dart';
-import 'package:chat_app/features/calls/data/models/call_type.dart';
-import 'package:chat_app/features/calls/data/models/call_history.dart';
+import 'package:chat_app/features/calls/core/models/call_type.dart';
+import 'package:chat_app/features/calls/core/models/call_history.dart';
 import 'package:chat_app/features/chat/data/models/message.dart';
 
 /// Renders a call-log entry as a centered system notice, matching

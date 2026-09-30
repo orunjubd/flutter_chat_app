@@ -1,17 +1,29 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chat_app/core/config/call_config.dart';
-import 'package:chat_app/features/calls/providers/call_provider.dart';
+import 'package:chat_app/features/calls/core/controllers/call_controller.dart'; // callProvider
+//import 'package:chat_app/features/calls/core/models/call_phase.dart'; // CallUiState
+import 'package:chat_app/features/calls/core/models/call_state.dart'; // CallState
 
+//import 'package:chat_app/features/calls/core/controllers/call_media_controller.dart';
 class LiveKitTestScreen extends ConsumerWidget {
   const LiveKitTestScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Belt and braces alongside connectTestRoom()'s own kDebugMode guard
+    // (8e) — this screen shouldn't even render its real content, let alone
+    // let someone tap into a dev-only token path, outside a debug build.
+    if (!kDebugMode) {
+      return const Scaffold(
+        body: Center(child: Text('Not available in this build.')),
+      );
+    }
     final callState = ref.watch(callProvider);
     final notifier = ref.read(callProvider.notifier);
 
-    final isConnected = callState.status == CallConnectionStatus.connected;
+    final isConnected = callState.phase == CallState.connected;
 
     return Scaffold(
       appBar: AppBar(title: const Text('LiveKit Foundation Test')),
@@ -32,7 +44,7 @@ class LiveKitTestScreen extends ConsumerWidget {
 
           const SizedBox(height: 24),
 
-          _StatusCard(status: callState.status),
+          _StatusCard(status: callState.phase),
 
           if (callState.errorMessage != null) ...[
             const SizedBox(height: 12),
@@ -50,7 +62,7 @@ class LiveKitTestScreen extends ConsumerWidget {
           const SizedBox(height: 24),
 
           FilledButton.icon(
-            onPressed: callState.status == CallConnectionStatus.connecting
+            onPressed: callState.phase == CallState.connecting
                 ? null
                 : () {
                     notifier.connectTestRoom();
@@ -128,26 +140,35 @@ class LiveKitTestScreen extends ConsumerWidget {
 class _StatusCard extends StatelessWidget {
   const _StatusCard({required this.status});
 
-  final CallConnectionStatus status;
+  final CallState status;
 
   @override
   Widget build(BuildContext context) {
     final text = switch (status) {
-      CallConnectionStatus.idle => 'Idle',
-      CallConnectionStatus.ringing => 'Ringing...',
-      CallConnectionStatus.connecting => 'Connecting...',
-      CallConnectionStatus.connected => 'Connected',
-      CallConnectionStatus.failed => 'Failed',
-      CallConnectionStatus.ended => 'Ended',
+      CallState.idle => 'Idle',
+      CallState.dialing => 'Dialing...',
+      CallState.ringing => 'Ringing...',
+      CallState.connecting => 'Connecting...',
+      CallState.connected => 'Connected',
+      CallState.reconnecting => 'Reconnecting...',
+      CallState.failed => 'Failed',
+      CallState.ended => 'Ended',
+      CallState.rejected => 'Rejected',
+      CallState.cancelled => 'Cancelled',
+      CallState.missed => 'Missed',
     };
-
     final icon = switch (status) {
-      CallConnectionStatus.idle => Icons.phone_disabled,
-      CallConnectionStatus.ringing => Icons.phone_callback,
-      CallConnectionStatus.connecting => Icons.sync,
-      CallConnectionStatus.connected => Icons.phone_in_talk,
-      CallConnectionStatus.failed => Icons.error_outline,
-      CallConnectionStatus.ended => Icons.call_end,
+      CallState.idle => Icons.phone_disabled,
+      CallState.dialing => Icons.phone_forwarded,
+      CallState.ringing => Icons.phone_callback,
+      CallState.connecting => Icons.sync,
+      CallState.connected => Icons.phone_in_talk,
+      CallState.reconnecting => Icons.sync_problem,
+      CallState.failed => Icons.error_outline,
+      CallState.ended => Icons.call_end,
+      CallState.rejected => Icons.call_missed_outgoing,
+      CallState.cancelled => Icons.cancel_outlined,
+      CallState.missed => Icons.call_missed,
     };
 
     return Card(

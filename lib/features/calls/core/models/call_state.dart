@@ -13,6 +13,24 @@ enum CallState {
   missed, // ring timeout, unchanged
 }
 
+/// Moved here from the old CallPhaseX — CallState IS the local phase now,
+/// there's no separate enum to keep in sync with this one anymore.
+extension CallStateX on CallState {
+  bool get isTerminal =>
+      this == CallState.ended ||
+      this == CallState.rejected ||
+      this == CallState.cancelled ||
+      this == CallState.failed ||
+      this == CallState.missed;
+
+  bool get isBusy =>
+      this == CallState.dialing ||
+      this == CallState.ringing ||
+      this == CallState.connecting ||
+      this == CallState.connected ||
+      this == CallState.reconnecting;
+}
+
 /// Optional, richer "why did it end" detail — additive to CallState, not a
 /// replacement. A terminal CallState value (rejected/cancelled/failed/missed/
 /// ended) is still enough on its own for audio/UI to react correctly; this

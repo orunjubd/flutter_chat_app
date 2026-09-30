@@ -11,8 +11,8 @@
 import 'dart:async';
 
 //import 'package:chat_app/features/calls/data/models/call_state.dart'; // CallState, CallEndReason
-import 'package:chat_app/features/calls/data/models/call_session.dart';
-import 'package:chat_app/features/calls/data/models/call_state.dart'
+import 'package:chat_app/features/calls/core/models/call_session.dart';
+import 'package:chat_app/features/calls/core/models/call_state.dart'
     as call_model;
 import 'package:flutter/material.dart';
 import 'call_audio_service.dart';

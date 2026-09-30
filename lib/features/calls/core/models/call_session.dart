@@ -1,8 +1,8 @@
 // features/calls/data/models/call_session.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'call_type.dart';
-import 'call_direction.dart';
-import 'call_state.dart';
+import 'package:chat_app/features/calls/core/models/call_type.dart';
+import 'package:chat_app/features/calls/core/models/call_direction.dart';
+import 'package:chat_app/features/calls/core/models/call_state.dart';
 
 class CallSession {
   const CallSession({
@@ -18,6 +18,7 @@ class CallSession {
     this.connectedAt,
     this.endedAt,
     this.endReason,
+    this.callerName,
   });
 
   final String id;
@@ -32,6 +33,7 @@ class CallSession {
   final Timestamp? connectedAt;
   final Timestamp? endedAt;
   final CallEndReason? endReason;
+  final String? callerName;
   CallSession.fromMap(String id, Map<String, dynamic> data)
     : this(
         id: id,
@@ -48,6 +50,7 @@ class CallSession {
         connectedAt: data['connectedAt'] as Timestamp?,
         endedAt: data['endedAt'] as Timestamp?,
         endReason: CallEndReasonX.parse(data['endReason'] as String?),
+        callerName: data['callerName'] as String?,
       );
 
   Duration? get duration {

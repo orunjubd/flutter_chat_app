@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'package:chat_app/features/calls/data/models/call_type.dart';
-import 'package:chat_app/features/calls/data/models/call_state.dart'
+import 'package:chat_app/features/calls/core/models/call_type.dart';
+import 'package:chat_app/features/calls/core/models/call_state.dart'
     as call_model;
 
 enum CallHistoryStatus { completed, missed, rejected, cancelled, failed }

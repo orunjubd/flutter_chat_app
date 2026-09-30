@@ -1,6 +1,7 @@
 // features/calls/services/call_push_handler.dart
 //import 'package:chat_app/features/calls/providers/call_provider.dart';
-import 'package:chat_app/features/calls/services/pending_call_service.dart';
+import 'package:chat_app/features/calls/core/services/callkit_bridge.dart';
+import 'package:chat_app/features/calls/core/services/pending_call_service.dart';
 import 'package:chat_app/firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -8,8 +9,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_callkit_incoming_maintained/entities/call_event.dart';
 //import 'package:flutter_callkit_incoming_maintained/flutter_callkit_incoming_maintained.dart';
-import 'package:chat_app/features/calls/services/incoming_call_service.dart';
-import 'package:chat_app/features/calls/data/models/call_state.dart'
+//import 'package:chat_app/features/calls/core/services/incoming_call_service.dart';
+import 'package:chat_app/features/calls/core/models/call_state.dart'
     as call_model;
 
 /// ===============================================================
@@ -25,18 +26,55 @@ import 'package:chat_app/features/calls/data/models/call_state.dart'
 /// IMPORTANT:
 /// This function runs in a background isolate.
 /// Therefore it must be an entry point.
+// @pragma('vm:entry-point')
+// Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+//   final type = message.data['type'];
+//   if (type != 'incoming_call') return; // ignore anything that isn't a call
+
+//   await CallKitBridge.showRaw(
+//     callId: message.data['callId'] ?? '',
+//     callerName: message.data['callerName'] ?? 'Unknown',
+//     callerAvatarUrl: message.data['callerAvatarUrl'],
+//     isVideoCall: message.data['callType'] == 'video',
+//   );
+// }
+
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  final type = message.data['type'];
-  if (type != 'incoming_call') return; // ignore anything that isn't a call
+  if (message.data['type'] != 'incoming_call') return;
 
-  final service = IncomingCallService();
-  await service.showIncomingCall(
-    callId: message.data['callId'] ?? '',
-    callerName: message.data['callerName'] ?? 'Unknown',
-    callerAvatarUrl: message.data['callerAvatarUrl'],
-    isVideoCall: message.data['callType'] == 'video',
+  final callId = (message.data['callId'] as String?)?.trim();
+  if (callId == null || callId.isEmpty) {
+    debugPrint('❌ [CallPush] Incoming FCM ignored: missing callId');
+    return;
+  }
+
+  final callerName = (message.data['callerName'] as String?)?.trim();
+  final avatarUrl = (message.data['callerAvatarUrl'] as String?)?.trim();
+
+  debugPrint(
+    '🔔 [CallPush] Incoming FCM: callId=$callId, '
+    'messageId=${message.messageId}, '
+    'sentTime=${message.sentTime}, '
+    'callType=${message.data['callType']}',
   );
+
+  try {
+    await CallKitBridge.showRaw(
+      callId: callId,
+      callerName: callerName == null || callerName.isEmpty
+          ? 'Unknown'
+          : callerName,
+      callerAvatarUrl: avatarUrl == null || avatarUrl.isEmpty
+          ? null
+          : avatarUrl,
+      isVideoCall: message.data['callType'] == 'video',
+    );
+    debugPrint('✅ [CallPush] showRaw returned: callId=$callId');
+  } catch (error, stackTrace) {
+    debugPrint('❌ [CallPush] showRaw failed: callId=$callId, error=$error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
 }
 
 /// ===============================================================
@@ -49,19 +87,19 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 /// We also show CallKit so incoming calls use the same native
 /// incoming-call experience.
 ///
-void registerForegroundCallListener() {
-  FirebaseMessaging.onMessage.listen((message) async {
-    if (message.data['type'] != 'incoming_call') return;
+// void registerForegroundCallListener() {
+//   FirebaseMessaging.onMessage.listen((message) async {
+//     if (message.data['type'] != 'incoming_call') return;
 
-    final service = IncomingCallService();
-    await service.showIncomingCall(
-      callId: message.data['callId'] ?? '',
-      callerName: message.data['callerName'] ?? 'Unknown',
-      callerAvatarUrl: message.data['callerAvatarUrl'],
-      isVideoCall: message.data['callType'] == 'video',
-    );
-  });
-}
+//     final service = IncomingCallService();
+//     await service.showIncomingCall(
+//       callId: message.data['callId'] ?? '',
+//       callerName: message.data['callerName'] ?? 'Unknown',
+//       callerAvatarUrl: message.data['callerAvatarUrl'],
+//       isVideoCall: message.data['callType'] == 'video',
+//     );
+//   });
+// }
 
 /// ===============================================================
 /// BACKGROUND CALL ACCEPT

@@ -1,10 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import 'package:chat_app/features/calls/data/models/call_session.dart';
-import 'package:chat_app/features/calls/data/models/call_state.dart';
-import 'package:chat_app/features/calls/data/models/call_type.dart';
-import 'package:chat_app/features/calls/data/models/call_direction.dart';
+import 'package:chat_app/features/calls/core/models/call_session.dart';
+import 'package:chat_app/features/calls/core/models/call_state.dart';
+import 'package:chat_app/features/calls/core/models/call_type.dart';
+import 'package:chat_app/features/calls/core/models/call_direction.dart';
 import 'package:chat_app/features/chat/data/repositories/conversation_repository.dart';
 
 class CallSignalingRepository {
@@ -24,6 +24,7 @@ class CallSignalingRepository {
     required String callerId,
     required String calleeId,
     required CallType type,
+    String? callerName,
   }) async {
     // Resolve (or create) the 1:1 conversation up front, the same
     // helper used everywhere else a conversation needs to exist
@@ -42,6 +43,7 @@ class CallSignalingRepository {
       roomName: callDocument.id,
       callerId: callerId,
       calleeId: calleeId,
+      callerName: callerName,
       type: type,
       direction: CallDirection.outgoing,
       state: CallState.dialing,
@@ -53,6 +55,7 @@ class CallSignalingRepository {
       'callerId': callSession.callerId,
       'roomName': callSession.roomName,
       'calleeId': callSession.calleeId,
+      'callerName': callSession.callerName,
       'type': callSession.type.name,
       'direction': callSession.direction.name,
       'state': callSession.state.name,
@@ -64,25 +67,16 @@ class CallSignalingRepository {
     return callSession;
   }
 
+  // FIXED: was manually reconstructing CallSession — silently dropped
+  // endReason on every read, and hardcoded direction wrong for the callee.
+  // Uses CallSession.fromMap now, same as fetchCallOnce already did — one
+  // parsing path instead of three drifting independently.
   Stream<CallSession?> watchCall({required String callId}) {
     return _callsCollection.doc(callId).snapshots().map((document) {
       if (!document.exists) return null;
       final data = document.data();
       if (data == null) return null;
-
-      return CallSession(
-        id: document.id,
-        conversationId: data['conversationId'] as String, // NEW — read back
-        roomName: data['roomName'] as String,
-        callerId: data['callerId'] as String,
-        calleeId: data['calleeId'] as String,
-        type: CallType.values.firstWhere((t) => t.name == data['type']),
-        direction: CallDirection.outgoing,
-        state: CallState.values.firstWhere((s) => s.name == data['state']),
-        createdAt: data['createdAt'] as Timestamp,
-        connectedAt: data['connectedAt'] as Timestamp?,
-        endedAt: data['endedAt'] as Timestamp?,
-      );
+      return CallSession.fromMap(document.id, data);
     });
   }
 
@@ -95,20 +89,7 @@ class CallSignalingRepository {
           if (snapshot.docs.isEmpty) return null;
           final document = snapshot.docs.first;
           final data = document.data();
-
-          return CallSession(
-            id: document.id,
-            conversationId: data['conversationId'] as String, // NEW — read back
-            roomName: data['roomName'] as String,
-            callerId: data['callerId'] as String,
-            calleeId: data['calleeId'] as String,
-            type: CallType.values.firstWhere((t) => t.name == data['type']),
-            direction: CallDirection.incoming,
-            state: CallState.values.firstWhere((s) => s.name == data['state']),
-            createdAt: data['createdAt'] as Timestamp,
-            connectedAt: data['connectedAt'] as Timestamp?,
-            endedAt: data['endedAt'] as Timestamp?,
-          );
+          return CallSession.fromMap(document.id, data);
         });
   }
 
@@ -134,7 +115,7 @@ class CallSignalingRepository {
   Future<void> markMissedCall({required String callId}) async {
     await _firestore.collection('calls').doc(callId).update({
       'state': CallState.missed.name,
-      'endedAt': Timestamp.now(),
+      'endedAt': FieldValue.serverTimestamp(),
     });
 
     debugPrint('📡 [CallSignalingRepository] Call $callId → missed');

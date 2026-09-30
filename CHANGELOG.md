@@ -1202,3 +1202,113 @@ The common signaling/session layer is shared. Voice-specific and
 video-specific provider/UI behavior remain separated so future
 customization can disable or change one call type without rewriting the
 other.
+
+---------------------------------------------------------
+## [1.8.3] — Voice Call Refactor, CallProvider Bug Fixes
+---------------------------------------------------------
+### Added
+- `CallAudioService` / `CallAudioCoordinator`: centralized ringback, ringtone,
+  vibration, and in-call tone playback, driven entirely off `CallSession`
+  state transitions instead of being scattered across UI widgets.
+- `CallEndReason` enum (`hangup`, `rejected`, `cancelled`, `missed`, `busy`,
+  `failed`, `networkLost`, `answeredElsewhere`), additive to `CallState`, with
+  an optional `CallSession.endReason` field. `CallAudioCoordinator` prefers
+  this for end-tone selection when present, falling back to state-based
+  guessing when it isn't.
+- `LiveKitCallService.onPeerGone`: detects the remote participant leaving the
+  room (via `ParticipantDisconnectedEvent`, with an 8s grace period against
+  `ParticipantConnectedEvent` to ignore transient reconnects) and surfaces it
+  independently of any Firestore write from the peer's client. Closes the gap
+  where a caller's sign-out, crash, force-quit, or dead network left the
+  callee's call running indefinitely with no signal anything had gone wrong.
+- `IncomingCallService.isShowingNativeUi` / `_visibleCallIds`: tracks which
+  call ids currently have the native CallKit/ConnectionService screen up, so
+  `CallAudioCoordinator` can correctly suppress the in-app ringtone instead
+  of always playing it alongside the OS ringtone.
+- `_bindToCall(callId, isCaller)`: single call-session listener replacing the
+  previously duplicated `_listenForOutgoingCall` / `_listenForActiveCall`.
+- Merged `CallScreen`: single screen for the entire call lifecycle, replacing
+  the separate `OutgoingCallScreen` + `CallScreen` pair. Pushed once (caller:
+  on call start; callee: on accept), renders every status via one switch,
+  never re-pushed mid-call.
+- `kDebugMode` guard on `connectTestRoom()` — the LiveKit test-room path is
+  now inert in release builds.
+
+### Changed
+- Migrated audio playback from `audioplayers` to `just_audio` +
+  `audio_session` (0.2.3): per-player `AudioContext` replaced with
+  app-wide `AudioSessionConfiguration`s applied just-in-time per sound
+  (ringtone / ringback / in-call tone).
+- `CallAudioCoordinator.localUserId` is now a live callback
+  (`String? Function()`) instead of a value captured once at construction —
+  previously this could permanently capture `''` if read before
+  `FirebaseAuth` resolved, making the caller's own client mistake itself for
+  an incoming call.
+- `CallAudioCoordinator` now resets its last-known state on a new call id
+  (`_lastCallId`), so a second call in the same app session is never compared
+  against the previous call's leftover state.
+- Renamed the local UI state class `CallState` → `CallUiState` throughout
+  `call_provider.dart`, `global_incoming_call_listener.dart`, and
+  `call_screen.dart` to remove the naming collision with the signaling
+  `call_model.CallState` enum (previously worked around via an `as
+  call_model` import alias). No change to the signaling enum or its values.
+- `_callWasConnected` is now reset to `false` at the entry of **both**
+  `startVoiceCall` and `acceptVoiceCall` (previously only reset in
+  `startVoiceCall`, and `acceptVoiceCall` incorrectly set it `true` at entry
+  rather than on actual connection — see Fixed).
+- `endCurrentCall()` now stops the ringback/ringtone loop immediately
+  (`_audio.stopLoop()`) before attempting the Firestore write, so a failed or
+  slow write can no longer leave audio playing indefinitely.
+- `disconnect()` no longer unconditionally overwrites a `failed` status with
+  `ended`.
+- `_createCallHistory`'s system message is now only sent by the caller's
+  client (`callSession.callerId == currentUser.uid` guard), not both sides.
+- `_historyCreatedCallIds` is now a bounded `LinkedHashSet` (cap: 200),
+  evicting the oldest entry once exceeded, instead of growing unbounded for
+  the life of the app session.
+- Auth sign-out mid-call now tears down local call state directly
+  (subscriptions, LiveKit disconnect, `CallUiState.idle`) instead of routing
+  through `endCurrentCall()`, which was guaranteed to fail post-sign-out with
+  `PERMISSION_DENIED` since no valid write can succeed without an auth token.
+
+### Fixed
+- **Duplicate CallKit event subscription**: `build()` previously created two
+  independent listeners on `IncomingCallService().events` — one via
+  `_listenForCallKitEvents()`, one inline — both assigned to
+  `_callKitEventSubscription`, so the first was silently leaked (never
+  cancelled) and every Accept/Decline event fired both handlers. Consolidated
+  to the single method-based listener; `_handleCallKitDecline` now delegates
+  to `rejectVoiceCall(...)` instead of duplicating its Firestore write and
+  state update by hand.
+- **Service construction/subscription ordering in `build()`**: `_audio` /
+  `_audioCoordinator` were previously assigned *after* the
+  `authStateChanges()` subscription was created, risking a
+  `LateInitializationError` if an auth event landed before `build()`
+  finished. Construction now happens first.
+- **`_callWasConnected` not tracked on the callee side**: `_bindToCall`
+  previously only set this flag from the caller's former listener, so a
+  callee who accepted, talked, and then pressed End had their call
+  misclassified as `cancelled` instead of `ended`. Now set uniformly for
+  both roles.
+- **CallKit native UI not dismissed on remote termination**: when the caller
+  cancelled before the callee answered, the callee's native incoming-call
+  screen previously stayed up until the 30s CallKit timeout, because
+  `IncomingCallService.endCall()` existed but was never called.
+  `listenForIncomingCalls()` now calls it on both the null-session path and
+  on any terminal-state snapshot.
+- **Unreadable `PERMISSION_DENIED` crash screen on sign-out mid-call**: see
+  Changed — sign-out no longer attempts a doomed Firestore write.
+- `IncomingCallService`'s `const` constructor was incompatible with the new
+  mutable `_visibleCallIds` tracking set; converted to a `factory` singleton.
+
+### Known gaps (tracked, not fixed in this release)
+- Root auth/navigation layer does not tear down other open Firestore
+  listeners (e.g. chat messages) on sign-out — same class of issue as the
+  call-signaling case fixed here, but out of scope for the calls feature.
+  Flagged for its own pass.
+- `CallTokenService.fetchDevelopmentToken` is a development-only token path
+  and must not ship; needs a server-side Cloud Function before release.
+- No camera state tracking yet (`setCameraEnabled` remains fire-and-forget) —
+  deferred to video call implementation.
+- `CallConnectionStatus` has no `reconnecting` value yet, so `CallScreen`
+  cannot currently distinguish a network hiccup from a stable connected call.

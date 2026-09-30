@@ -48,9 +48,15 @@ final callAudioServiceProvider = Provider<CallAudioService>((ref) {
 
 class CallAudioService {
   CallAudioService();
-
-  final AudioPlayer _loopPlayer = AudioPlayer();
-  final AudioPlayer _tonePlayer = AudioPlayer();
+  // handleInterruptions: false — LiveKit's connect() requests audio focus the
+  // moment the room connects, even while the caller is still ringing (by
+  // design: media needs to be ready instantly if the callee answers). Without
+  // this, just_audio auto-pauses on that focus loss, which is exactly why
+  // ringback was stopping after one loop. Our own _applySession calls are
+  // already the intended source of truth for session config — this just
+  // stops just_audio's own default interruption handling from overriding it.
+  final AudioPlayer _loopPlayer = AudioPlayer(handleInterruptions: false);
+  final AudioPlayer _tonePlayer = AudioPlayer(handleInterruptions: false);
 
   Timer? _vibrationTimer;
   bool _vibrating = false;
@@ -106,7 +112,10 @@ class CallAudioService {
       contentType: AndroidAudioContentType.sonification,
       usage: AndroidAudioUsage.voiceCommunicationSignalling,
     ),
-    //androidAudioFocusGainType: AndroidAudioFocusGainType.none,
+    // Leave androidAudioFocusGainType unset (null) — no `.none` value exists,
+    // and null is what makes audio_session skip requesting focus entirely.
+    // This must NOT request focus, or it will duck/interrupt the live
+    // LiveKit call audio every time a tone plays.
     androidWillPauseWhenDucked: false,
   );
 
@@ -114,7 +123,7 @@ class CallAudioService {
   // (no implicit "assets/" prefix like audioplayers' AssetSource did).
   static const _assets = {
     'ringback': 'assets/sounds/ringback.mp3',
-    'ringtone': 'assets/sounds/ringtone.mp3',
+    'ringtone': 'assets/sounds/ece_ringtone.mp3',
     CallTone.connected: 'assets/sounds/call_connected.mp3',
     CallTone.ended: 'assets/sounds/call_ended.mp3',
     CallTone.busy: 'assets/sounds/call_busy.mp3',
@@ -132,20 +141,81 @@ class CallAudioService {
 
   /// Start ringback. Safe to call repeatedly — a second call is a no-op while
   /// the same loop is already playing.
+  ///
+  /// _currentLoop is claimed SYNCHRONOUSLY, before any await — this closes a
+  /// real race: two Firestore snapshots (e.g. dialing then ringing) arriving
+  /// close together could previously both pass the "already playing" guard,
+  /// since the old code checked the guard, then awaited stopLoop(), and only
+  /// set _currentLoop AFTER that await resolved. A second call arriving
+  /// during that gap saw _currentLoop still null and proceeded too, causing
+  /// two overlapping setAsset/play calls on the same player.
+  // Future<void> startRingback({bool speakerOn = true}) async {
+  //   if (_currentLoop == 'ringback') return;
+  //   await stopLoop();
+  //   _currentLoop = 'ringback';
+
+  //   try {
+  //     await _applySession(_ringbackSessionConfig);
+  //     await _loopPlayer.setLoopMode(LoopMode.one);
+  //     await _loopPlayer.setVolume(speakerOn ? 0.8 : 0.5);
+  //     await _loopPlayer.setAsset(_assets['ringback']!);
+  //     unawaited(_loopPlayer.play());
+  //   } catch (e) {
+  //     _log('ringback failed: $e');
+  //     _currentLoop = null;
+  //   }
+  // }
+
+  // only Testing purpose
   Future<void> startRingback({bool speakerOn = false}) async {
+    _log(
+      'startRingback ENTER: service=${identityHashCode(this)}, '
+      'disposed=$_disposed, current=$_currentLoop, '
+      'playing=${_loopPlayer.playing}, '
+      'processing=${_loopPlayer.processingState}',
+    );
     if (_currentLoop == 'ringback') return;
-    await stopLoop();
-    _currentLoop = 'ringback';
+    _currentLoop = 'ringback'; // claimed — no await has happened yet
+    await _stopLoopInternal(); // stop whatever was playing, without clearing our claim
+    if (_currentLoop != 'ringback') return; // superseded while stopping
 
     try {
       await _applySession(_ringbackSessionConfig);
+      if (_currentLoop != 'ringback') return;
+
       await _loopPlayer.setLoopMode(LoopMode.one);
       await _loopPlayer.setVolume(speakerOn ? 0.8 : 0.5);
-      await _loopPlayer.setAsset(_assets['ringback']!);
+
+      _log(
+        'setAsset START: service=${identityHashCode(this)}, '
+        'asset=${_assets['ringback']}',
+      );
+
+      final duration = await _loopPlayer.setAsset(_assets['ringback']!);
+
+      _log(
+        'setAsset DONE: service=${identityHashCode(this)}, '
+        'duration=$duration, disposed=$_disposed, current=$_currentLoop, '
+        'processing=${_loopPlayer.processingState}',
+      );
+
+      if (_currentLoop != 'ringback') {
+        _log('play skipped: ringback was stopped during asset loading');
+        return;
+      }
+      _log(
+        'play REQUESTED: service=${identityHashCode(this)}, '
+        'playing=${_loopPlayer.playing}, '
+        'processing=${_loopPlayer.processingState}',
+      );
       unawaited(_loopPlayer.play());
-    } catch (e) {
-      _log('ringback failed: $e');
-      _currentLoop = null;
+    } catch (error, stackTrace) {
+      _log(
+        'ringback setup FAILED: service=${identityHashCode(this)}, '
+        'error=$error',
+      );
+      debugPrintStack(stackTrace: stackTrace);
+      if (_currentLoop == 'ringback') _currentLoop = null;
     }
   }
 
@@ -156,6 +226,8 @@ class CallAudioService {
   /// [handledByOs] MUST be true whenever CallKit / ConnectionService is showing
   /// the native incoming screen. The OS is already ringing; ringing again gives
   /// the user two overlapping ringtones and two vibration patterns.
+  ///
+  /// Same claim-before-await pattern as startRingback, same reason.
   Future<void> startRingtone({
     required bool handledByOs,
     bool vibrate = true,
@@ -165,22 +237,57 @@ class CallAudioService {
       return;
     }
     if (_currentLoop == 'ringtone') return;
-    await stopLoop();
-    _currentLoop = 'ringtone';
+    _currentLoop = 'ringtone'; // claimed — no await has happened yet
+    await _stopLoopInternal();
+    if (_currentLoop != 'ringtone') return;
 
     try {
       await _applySession(_ringtoneSessionConfig);
+      if (_currentLoop != 'ringtone') return;
       await _loopPlayer.setLoopMode(LoopMode.one);
       await _loopPlayer.setVolume(1.0);
       await _loopPlayer.setAsset(_assets['ringtone']!);
+      _log('🔊 RINGTONE starting');
+      if (_currentLoop != 'ringtone') return;
       unawaited(_loopPlayer.play());
-    } catch (e) {
+    } catch (e, st) {
       _log('ringtone failed: $e');
-      _currentLoop = null;
+      debugPrintStack(stackTrace: st);
+      if (_currentLoop == 'ringtone') _currentLoop = null;
+      //_currentLoop = null;
     }
 
     if (vibrate) await _startVibration();
   }
+  // Future<void> startRingtone({
+  //   required bool handledByOs,
+  //   bool vibrate = true,
+  // }) async {
+  //   _log('ringtone requested — handledByOs=$handledByOs (FORCED ECE TEST)');
+
+  //   if (_currentLoop == 'ringtone') return;
+
+  //   await stopLoop();
+  //   _currentLoop = 'ringtone';
+
+  //   try {
+  //     await _applySession(_ringtoneSessionConfig);
+  //     await _loopPlayer.setLoopMode(LoopMode.one);
+  //     await _loopPlayer.setVolume(1.0);
+  //     await _loopPlayer.setAsset(_assets['ringtone']!);
+  //     _log('🔊 RINGTONE starting');
+  //     unawaited(_loopPlayer.play()); // never await: completes only when stopped
+  //   } catch (e, st) {
+  //     _log('❌ ringtone play() failed: $e');
+  //     debugPrintStack(stackTrace: st);
+  //     _currentLoop = null;
+  //   }
+  //   if (vibrate) await _startVibration();
+
+  //   if (vibrate) {
+  //     await _startVibration();
+  //   }
+  // }
 
   Future<void> _startVibration() async {
     if (_vibrating) return;
@@ -241,12 +348,39 @@ class CallAudioService {
 
   // --- teardown ----------------------------------------------------------------------
 
+  // Future<void> stopLoop() async {
+  //   _currentLoop = null;
+  //   await _stopVibration();
+  //   try {
+  //     await _loopPlayer.stop();
+  //   } catch (_) {}
+  // }
+  // --- teardown ----------------------------------------------------------------------
+  // Testing Purpose temporary
+  // --- teardown ----------------------------------------------------------------------
   Future<void> stopLoop() async {
+    _log(
+      'stopLoop: service=${identityHashCode(this)}, '
+      'current=$_currentLoop, playing=${_loopPlayer.playing}, '
+      'processing=${_loopPlayer.processingState}',
+    );
+
     _currentLoop = null;
+    await _stopLoopInternal();
+  }
+
+  /// Stops playback/vibration WITHOUT touching _currentLoop. Used internally
+  /// by startRingback/startRingtone, which have already claimed _currentLoop
+  /// themselves and would otherwise have their own claim wiped out by a
+  /// naive call to the public stopLoop() above.
+  Future<void> _stopLoopInternal() async {
     await _stopVibration();
+
     try {
       await _loopPlayer.stop();
-    } catch (_) {}
+    } catch (error) {
+      _log('stopLoop failed: $error');
+    }
   }
 
   /// Call this on EVERY path out of a call. Belt and braces.

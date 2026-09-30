@@ -13,9 +13,6 @@ abstract class CallService {
   Future<void> setSpeakerphoneEnabled(bool enabled); // NEW
   //Future<void> switchCamera();
   Future<void> disconnect();
-  // Use EventsListener<RoomEvent> instead of RoomListener
-  //void addListener(EventsListener<RoomEvent> listener);
-  //void removeListener(EventsListener<RoomEvent> listener);
 
   /// Fires once when the remote participant is gone and hasn't come back
   /// within a short grace period — NOT on every raw disconnect event, which
@@ -27,4 +24,14 @@ abstract class CallService {
   /// Only meaningful after connect() and before disconnect(); implementers
   /// should treat a stream event here as one-shot per call.
   Stream<void> get onPeerGone;
+
+  /// Fires when THIS client's own connection to the LiveKit server drops and
+  /// it starts attempting to reconnect — distinct from onPeerGone, which is
+  /// about the OTHER participant leaving. A local network blip on either
+  /// side is still something both clients should see reflected in the
+  /// shared call state, since the call is degraded either way.
+  Stream<void> get onRoomReconnecting;
+
+  /// Fires when a reconnect started via onRoomReconnecting succeeds.
+  Stream<void> get onRoomReconnected;
 }

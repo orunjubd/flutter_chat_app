@@ -1,20 +1,19 @@
-import 'package:chat_app/core/extensions/theme_extensions.dart';
-import 'package:chat_app/core/theme/app_colors.dart';
-import 'package:chat_app/core/utils/date_time_formatter.dart';
-import 'package:chat_app/core/widgets/app_scaffold.dart';
-import 'package:chat_app/features/calls/providers/call_provider.dart';
-import 'package:chat_app/features/calls/screens/call_screen.dart';
-import 'package:chat_app/features/calls/screens/outgoing_call_screen.dart';
-//import 'package:chat_app/features/calls/screens/livekit_test_screen.dart';
-//import 'package:chat_app/features/calls/widgets/incoming_voice_call_dialog.dart';
-import 'package:chat_app/features/chat/presentation/widgets/reply_preview.dart';
-import 'package:chat_app/features/chat/providers/reply_repository_provider.dart';
 import 'package:chat_app/features/chat/search/screens/search_messages_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-//import 'package:intl/intl.dart';
+
+import 'package:chat_app/core/extensions/theme_extensions.dart';
+import 'package:chat_app/core/theme/app_colors.dart';
+import 'package:chat_app/core/utils/date_time_formatter.dart';
+import 'package:chat_app/core/widgets/app_scaffold.dart';
+import 'package:chat_app/features/calls/core/controllers/call_controller.dart'; // callProvider
+//import 'package:chat_app/features/calls/core/models/call_phase.dart'; // CallUiState
+import 'package:chat_app/features/calls/core/models/call_state.dart'; // CallState
+import 'package:chat_app/features/calls/voice_calls/screens/call_screen.dart';
+import 'package:chat_app/features/chat/presentation/widgets/reply_preview.dart';
+import 'package:chat_app/features/chat/providers/reply_repository_provider.dart';
 
 import 'package:chat_app/features/chat/providers/user_provider.dart';
 import 'package:chat_app/features/chat/data/models/message.dart';
@@ -205,19 +204,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
       (id) => id != currentUserId,
       orElse: () => '',
     );
-    ref.listen<CallState>(callProvider, (previous, next) {
-      if (previous?.status != CallConnectionStatus.connected &&
-          next.status == CallConnectionStatus.connected) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => CallScreen(otherUserId: otherUserId),
-          ),
-        );
-      }
-    });
+
     final presenceAsync = ref.watch(userPresenceProvider(otherUserId));
     final otherUserAsync = ref.watch(userByIdProvider(otherUserId));
     final callState = ref.watch(callProvider);
+    //final otherUser = otherUserAsync.valueOrNull;
 
     return Stack(
       children: [
@@ -267,24 +258,33 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                 icon: const Icon(Icons.call_outlined),
                 tooltip: 'Voice Call',
                 onPressed:
-                    callState.status == CallConnectionStatus.connecting ||
-                        callState.status == CallConnectionStatus.ringing ||
-                        callState.status == CallConnectionStatus.connected
+                    callState.phase == CallState.connecting ||
+                        callState.phase == CallState.ringing ||
+                        callState.phase == CallState.connected ||
+                        callState.phase == CallState.reconnecting
                     ? null
                     : () async {
                         debugPrint(
-                          '📞 [UI-Test] Call button tapped! Current status map: ${callState.status}',
+                          '📞 [UI-Test] Call button tapped! Current status map: ${callState.phase}',
                         );
                         await ref
                             .read(callProvider.notifier)
                             .startVoiceCall(calleeId: otherUserId);
 
                         if (!context.mounted) return;
-
+                        // ============================================================
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) =>
-                                OutgoingCallScreen(calleeId: otherUserId),
+                            settings: const RouteSettings(name: 'call_screen'),
+                            builder: (_) => CallScreen(
+                              peerId: otherUserId,
+                              //peerName: otherUser?.username ?? 'Unknown User',
+                              peerName:
+                                  otherUserAsync.value?.username ??
+                                  'Unknown User',
+                              isOutgoing: true,
+                            ),
+                            // ============================================================
                           ),
                         );
                       },

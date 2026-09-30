@@ -4,7 +4,7 @@
 import 'package:chat_app/core/contact/widgets/contact_message_bubble.dart';
 import 'package:chat_app/core/location/widgets/location_message_bubble.dart';
 import 'package:chat_app/core/video/widgets/fullscreen_video_player.dart';
-import 'package:chat_app/features/calls/widgets/call_system_message_bubble.dart';
+import 'package:chat_app/features/calls/core/widgets/call_system_message_bubble.dart';
 import 'package:chat_app/features/chat/presentation/widgets/file_message_bubble.dart';
 import 'package:chat_app/features/chat/presentation/widgets/video_message_bubble.dart';
 import 'package:firebase_auth/firebase_auth.dart';
