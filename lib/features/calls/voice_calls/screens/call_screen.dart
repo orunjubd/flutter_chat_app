@@ -17,6 +17,7 @@
 
 import 'dart:async';
 //import 'package:chat_app/features/calls/core/models/call_session.dart';
+import 'package:chat_app/features/calls/core/models/call_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -38,6 +39,7 @@ class CallScreen extends ConsumerStatefulWidget {
   final String peerName;
   final String? peerAvatarUrl;
   final bool isOutgoing;
+  static int instances = 0;
 
   @override
   ConsumerState<CallScreen> createState() => _CallScreenState();
@@ -46,8 +48,7 @@ class CallScreen extends ConsumerStatefulWidget {
 class _CallScreenState extends ConsumerState<CallScreen> {
   bool _outgoingCallStarted = false;
   bool _popped = false;
-  //bool _actionTaken = false; // guards Accept/Decline against a double tap
-
+  bool _actionTaken = false;
   Timer? _durationTimer;
   Duration _duration = Duration.zero;
   bool _timerRunning = false;
@@ -55,6 +56,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
   @override
   void initState() {
     super.initState();
+    CallScreen.instances++;
     if (widget.isOutgoing) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || _outgoingCallStarted) return;
@@ -66,6 +68,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
 
   @override
   void dispose() {
+    CallScreen.instances--;
     _durationTimer?.cancel();
     super.dispose();
   }
@@ -77,6 +80,20 @@ class _CallScreenState extends ConsumerState<CallScreen> {
       if (!mounted) return;
       setState(() => _duration += const Duration(seconds: 1));
     });
+  }
+
+  void _accept(CallSession? incoming) {
+    if (_actionTaken || incoming == null) return;
+    setState(() => _actionTaken = true);
+    ref
+        .read(callProvider.notifier)
+        .acceptCall(callId: incoming.id, roomName: incoming.roomName);
+  }
+
+  void _decline(CallSession? incoming) {
+    if (_actionTaken || incoming == null) return;
+    setState(() => _actionTaken = true);
+    ref.read(callProvider.notifier).rejectCall(callId: incoming.id);
   }
 
   String _formatDuration(Duration d) {
@@ -103,9 +120,6 @@ class _CallScreenState extends ConsumerState<CallScreen> {
       final wasActive = previous != null && previous.phase != CallState.idle;
       final shouldPop =
           next.phase.isTerminal || (wasActive && next.phase == CallState.idle);
-      // if (shouldPop) {
-      //   WidgetsBinding.instance.addPostFrameCallback((_) => _popOnce());
-      // }
       if (shouldPop) {
         WidgetsBinding.instance.addPostFrameCallback((_) => _popOnce());
       }
@@ -115,81 +129,138 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     final phase = callState.phase;
     final controlsEnabled =
         phase == CallState.connected || phase == CallState.reconnecting;
-    // Native CallKit owns the incoming-call UI.
-    // Keep this Flutter route alive, but render nothing underneath it.
-    // if (callState.nativeUiVisible &&
-    //     !widget.isOutgoing &&
-    //     phase == CallState.ringing) {
-    //   return const SizedBox.shrink();
-    // }
-    // // Incoming, not yet answered: Accept/Decline instead of Mute/Speaker/End.
-    // // callId/roomName come off watched state, not a constructor param —
-    // // this screen was pushed by GlobalIncomingCallListener the instant the
-    // // call started ringing, using exactly this same incomingCall session.
-    // final isAwaitingAnswer = !widget.isOutgoing && phase == CallState.ringing;
-    // final incoming = callState.incomingCall;
+    final incoming = callState.incomingCall;
+    final isAwaitingAnswer = !widget.isOutgoing && phase == CallState.ringing;
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
-        ref.read(callProvider.notifier).endCurrentCall();
+        if (isAwaitingAnswer) {
+          _decline(incoming);
+        } else {
+          ref.read(callProvider.notifier).endCurrentCall();
+        }
       },
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: SafeArea(
-          child: Column(
-            children: [
-              const Spacer(flex: 2),
-              _PeerAvatar(
-                name: widget.peerName,
-                avatarUrl: widget.peerAvatarUrl,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                widget.peerName,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
+      child: isAwaitingAnswer
+          ? _buildIncomingCard(context, incoming)
+          : _buildFullScreen(
+              context,
+              phase,
+              controlsEnabled,
+              callState.errorMessage,
+            ),
+    );
+  }
+
+  Widget _buildIncomingCard(BuildContext context, CallSession? incoming) {
+    final callerName = incoming?.callerName ?? widget.peerName;
+    return Scaffold(
+      backgroundColor: Colors.black87,
+      body: SafeArea(
+        child: Center(
+          child: Container(
+            width: 320,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.phone_in_talk, size: 56),
+                const SizedBox(height: 16),
+                Text(
+                  'Incoming Voice Call',
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _statusLabel(phase, callState.errorMessage),
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: (0.7)),
-                  fontSize: 16,
+                const SizedBox(height: 8),
+                Text(
+                  callerName,
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
                 ),
-              ),
-              const Spacer(flex: 3),
-              VoiceCallControls(
-                controlsEnabled: controlsEnabled,
-                onEndCall: () =>
-                    ref.read(callProvider.notifier).endCurrentCall(),
-                onToggleMute: controlsEnabled
-                    ? () => ref.read(callProvider.notifier).toggleMic()
-                    : null,
-                onToggleSpeaker: controlsEnabled
-                    ? () => ref.read(callProvider.notifier).toggleSpeaker()
-                    : null,
-              ),
-              const SizedBox(height: 40),
-            ],
+                const SizedBox(height: 24),
+                IncomingCallActions(
+                  enabled: !_actionTaken && incoming != null,
+                  onAccept: () => _accept(incoming),
+                  onDecline: () => _decline(incoming),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  String _statusLabel(CallState phase, String? errorMessage) {
+  Widget _buildFullScreen(
+    BuildContext context,
+    CallState phase,
+    bool controlsEnabled,
+    String? errorMessage,
+  ) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const Spacer(flex: 2),
+            _PeerAvatar(name: widget.peerName, avatarUrl: widget.peerAvatarUrl),
+            const SizedBox(height: 24),
+            Text(
+              widget.peerName,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _statusLabel(
+                phase,
+                errorMessage,
+                ref.watch(callProvider).activeCall,
+              ),
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 16,
+              ),
+            ),
+            const Spacer(flex: 3),
+            VoiceCallControls(
+              controlsEnabled: controlsEnabled,
+              onEndCall: () => ref.read(callProvider.notifier).endCurrentCall(),
+              onToggleMute: controlsEnabled
+                  ? () => ref.read(callProvider.notifier).toggleMic()
+                  : null,
+              onToggleSpeaker: controlsEnabled
+                  ? () => ref.read(callProvider.notifier).toggleSpeaker()
+                  : null,
+            ),
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _statusLabel(
+    CallState phase,
+    String? errorMessage,
+    CallSession? activeCall,
+  ) {
     switch (phase) {
       case CallState.idle:
         return '';
       case CallState.dialing:
         return 'Calling…';
       case CallState.ringing:
-        return widget.isOutgoing ? 'Ringing…' : 'Incoming call…';
+        if (!widget.isOutgoing) return 'Incoming call…';
+        return (activeCall?.calleeRingingAt != null) ? 'Ringing…' : 'Calling…';
+      //case CallState.ringing: return widget.isOutgoing ? 'Ringing…' : 'Incoming call…';
       case CallState.connecting:
         return 'Connecting…';
       case CallState.connected:

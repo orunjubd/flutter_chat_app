@@ -11,9 +11,13 @@
 
 import 'dart:async';
 
+import 'package:chat_app/features/calls/core/services/pending_call_service.dart';
+import 'package:chat_app/features/calls/core/utils/app_lifecycle_utils.dart';
+//import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+//import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:chat_app/features/calls/core/models/call_phase.dart'; // CallUiState
@@ -64,11 +68,12 @@ class CallController extends Notifier<CallUiState> {
   late final CallHistoryRecorder _history;
 
   StreamSubscription<User?>? _authSub;
-  StreamSubscription<RemoteMessage>? _foregroundPushSub;
+  //StreamSubscription<RemoteMessage>? _foregroundPushSub;
   StreamSubscription<void>? _peerGoneSub;
   StreamSubscription<void>? _reconnectingSub;
   StreamSubscription<void>? _reconnectedSub;
 
+  String? _acceptingCallId;
   String? get _uid => FirebaseAuth.instance.currentUser?.uid;
 
   @override
@@ -92,18 +97,17 @@ class CallController extends Notifier<CallUiState> {
     // so isShowingNativeUi stays accurate. (Background isolate push handling
     // is separate: call_push_handler.dart uses CallKitBridge.showRaw, which
     // cannot see this instance at all — see the isolate note on that method.)
-    _foregroundPushSub = FirebaseMessaging.onMessage.listen((message) {
-      if (message.data['type'] != 'incoming_call') return;
-      debugPrint('📥 [Call] trigger: foreground FCM push → native UI');
-      unawaited(
-        _callKit.show(
-          callId: message.data['callId'] ?? '',
-          callerName: message.data['callerName'] ?? 'Unknown',
-          callerAvatarUrl: message.data['callerAvatarUrl'],
-          isVideoCall: message.data['callType'] == 'video',
-        ),
-      );
-    });
+    // _foregroundPushSub = FirebaseMessaging.onMessage.listen((message) {
+    //   if (message.data['type'] != 'incoming_call') return;
+    //   debugPrint('📥 [Call] trigger: foreground FCM push → native UI');
+    //   unawaited(_callKit.show(
+    //       callId: message.data['callId'] ?? '',
+    //       callerName: message.data['callerName'] ?? 'Unknown',
+    //       callerAvatarUrl: message.data['callerAvatarUrl'],
+    //       isVideoCall: message.data['callType'] == 'video',
+    //     ),
+    //   );
+    // });
 
     // ── 3. Media + lifecycle.
     _media = CallMediaController(
@@ -133,6 +137,12 @@ class CallController extends Notifier<CallUiState> {
       onTerminal: _onTerminal,
     );
 
+    // 🛡️ d) APP LIFECYCLE WATCHDOG INTEGRATION
+    final lifecycle = AppLifecycleListener(
+      onResume: () => unawaited(_onAppResumed()),
+    );
+    ref.onDispose(lifecycle.dispose);
+
     // ── 5. Auth last.
     _authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
       if (user != null) {
@@ -143,6 +153,7 @@ class CallController extends Notifier<CallUiState> {
         _peerGoneSub?.cancel();
         _reconnectingSub?.cancel();
         _reconnectedSub?.cancel();
+        unawaited(_consumePendingAccept());
         unawaited(_audioCoordinator.reset());
         unawaited(_callKit.dismissAll());
         unawaited(ref.read(liveKitCallServiceProvider).disconnect());
@@ -152,7 +163,7 @@ class CallController extends Notifier<CallUiState> {
 
     ref.onDispose(() {
       _authSub?.cancel();
-      _foregroundPushSub?.cancel();
+      //_foregroundPushSub?.cancel();
       _peerGoneSub?.cancel();
       _reconnectingSub?.cancel();
       _reconnectedSub?.cancel();
@@ -272,6 +283,8 @@ class CallController extends Notifier<CallUiState> {
   }) async {
     final uid = _uid;
     if (uid == null) return _fail('No authenticated user.');
+    if (_acceptingCallId == callId) return;
+    _acceptingCallId = callId;
     await _callKit.dismiss(callId);
     _signaling.watchActive(callId: callId);
     state = state.copyWith(
@@ -286,6 +299,7 @@ class CallController extends Notifier<CallUiState> {
     if (error != null) {
       // Don't rely solely on _onTerminal's self-healing re-arm — if the
       // failure write to Firestore also fails, nothing else re-arms this.
+      _acceptingCallId = null;
       final u = _uid;
       if (u != null) _signaling.watchInbox(userId: u);
       return _fail(error);
@@ -295,6 +309,40 @@ class CallController extends Notifier<CallUiState> {
       phase: call_model.CallState.connected,
       micEnabled: true,
     );
+  }
+
+  // Pending accept (killed-state Accept):
+  Future<void> _consumePendingAccept() async {
+    final callId = await PendingCallService.instance.consumeAcceptedCall();
+    if (callId == null) return;
+    final session = await ref
+        .read(callSignalingRepositoryProvider)
+        .fetchCallOnce(callId: callId);
+    if (session == null ||
+        session.calleeId != _uid ||
+        session.state.isTerminal) {
+      await _callKit.dismiss(callId);
+      return;
+    }
+    await acceptCall(callId: session.id, roomName: session.roomName);
+  }
+
+  // Resume handler (notification-body tap):
+  Future<void> _onAppResumed() async {
+    if (_uid != null) unawaited(_consumePendingAccept());
+
+    // Give a native Accept event time to arrive first; it changes the phase.
+    await Future.delayed(const Duration(milliseconds: 600));
+
+    final incoming = state.incomingCall;
+    if (incoming == null || state.phase != call_model.CallState.ringing) return;
+    if (!await CallKitBridge.isActiveNatively(incoming.id)) return;
+
+    debugPrint('📲 [Call] resumed while native UI ringing → own UI');
+    await _callKit.dismiss(incoming.id);
+    await _audioCoordinator.takeOverRingtone();
+    // Re-emit so GlobalIncomingCallListener re-evaluates and pushes the card.
+    state = state.copyWith(incomingCall: incoming);
   }
 
   Future<void> rejectCall({required String callId}) async {
@@ -404,18 +452,45 @@ class CallController extends Notifier<CallUiState> {
 
   void _onIncomingCall(CallSession session) {
     if (session.type != CallType.voice) return;
+
+    // Same call already being handled (the snapshot re-fired after our own write).
+    if (state.incomingCall?.id == session.id) return;
+
+    final age = DateTime.now().difference(session.createdAt.toDate());
+    if (age > const Duration(seconds: 60)) {
+      debugPrint(
+        '🕰️ [Call] ignoring stale ringing call → ${session.id} (${age.inSeconds}s old)',
+      );
+      unawaited(_lifecycle.markMissed(callId: session.id));
+      return;
+    }
+    // Tell the caller this device received the call (one write per call).
+    if (session.calleeRingingAt == null) {
+      unawaited(
+        ref
+            .read(callSignalingRepositoryProvider)
+            .markCalleeRinging(callId: session.id),
+      );
+    }
     state = state.copyWith(
       incomingCall: session,
       phase: call_model.CallState.ringing,
     );
-    debugPrint('📥 [Call] trigger: Firestore inbox → native UI');
-    unawaited(
-      _callKit.show(
-        callId: session.id,
-        callerName: session.callerName ?? 'Unknown',
-        isVideoCall: session.type != CallType.voice,
-      ),
-    );
+
+    if (isAppInForeground) {
+      debugPrint('📥 [Call] Firestore inbox → own UI (foreground)');
+      // No _callKit.show(): isShowingNativeUi stays false, so the audio
+      // coordinator plays OUR ringtone.
+    } else {
+      debugPrint('📥 [Call] Firestore inbox → native UI (background)');
+      unawaited(
+        _callKit.show(
+          callId: session.id,
+          callerName: session.callerName ?? 'Unknown',
+          isVideoCall: false,
+        ),
+      );
+    }
     unawaited(_audioCoordinator.onSession(session, speakerOn: state.speakerOn));
   }
 
@@ -452,6 +527,7 @@ class CallController extends Notifier<CallUiState> {
     CallSession session,
     call_model.CallState reason,
   ) async {
+    _acceptingCallId = null;
     unawaited(
       _history.record(
         session: session,

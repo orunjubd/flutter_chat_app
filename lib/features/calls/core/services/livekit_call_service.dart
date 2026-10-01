@@ -1,6 +1,7 @@
 // features/call/services/livekit_call_service.dart
 import 'dart:async';
 
+import 'package:chat_app/features/calls/core/models/call_video_tracks.dart';
 import 'package:flutter/foundation.dart';
 import 'package:livekit_client/livekit_client.dart';
 import 'package:chat_app/core/config/call_config.dart';
@@ -14,6 +15,69 @@ class LiveKitCallService implements CallService {
   final _peerGoneController = StreamController<void>.broadcast();
   final _reconnectingController = StreamController<void>.broadcast();
   final _reconnectedController = StreamController<void>.broadcast();
+  final _videoTracksController = StreamController<CallVideoTracks>.broadcast();
+  bool _frontCamera = true;
+
+  @override
+  Stream<CallVideoTracks> get onVideoTracksChanged =>
+      _videoTracksController.stream;
+
+  @override
+  CallVideoTracks get videoTracks {
+    final room = _room;
+    if (room == null) return const CallVideoTracks();
+    VideoTrack? local;
+    final lp = room.localParticipant;
+    if (lp != null) {
+      for (final pub in lp.videoTrackPublications) {
+        final t = pub.track;
+        if (t != null && !pub.muted) {
+          local = t;
+          break;
+        }
+      }
+    }
+    VideoTrack? remote;
+    for (final p in room.remoteParticipants.values) {
+      for (final pub in p.videoTrackPublications) {
+        final t = pub.track;
+        if (t != null && pub.subscribed && !pub.muted) {
+          remote = t;
+          break;
+        }
+      }
+      if (remote != null) break;
+    }
+    return CallVideoTracks(local: local, remote: remote);
+  }
+
+  void _emitTracks() {
+    if (!_videoTracksController.isClosed) {
+      _videoTracksController.add(videoTracks);
+    }
+  }
+
+  @override
+  Future<void> switchCamera() async {
+    final lp = _room?.localParticipant;
+    if (lp == null) return;
+    for (final pub in lp.videoTrackPublications) {
+      final track = pub.track;
+      if (track == null) continue;
+      try {
+        _frontCamera = !_frontCamera;
+        await track.setCameraPosition(
+          _frontCamera ? CameraPosition.front : CameraPosition.back,
+        );
+        debugPrint('📷 [LiveKit] camera → ${_frontCamera ? "front" : "back"}');
+      } catch (e) {
+        _frontCamera = !_frontCamera; // revert
+        debugPrint('❌ [LiveKit] switchCamera failed: $e');
+      }
+      break;
+    }
+    _emitTracks();
+  }
 
   // How long to wait after the peer disconnects before treating the call as
   // actually over. Long enough to ride out a brief network blip / LiveKit's
@@ -94,7 +158,13 @@ class LiveKitCallService implements CallService {
       ..on<RoomReconnectedEvent>((event) {
         debugPrint('✅ [LiveKit] Reconnected to room.');
         if (!_reconnectedController.isClosed) _reconnectedController.add(null);
-      });
+      })
+      ..on<LocalTrackPublishedEvent>((_) => _emitTracks())
+      ..on<LocalTrackUnpublishedEvent>((_) => _emitTracks())
+      ..on<TrackSubscribedEvent>((_) => _emitTracks())
+      ..on<TrackUnsubscribedEvent>((_) => _emitTracks())
+      ..on<TrackMutedEvent>((_) => _emitTracks())
+      ..on<TrackUnmutedEvent>((_) => _emitTracks());
   }
 
   @override
@@ -114,6 +184,7 @@ class LiveKitCallService implements CallService {
       throw StateError('Cannot change camera before joining a room.');
     }
     await participant.setCameraEnabled(enabled);
+    _emitTracks();
     debugPrint('📷 [LiveKit] Camera ${enabled ? 'enabled' : 'disabled'}.');
   }
 
@@ -145,6 +216,7 @@ class LiveKitCallService implements CallService {
     debugPrint('🔌 [LiveKit] Disconnecting...');
     await room.disconnect();
     _room = null;
+    _emitTracks();
     debugPrint('✅ [LiveKit] Disconnected.');
   }
 
@@ -156,5 +228,6 @@ class LiveKitCallService implements CallService {
     await _peerGoneController.close();
     await _reconnectingController.close();
     await _reconnectedController.close();
+    await _videoTracksController.close();
   }
 }

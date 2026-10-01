@@ -1671,3 +1671,13 @@ progress, thumbnails and playback.
 
 Video messages use the media-upload pipeline. Video calls use LiveKit
 real-time communication plus Firestore call signaling.
+
+
+====================================================
+## v1.8.4
+### Incoming call routing
+Firestore inbox listener → CallController._onIncomingCall
+  foreground → own ringtone + CallScreen card
+  background → CallKitBridge.show (native UI)
+FCM push (background isolate) → CallKitBridge.showRaw (deduped via activeCalls())
+Decision: Firestore is the source of truth; push only wakes the app.

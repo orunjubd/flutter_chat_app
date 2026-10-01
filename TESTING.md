@@ -308,3 +308,11 @@ Planned test cases:
 ✅ Stable
 
 Current Release: **ECE Chat v1.6.1**
+
+=======================================
+## 1.8.4
+
+### Voice call (v1.8.4)
+- Test on two devices; callee must be a real phone for FCM/CallKit.
+- Dev only: run `node push_relay/relay.js` while testing background calls.
+- Matrix: foreground / background / killed × accept / decline / caller cancel / timeout.

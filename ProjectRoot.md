@@ -49,3 +49,10 @@ independent sealed `Message` subtypes for exactly this reason. Image,
 voice, and document currently remain on a shared flat legacy shape for
 backward-compatibility reasons with existing production data, and are
 planned to be migrated the same way, one type at a time.
+
+=========================================================
+## Voice calls
+
+- Voice calls: complete (v1.8.4). Video calls: in progress.
+- Push for background calls: dev relay only; Cloud Functions blocked on Blaze plan.
+- push_relay/ (dev-only, contains a service-account key, git-ignored).

@@ -763,3 +763,55 @@ The video-call work must preserve the stable voice-call behavior.
 
 This file intentionally documents the **current v1.8.1 baseline only**.
 Older release-by-release history is not reproduced here.
+
+--------------------------------------
+# ECE v1.8.4 – Voice Call Complete
+--------------------------------------
+### Release date: 2026-10-01
+
+One-to-one voice calling is now complete: signaling, LiveKit audio, hybrid
+incoming-call UI, call history and push-based background ringing.
+
+## Major features
+- **Hybrid incoming call**
+  - App in foreground: our own Dart ringtone + in-app incoming call card.
+  - App in background/killed: system ringtone + native Android CallKit UI.
+- **Calling… → Ringing… status.** The callee's device writes `calleeRingingAt`
+  so the caller only sees "Ringing…" once the call actually reached a device.
+- **Accept / Decline / Cancel / Missed / End** all clean up UI, ringtone and
+  native notification.
+- **Call history** and in-chat system messages for every call outcome.
+- **Dev push relay** (`push_relay/`): Node script that sends the FCM push
+  without Cloud Functions (no Blaze plan required for development).
+
+## Fixes
+- Foreground FCM listener no longer shows native UI on top of the in-app card
+  (double ringing).
+- CallKit `show` deduplicated across isolates (`activeCalls()` check).
+- Stale "ringing" calls older than 60 s are ignored and marked missed.
+- Fixed infinite Firestore write loop caused by writing `calleeRingingAt`
+  while the inbox query was still matching the document.
+- Accept guard prevents CallKit accept and pending-accept from both firing.
+- Back press on the incoming card now declines instead of ending a call that
+  has no active id yet.
+
+## Testing status
+| Scenario | Result |
+|---|---|
+| Foreground ring, Accept, call connects | Passed (Pixel emulator → Nokia 6.1) |
+| Foreground ring, Decline | Passed |
+| Caller timeout → missed, ringtone stops | Passed |
+| Background ring via push relay | Passed |
+| Killed-state Accept (PendingCallService) | Not yet verified |
+| Notification-body tap while ringing | Not yet verified |
+
+## Known limitations
+- Background/killed ringing needs a push. Cloud Functions require the Blaze plan,
+  so development uses `push_relay/` (not for production).
+- Firestore rules are the open dev rules (`request.auth != null`).
+  Must be tightened before release.
+- `createdAt` uses the caller's device clock; large clock differences can make a
+  fresh call look stale.
+- Some strings and colors in the call UI are still hard-coded
+  (ECERules §15/§16).
+- Video calls are NOT part of this release (in progress).

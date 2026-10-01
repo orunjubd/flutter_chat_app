@@ -229,3 +229,12 @@ Priority order:
 Last Updated:
 
 **ECE Chat v1.6.1**
+====================================================================
+## 1.8.4
+
+- [ ] Verify killed-state Accept (PendingCallService → CallScreen)
+- [ ] Verify notification-body tap while ringing
+- [ ] Tighten Firestore rules (calls, users, conversations) before release
+- [ ] Move call strings to CallStrings, colors to AppColors/theme extension
+- [ ] Enable Blaze and deploy onCallRinging to replace push_relay
+- [ ] Use serverTimestamp for call createdAt (clock-skew fix)

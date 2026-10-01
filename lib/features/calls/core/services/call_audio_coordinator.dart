@@ -39,6 +39,7 @@ class CallAudioCoordinator {
   call_model.CallState? _lastState;
   String? _lastCallId;
   bool _active = false;
+  bool _ownRingtoneOn = false;
 
   /// Drive audio from the session stream. Call from your provider's listener.
   Future<void> onSession(CallSession session, {required bool speakerOn}) async {
@@ -59,6 +60,11 @@ class CallAudioCoordinator {
     final uid = localUserId();
     final isCaller = uid != null && session.callerId == uid;
 
+    if (current != call_model.CallState.ringing &&
+        current != call_model.CallState.dialing) {
+      _ownRingtoneOn = false;
+    }
+
     switch (current) {
       case call_model.CallState.idle:
         break;
@@ -68,7 +74,9 @@ class CallAudioCoordinator {
         if (isCaller) {
           await _audio.startRingback(speakerOn: speakerOn);
         } else {
-          await _audio.startRingtone(handledByOs: isNativeIncomingUiVisible());
+          final handledByOs = isNativeIncomingUiVisible();
+          _ownRingtoneOn = !handledByOs;
+          await _audio.startRingtone(handledByOs: handledByOs);
         }
 
       case call_model.CallState.connecting:
@@ -147,10 +155,19 @@ class CallAudioCoordinator {
   Future<void> reset() async {
     _lastState = null;
     _lastCallId = null;
+    _ownRingtoneOn = false;
     if (_active) {
       _active = false;
       await _audio.stopAll();
     }
+  }
+
+  /// Native UI was dismissed while the app is foreground: start our ringtone
+  /// unless it's already playing.
+  Future<void> takeOverRingtone() async {
+    if (_ownRingtoneOn) return;
+    _ownRingtoneOn = true;
+    await _audio.startRingtone(handledByOs: false);
   }
 
   // ============================================================================

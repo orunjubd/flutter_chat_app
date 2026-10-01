@@ -4,6 +4,7 @@ import 'package:chat_app/features/calls/core/services/callkit_bridge.dart';
 import 'package:chat_app/features/calls/core/services/pending_call_service.dart';
 import 'package:chat_app/firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -42,23 +43,16 @@ import 'package:chat_app/features/calls/core/models/call_state.dart'
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   if (message.data['type'] != 'incoming_call') return;
-
   final callId = (message.data['callId'] as String?)?.trim();
   if (callId == null || callId.isEmpty) {
     debugPrint('❌ [CallPush] Incoming FCM ignored: missing callId');
     return;
   }
-
   final callerName = (message.data['callerName'] as String?)?.trim();
   final avatarUrl = (message.data['callerAvatarUrl'] as String?)?.trim();
-
   debugPrint(
-    '🔔 [CallPush] Incoming FCM: callId=$callId, '
-    'messageId=${message.messageId}, '
-    'sentTime=${message.sentTime}, '
-    'callType=${message.data['callType']}',
+    '🔔 [CallPush] Incoming FCM: callId=$callId, callType=${message.data['callType']}',
   );
-
   try {
     await CallKitBridge.showRaw(
       callId: callId,
@@ -71,9 +65,37 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       isVideoCall: message.data['callType'] == 'video',
     );
     debugPrint('✅ [CallPush] showRaw returned: callId=$callId');
+    await _markCalleeRingingFromBackground(callId); // after the UI is up
   } catch (error, stackTrace) {
     debugPrint('❌ [CallPush] showRaw failed: callId=$callId, error=$error');
     debugPrintStack(stackTrace: stackTrace);
+  }
+}
+
+/// Background-isolate twin of CallSignalingRepository.markCalleeRinging.
+/// Raw Firestore on purpose: no Riverpod container exists in this isolate.
+Future<void> _markCalleeRingingFromBackground(String callId) async {
+  try {
+    await _initializeFirebaseForBackground();
+    // Auth restores asynchronously in a fresh isolate; rules need request.auth.
+    await FirebaseAuth.instance.authStateChanges().first.timeout(
+      const Duration(seconds: 3),
+      onTimeout: () => null,
+    );
+
+    final ref = FirebaseFirestore.instance.collection('calls').doc(callId);
+    final data = (await ref.get()).data();
+    if (data == null ||
+        data['state'] != call_model.CallState.ringing.name ||
+        data['calleeRingingAt'] != null) {
+      return; // gone, answered, or already acknowledged by the other path
+    }
+    await ref.update({'calleeRingingAt': FieldValue.serverTimestamp()});
+    debugPrint('📡 [CallPush] calleeRingingAt written → $callId');
+  } catch (e) {
+    debugPrint(
+      '⚠️ [CallPush] could not write calleeRingingAt: $e',
+    ); // best-effort
   }
 }
 

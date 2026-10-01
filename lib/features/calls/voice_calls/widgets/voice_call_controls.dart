@@ -71,75 +71,80 @@ class _ControlButton extends StatelessWidget {
             color: enabled ? Colors.white70 : Colors.white24,
             fontSize: 12,
           ),
-          //         ),
-          //       ],
-          //     );
-          //   }
-          // }
-
-          // /// Shown instead of VoiceCallControls while an incoming call hasn't been
-          // /// answered yet — Accept/Decline, not Mute/Speaker/End. Once accepted, the
-          // /// screen swaps to VoiceCallControls automatically as `phase` changes.
-          // class IncomingCallActions extends StatelessWidget {
-          //   const IncomingCallActions({
-          //     super.key,
-          //     required this.enabled,
-          //     required this.onAccept,
-          //     required this.onDecline,
-          //   });
-
-          //   final bool enabled;
-          //   final VoidCallback onAccept;
-          //   final VoidCallback onDecline;
-
-          //   @override
-          //   Widget build(BuildContext context) {
-          //     return Row(
-          //       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          //       children: [
-          //         _RoundIconButton(
-          //           icon: Icons.call_end,
-          //           color: Colors.red,
-          //           onPressed: enabled ? onDecline : null,
-          //         ),
-          //         _RoundIconButton(
-          //           icon: Icons.call,
-          //           color: Colors.green,
-          //           onPressed: enabled ? onAccept : null,
         ),
       ],
     );
   }
 }
 
-// class _RoundIconButton extends StatelessWidget {
-//   const _RoundIconButton({
-//     required this.icon,
-//     required this.color,
-//     required this.onPressed,
-//   });
+class IncomingCallActions extends StatelessWidget {
+  const IncomingCallActions({
+    super.key,
+    required this.enabled,
+    required this.onAccept,
+    required this.onDecline,
+  });
+  final bool enabled;
+  final VoidCallback onAccept;
+  final VoidCallback onDecline;
 
-//   final IconData icon;
-//   final Color color;
-//   final VoidCallback? onPressed;
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _RoundAction(
+          color: Colors.red,
+          icon: Icons.call_end,
+          label: 'Decline',
+          onTap: enabled ? onDecline : null,
+        ),
+        _RoundAction(
+          color: Colors.green,
+          icon: Icons.call,
+          label: 'Accept',
+          onTap: enabled ? onAccept : null,
+        ),
+      ],
+    );
+  }
+}
 
-//   @override
-//   Widget build(BuildContext context) {
-//     final enabled = onPressed != null;
-//     return Material(
-//       color: enabled ? color : color.withValues(alpha: 0.4),
-//       shape: const CircleBorder(),
-//       child: InkWell(
-//         customBorder: const CircleBorder(),
-//         onTap: onPressed,
-//         child: Padding(
-//           padding: const EdgeInsets.all(18),
-//           child: Icon(icon, color: Colors.white, size: 32),
-//         ),
-//       ),
-//     );
-//   }
-// }
+class _RoundAction extends StatelessWidget {
+  const _RoundAction({
+    required this.color,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+  final Color color;
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Material(
+          color: onTap == null ? color.withValues(alpha: 0.4) : color,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Icon(icon, color: Colors.white, size: 32),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+      ],
+    );
+  }
+}
 
 class _EndCallButton extends StatelessWidget {
   const _EndCallButton({required this.onPressed});

@@ -178,6 +178,8 @@ restoring obsolete roadmap states from older documentation.
 
 | Version | Summary |
 |---|---|
+| v1.8.4 | 2026-10-01 | Voice Call Complete: hybrid incoming UI, ringing acknowledgement,
+background push via dev relay. Killed-state accept pending verification. |
 | v1.8.1 | Phase 4.9 —  Voice Call: Speaker, mute/unmute, incomingCallScreen correction, Black Screen / Red Screen correction, use copyWith.State, update GlobalIncomingCalllistner, few method update CallProvider |
 | v1.8.0 | Phase 4.9 —  Voice Call: includes the complete one-to-one voice-call; flow: - outgoing call - incoming call - accept - reject - LiveKit
 connection - microphone control - speaker control - call termination - repeated calls - call history - call system messages - CallKit/background acceptance support - incoming listener restoration|

@@ -255,6 +255,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
             ),
             actions: [
               IconButton(
+                icon: const Icon(Icons.videocam_outlined),
+                tooltip: 'Video Call',
+                onPressed: () {
+                  /* same as voice, but CallScreen(..., isOutgoing: true, type: CallType.video) */
+                },
+              ),
+              IconButton(
                 icon: const Icon(Icons.call_outlined),
                 tooltip: 'Voice Call',
                 onPressed:

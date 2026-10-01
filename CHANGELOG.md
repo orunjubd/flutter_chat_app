@@ -1312,3 +1312,27 @@ other.
   deferred to video call implementation.
 - `CallConnectionStatus` has no `reconnecting` value yet, so `CallScreen`
   cannot currently distinguish a network hiccup from a stable connected call.
+
+====================================================================
+  ## [1.8.4] – 2026-10-01 – Voice Call Complete
+====================================================================
+
+### Added
+
+- Hybrid incoming call (foreground own UI / background native CallKit)
+- `calleeRingingAt` acknowledgement ("Calling…" vs "Ringing…")
+- `CallSignalingRepository.markCalleeRinging`
+- `CallKitBridge.isActiveNatively` and cross-isolate dedupe in `showRaw`
+- `CallAudioCoordinator.takeOverRingtone`
+- `isAppInForeground` helper (`core/utils/app_lifecycle_utils.dart`)
+- `IncomingCallActions` widget, incoming-call card in `CallScreen`
+- App-resume handler and pending-accept consume in `CallController`
+- Dev push relay (`push_relay/relay.js`)
+
+### Fixed
+- Double ringing in foreground; stale ringing calls; calleeRingingAt write loop;
+  duplicate accept; back-press behavior on incoming card
+  
+### Changed
+- `GlobalIncomingCallListener` opens `CallScreen` for foreground ring and on accept
+- `CallSession` gains `calleeRingingAt`

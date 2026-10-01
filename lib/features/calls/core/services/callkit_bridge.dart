@@ -61,6 +61,16 @@ class CallKitBridge {
     debugPrint('📞 [CallKit] bridge listening.');
   }
 
+  static Future<bool> isActiveNatively(String callId) async {
+    try {
+      final calls = await FlutterCallkitIncoming.activeCalls();
+      return calls.any((c) => c is Map && c.id == callId);
+    } catch (e) {
+      debugPrint('⚠️ [CallKit] activeCalls failed: $e');
+    }
+    return false;
+  }
+
   Future<void> _handle(CallEvent? event) async {
     if (event == null) return;
 
@@ -106,7 +116,6 @@ class CallKitBridge {
   }
 
   // --- showing / dismissing --------------------------------------------------
-
   /// Builds and shows the native incoming-call UI directly via the plugin,
   /// with NO instance-level tracking. This is the only variant safe to call
   /// from the background message-handler isolate, which cannot see this
@@ -121,6 +130,12 @@ class CallKitBridge {
     required bool isVideoCall,
     Duration timeout = const Duration(seconds: 30),
   }) async {
+    if (await isActiveNatively(callId)) {
+      debugPrint(
+        '🔔 [CallKit] showRaw skipped, already active natively → $callId',
+      );
+      return;
+    }
     final params = CallKitParams(
       id: callId,
       nameCaller: callerName,

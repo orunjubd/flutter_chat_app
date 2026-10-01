@@ -1,6 +1,8 @@
 //import 'package:livekit_client/livekit_client.dart';
 
 // features/calls/services/call_service.dart
+import 'package:chat_app/features/calls/core/models/call_video_tracks.dart';
+
 /// Common contract for all RTC providers. Swapping LiveKit for
 /// Agora/self-hosted later means writing one new class here and
 /// changing one line in the provider — nothing else in the app
@@ -10,9 +12,11 @@ abstract class CallService {
   Future<void> connect({required String roomToken});
   Future<void> setMicrophoneEnabled(bool enabled);
   Future<void> setCameraEnabled(bool enabled);
-  Future<void> setSpeakerphoneEnabled(bool enabled); // NEW
-  //Future<void> switchCamera();
+  Future<void> setSpeakerphoneEnabled(bool enabled);
   Future<void> disconnect();
+  Future<void> switchCamera();
+  CallVideoTracks get videoTracks;
+  Stream<CallVideoTracks> get onVideoTracksChanged;
 
   /// Fires once when the remote participant is gone and hasn't come back
   /// within a short grace period — NOT on every raw disconnect event, which

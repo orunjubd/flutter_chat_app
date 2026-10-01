@@ -1,4 +1,5 @@
 import 'package:chat_app/features/calls/core/controllers/call_controller.dart';
+import 'package:chat_app/features/calls/core/utils/app_lifecycle_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chat_app/features/calls/core/models/call_state.dart';
@@ -20,6 +21,9 @@ import 'package:chat_app/core/navigation/app_navigator_key.dart';
 // Known gap: if CallKit's native UI doesn't show for some reason (push
 // delivery failure), there is currently no way to accept a call at all.
 // Revisit once native-only testing is confirmed clean.
+
+bool _pushScheduled = false; // top-level in the file
+
 class GlobalIncomingCallListener extends ConsumerWidget {
   const GlobalIncomingCallListener({super.key, required this.child});
   final Widget child;
@@ -40,178 +44,41 @@ class GlobalIncomingCallListener extends ConsumerWidget {
           next.phase != CallState.ringing &&
           next.phase.isBusy;
 
-      if (justAccepted) {
-        final acceptedCall = previous!.incomingCall!;
-        final callerId = acceptedCall.callerId;
-        final peerName = acceptedCall.callerName ?? 'Unknown User';
+      final justStartedRinging =
+          next.phase == CallState.ringing &&
+          next.incomingCall != null &&
+          isAppInForeground; // same check the controller used
+
+      if (!justAccepted && !justStartedRinging) return;
+
+      final call = justAccepted ? previous!.incomingCall! : next.incomingCall!;
+
+      if (_pushScheduled) return;
+      _pushScheduled = true;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _pushScheduled = false;
+        if (CallScreen.instances > 0) return; // foreground card already open
+        final navigator = appNavigatorKey.currentState;
+        if (navigator == null) {
+          debugPrint('❌ [GlobalIncomingCallListener] navigator is null');
+          return;
+        }
         debugPrint(
-          '🎯 [GlobalIncomingCallListener] Navigating to CallScreen for $callerId',
+          '🎯 [GlobalIncomingCallListener] pushing CallScreen (instances=${CallScreen.instances})',
         );
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final navigator = appNavigatorKey.currentState;
-          if (navigator != null) {
-            // Defensive cleanup: if a previous CallScreen (e.g. from a call
-            // that just ended) hasn't popped itself yet — a real race when a
-            // new call arrives right after the last one ended — clear it
-            // before pushing, so screens never stack up. CallScreen's own
-            // self-pop stays in place for the normal single-call case; this
-            // is the backstop for the race specifically.
-            navigator.push(
-              MaterialPageRoute(
-                settings: const RouteSettings(name: 'call_screen'),
-                builder: (_) => CallScreen(
-                  peerId: callerId,
-                  peerName: peerName,
-                  isOutgoing: false,
-                ),
-              ),
-            );
-          } else {
-            debugPrint(
-              '❌ [GlobalIncomingCallListener] appNavigatorKey.currentState is null',
-            );
-          }
-        });
-      }
+        navigator.push(
+          MaterialPageRoute(
+            settings: const RouteSettings(name: 'call_screen'),
+            builder: (_) => CallScreen(
+              peerId: call.callerId,
+              peerName: call.callerName ?? 'Unknown User',
+              isOutgoing: false,
+            ),
+          ),
+        );
+      });
     });
-
-    // No more overlay/dialog — CallScreen is the only UI for an incoming
-    // call now, pushed above the moment it's detected.
     return child;
   }
 }
-
-// class GlobalIncomingCallListener extends ConsumerWidget {
-//   const GlobalIncomingCallListener({super.key, required this.child});
-
-//   final Widget child;
-
-//   static const _busyStatuses = {
-//     CallState.connecting,
-//     CallState.connected,
-//     CallState.ringing,
-//   };
-
-//   @override
-//   Widget build(BuildContext context, WidgetRef ref) {
-//     final callState = ref.watch(callProvider);
-//     final incomingCall = callState.incomingCall;
-
-//     debugPrint(
-//       '👀 [GlobalIncomingCallListener.build] status=${callState.phase}, incomingCall=$incomingCall',
-//     );
-//     ref.listen<CallUiState>(callProvider, (previous, next) async {
-//       //final callAudio = ref.read(callAudioServiceProvider);
-
-//       debugPrint(
-//         '🔔 [GlobalIncomingCallListener.listen] '
-//         'previous=${previous?.phase} → next=${next.phase}',
-//       );
-
-//       debugPrint(
-//         '🔔 [GlobalIncomingCallListener.listen] '
-//         'next.incomingCall=${next.incomingCall}',
-//       );
-
-//       // ============================================================
-//       // 1. INCOMING CALL → START RINGTONE
-//       // ============================================================
-//       if (next.incomingCall != null &&
-//           next.phase == CallState.ringing &&
-//           (previous?.incomingCall == null ||
-//               previous?.phase != CallState.ringing)) {
-//         debugPrint(
-//           '🔔 [GlobalIncomingCallListener] '
-//           'Incoming call detected → starting ringtone',
-//         );
-
-//         //unawaited(callAudio.playRingtone());
-//       }
-
-//       // ============================================================
-//       // 2. INCOMING CALL → ACCEPTED / CONNECTED
-//       // ============================================================
-//       if (next.phase == CallState.connected &&
-//           previous?.phase != CallState.connected) {
-//         debugPrint(
-//           '🔇 [GlobalIncomingCallListener] '
-//           'Call connected → stopping ringtone',
-//         );
-
-//         //unawaited(callAudio.stop());
-
-//         if (next.incomingCall != null) {
-//           final callerId = next.incomingCall!.callerId;
-
-//           debugPrint(
-//             '🎯 [GlobalIncomingCallListener] '
-//             'Navigating to CallScreen for $callerId',
-//           );
-//           String peerName = 'Unknown User';
-//           try {
-//             // 🚀 ECE DYNAMIC RESOLVER CHANNEL
-//             // ✅ REQUIREMENT MET: Fetches the real profile snapshot asynchronously before pushing routes!
-//             //final userProfile = await ref.read( userByIdProvider(callerId).future,  );
-//             final userProfile = await ref.read(
-//               userByIdProvider(callerId).future,
-//             );
-//             if (userProfile != null) {
-//               peerName = userProfile.username;
-//             }
-//           } catch (e) {
-//             debugPrint(
-//               '⚠️ [GlobalIncomingCallListener] Failed to resolve peer name metadata: $e',
-//             );
-//           }
-//           WidgetsBinding.instance.addPostFrameCallback((_) {
-//             final navigator = appNavigatorKey.currentState;
-
-//             if (navigator != null) {
-//               navigator.push(
-//                 MaterialPageRoute(
-//                   builder: (_) => CallScreen(
-//                     peerId: callerId,
-//                     //peerName: otherUser?.username ?? 'Unknown User',
-//                     peerName: peerName,
-//                     isOutgoing: false,
-//                   ),
-//                 ),
-//               );
-//             } else {
-//               debugPrint(
-//                 '❌ [GlobalIncomingCallListener] '
-//                 'appNavigatorKey.currentState is null',
-//               );
-//             }
-//           });
-//         }
-//       }
-
-//       // ============================================================
-//       // 3. INCOMING CALL → REJECTED / ENDED / FAILED
-//       // ============================================================
-//       if (next.phase == CallState.ended || next.phase == CallState.failed) {
-//         debugPrint(
-//           '🔇 [GlobalIncomingCallListener] '
-//           'Call became terminal → stopping ringtone',
-//         );
-
-//         //unawaited(callAudio.stop());
-//       }
-//     });
-
-//     final shouldShowIncomingCall =
-//         incomingCall != null && !_busyStatuses.contains(callState.phase);
-
-//     return Stack(
-//       children: [
-//         child,
-//         if (shouldShowIncomingCall)
-//           Positioned.fill(
-//             child: IncomingVoiceCallDialog(incomingCall: incomingCall),
-//           ),
-//       ],
-//     );
-//   }
-// }
