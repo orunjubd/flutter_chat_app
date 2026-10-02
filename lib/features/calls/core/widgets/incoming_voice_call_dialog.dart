@@ -45,34 +45,6 @@ class IncomingVoiceCallDialog extends ConsumerWidget {
                 style: Theme.of(context).textTheme.titleMedium,
                 textAlign: TextAlign.center,
               ),
-
-              // callerAsync.when(
-              //   loading: () => Text(
-              //     'Loading caller...',
-              //     style: Theme.of(context).textTheme.titleMedium,
-              //     textAlign: TextAlign.center,
-              //   ),
-              //   error: (_, _) => Text(
-              //     incomingCall.callerId,
-              //     style: Theme.of(context).textTheme.titleMedium,
-              //     textAlign: TextAlign.center,
-              //   ),
-              //   data: (user) {
-              //     debugPrint(
-              //       '👤 [IncomingCall] Caller UID: ${incomingCall.callerId}',
-              //     );
-
-              //     debugPrint('👤 [IncomingCall] User object: $user');
-
-              //     debugPrint('👤 [IncomingCall] Username: ${user?.username}');
-
-              //     return Text(
-              //       user?.username ?? 'Unknown caller',
-              //       style: Theme.of(context).textTheme.titleMedium,
-              //       textAlign: TextAlign.center,
-              //     );
-              //   },
-              // ),
               const SizedBox(height: 24),
               // ✅ FIX: Give Row a finite width.
               SizedBox(

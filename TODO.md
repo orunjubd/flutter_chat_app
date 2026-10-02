@@ -231,6 +231,7 @@ Last Updated:
 **ECE Chat v1.6.1**
 ====================================================================
 ## 1.8.4
+====================================================================
 
 - [ ] Verify killed-state Accept (PendingCallService → CallScreen)
 - [ ] Verify notification-body tap while ringing
@@ -238,3 +239,33 @@ Last Updated:
 - [ ] Move call strings to CallStrings, colors to AppColors/theme extension
 - [ ] Enable Blaze and deploy onCallRinging to replace push_relay
 - [ ] Use serverTimestamp for call createdAt (clock-skew fix)
+
+====================================================================
+## 1.8.5
+
+## Next (polish)
+- [ ] Move `call_screen.dart` to `core/screens/` (`git mv`, fix imports)
+- [ ] Split `CallController` (no behavior change, one commit each):
+  - [ ] `CallRoomEventsBinder`
+  - [ ] `CallKitCallbacks`
+  - [ ] `CallAppLifecycleHandler`
+- [ ] Guard `NetworkImage` against empty URLs in `_PeerAvatar` and `_Waiting` (search project for `NetworkImage(`)
+- [ ] Remove debug print "Its for check is _startCall running"
+- [ ] Move call strings to `CallStrings`; colors to `AppColors` / theme tokens
+- [ ] Finish a real `CallScreen` incoming-card label review (voice vs video)
+
+## Verify
+- [ ] Killed-state Accept (PendingCallService → CallScreen)
+- [ ] Notification-body tap while ringing
+- [ ] Video call via background and killed push
+- [ ] Flip camera on a two-camera device
+- [ ] Camera permission denied path
+
+## Before release
+- [ ] Tighten Firestore rules (calls, users, conversations)
+- [ ] Enable Blaze and deploy `onCallRinging`, retire `push_relay/`
+- [ ] Use `serverTimestamp` for call `createdAt` (clock-skew fix)
+- [ ] Complete the `Info.plist` contacts usage description sentence
+
+## Planned
+- [ ] Group voice and video calls (design review first: model, signaling, size limit, admin policy)

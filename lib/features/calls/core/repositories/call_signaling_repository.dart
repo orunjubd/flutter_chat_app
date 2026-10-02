@@ -146,4 +146,11 @@ class CallSignalingRepository {
       return null;
     }
   }
+
+  /// Tells the caller this device received the call (Calling… → Ringing…).
+  Future<void> markCalleeRinging({required String callId}) async {
+    await _callsCollection.doc(callId).update({
+      'calleeRingingAt': FieldValue.serverTimestamp(),
+    });
+  }
 }

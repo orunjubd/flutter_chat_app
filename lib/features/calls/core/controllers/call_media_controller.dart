@@ -83,6 +83,7 @@ class CallMediaController {
     return _snapshot;
   }
 
+  Future<void> switchCamera() => _callService.switchCamera();
   Future<CallMediaSnapshot> toggleMic() =>
       setMicrophoneEnabled(!_snapshot.micEnabled);
 

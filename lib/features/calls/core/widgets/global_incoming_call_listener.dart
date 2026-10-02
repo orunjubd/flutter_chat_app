@@ -74,6 +74,7 @@ class GlobalIncomingCallListener extends ConsumerWidget {
               peerId: call.callerId,
               peerName: call.callerName ?? 'Unknown User',
               isOutgoing: false,
+              type: call.type,
             ),
           ),
         );

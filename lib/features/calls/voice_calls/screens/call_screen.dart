@@ -18,6 +18,9 @@
 import 'dart:async';
 //import 'package:chat_app/features/calls/core/models/call_session.dart';
 import 'package:chat_app/features/calls/core/models/call_session.dart';
+import 'package:chat_app/features/calls/core/models/call_type.dart';
+import 'package:chat_app/features/calls/core/widgets/incoming_call_card.dart';
+import 'package:chat_app/features/calls/video_calls/widgets/video_call_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,12 +36,14 @@ class CallScreen extends ConsumerStatefulWidget {
     required this.peerName,
     this.peerAvatarUrl,
     required this.isOutgoing,
+    this.type = CallType.voice,
   });
-
   final String peerId;
   final String peerName;
   final String? peerAvatarUrl;
   final bool isOutgoing;
+  final CallType type;
+
   static int instances = 0;
 
   @override
@@ -53,6 +58,8 @@ class _CallScreenState extends ConsumerState<CallScreen> {
   Duration _duration = Duration.zero;
   bool _timerRunning = false;
 
+  bool get _isVideo => widget.type == CallType.video;
+
   @override
   void initState() {
     super.initState();
@@ -61,7 +68,12 @@ class _CallScreenState extends ConsumerState<CallScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || _outgoingCallStarted) return;
         _outgoingCallStarted = true;
-        ref.read(callProvider.notifier).startVoiceCall(calleeId: widget.peerId);
+        final call = ref.read(callProvider.notifier);
+        if (_isVideo) {
+          call.startVideoCall(calleeId: widget.peerId);
+        } else {
+          call.startVoiceCall(calleeId: widget.peerId);
+        }
       });
     }
   }
@@ -82,20 +94,6 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     });
   }
 
-  void _accept(CallSession? incoming) {
-    if (_actionTaken || incoming == null) return;
-    setState(() => _actionTaken = true);
-    ref
-        .read(callProvider.notifier)
-        .acceptCall(callId: incoming.id, roomName: incoming.roomName);
-  }
-
-  void _decline(CallSession? incoming) {
-    if (_actionTaken || incoming == null) return;
-    setState(() => _actionTaken = true);
-    ref.read(callProvider.notifier).rejectCall(callId: incoming.id);
-  }
-
   String _formatDuration(Duration d) {
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
@@ -111,12 +109,28 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     Navigator.of(context).pop();
   }
 
+  void _accept(CallSession? incoming) {
+    if (_actionTaken || incoming == null) return;
+    setState(() => _actionTaken = true);
+    ref
+        .read(callProvider.notifier)
+        .acceptCall(
+          callId: incoming.id,
+          roomName: incoming.roomName,
+          type: incoming.type,
+        );
+  }
+
+  void _decline(CallSession? incoming) {
+    if (_actionTaken || incoming == null) return;
+    setState(() => _actionTaken = true);
+    ref.read(callProvider.notifier).rejectCall(callId: incoming.id);
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<CallUiState>(callProvider, (previous, next) {
-      if (next.phase == CallState.connected) {
-        _startDurationTimerIfNeeded();
-      }
+      if (next.phase == CallState.connected) _startDurationTimerIfNeeded();
       final wasActive = previous != null && previous.phase != CallState.idle;
       final shouldPop =
           next.phase.isTerminal || (wasActive && next.phase == CallState.idle);
@@ -126,11 +140,9 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     });
 
     final callState = ref.watch(callProvider);
-    final phase = callState.phase;
-    final controlsEnabled =
-        phase == CallState.connected || phase == CallState.reconnecting;
     final incoming = callState.incomingCall;
-    final isAwaitingAnswer = !widget.isOutgoing && phase == CallState.ringing;
+    final isAwaitingAnswer =
+        !widget.isOutgoing && callState.phase == CallState.ringing;
 
     return PopScope(
       canPop: false,
@@ -143,64 +155,46 @@ class _CallScreenState extends ConsumerState<CallScreen> {
         }
       },
       child: isAwaitingAnswer
-          ? _buildIncomingCard(context, incoming)
-          : _buildFullScreen(
-              context,
-              phase,
-              controlsEnabled,
-              callState.errorMessage,
-            ),
+          ? IncomingCallCard(
+              title: _isVideo ? 'Incoming Video Call' : 'Incoming Voice Call',
+              icon: _isVideo ? Icons.videocam : Icons.phone_in_talk,
+              callerName: incoming?.callerName ?? widget.peerName,
+              actionsEnabled: !_actionTaken && incoming != null,
+              onAccept: () => _accept(incoming),
+              onDecline: () => _decline(incoming),
+            )
+          : _buildFullScreen(context, callState),
     );
   }
 
-  Widget _buildIncomingCard(BuildContext context, CallSession? incoming) {
-    final callerName = incoming?.callerName ?? widget.peerName;
-    return Scaffold(
-      backgroundColor: Colors.black87,
-      body: SafeArea(
-        child: Center(
-          child: Container(
-            width: 320,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.phone_in_talk, size: 56),
-                const SizedBox(height: 16),
-                Text(
-                  'Incoming Voice Call',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  callerName,
-                  style: Theme.of(context).textTheme.titleMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                IncomingCallActions(
-                  enabled: !_actionTaken && incoming != null,
-                  onAccept: () => _accept(incoming),
-                  onDecline: () => _decline(incoming),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+  Widget _buildFullScreen(BuildContext context, CallUiState callState) {
+    final phase = callState.phase;
+    final controlsEnabled =
+        phase == CallState.connected || phase == CallState.reconnecting;
+    final label = _statusLabel(
+      phase,
+      callState.errorMessage,
+      callState.activeCall,
     );
-  }
+    final call = ref.read(callProvider.notifier);
 
-  Widget _buildFullScreen(
-    BuildContext context,
-    CallState phase,
-    bool controlsEnabled,
-    String? errorMessage,
-  ) {
+    if (_isVideo) {
+      return VideoCallView(
+        peerName: widget.peerName,
+        peerAvatarUrl: widget.peerAvatarUrl,
+        statusLabel: label,
+        controlsEnabled: controlsEnabled,
+        micEnabled: callState.micEnabled,
+        cameraEnabled: callState.cameraEnabled,
+        speakerOn: callState.speakerOn,
+        onToggleMute: call.toggleMic,
+        onToggleCamera: call.toggleCamera,
+        onSwitchCamera: call.switchCamera,
+        onToggleSpeaker: call.toggleSpeaker,
+        onEndCall: call.endCurrentCall,
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -219,11 +213,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              _statusLabel(
-                phase,
-                errorMessage,
-                ref.watch(callProvider).activeCall,
-              ),
+              label,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 16,
@@ -232,12 +222,10 @@ class _CallScreenState extends ConsumerState<CallScreen> {
             const Spacer(flex: 3),
             VoiceCallControls(
               controlsEnabled: controlsEnabled,
-              onEndCall: () => ref.read(callProvider.notifier).endCurrentCall(),
-              onToggleMute: controlsEnabled
-                  ? () => ref.read(callProvider.notifier).toggleMic()
-                  : null,
+              onEndCall: () => call.endCurrentCall(),
+              onToggleMute: controlsEnabled ? () => call.toggleMic() : null,
               onToggleSpeaker: controlsEnabled
-                  ? () => ref.read(callProvider.notifier).toggleSpeaker()
+                  ? () => call.toggleSpeaker()
                   : null,
             ),
             const SizedBox(height: 40),
@@ -259,8 +247,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
         return 'Calling…';
       case CallState.ringing:
         if (!widget.isOutgoing) return 'Incoming call…';
-        return (activeCall?.calleeRingingAt != null) ? 'Ringing…' : 'Calling…';
-      //case CallState.ringing: return widget.isOutgoing ? 'Ringing…' : 'Incoming call…';
+        return activeCall?.calleeRingingAt != null ? 'Ringing…' : 'Calling…';
       case CallState.connecting:
         return 'Connecting…';
       case CallState.connected:
@@ -283,7 +270,6 @@ class _CallScreenState extends ConsumerState<CallScreen> {
 
 class _PeerAvatar extends StatelessWidget {
   const _PeerAvatar({required this.name, this.avatarUrl});
-
   final String name;
   final String? avatarUrl;
 

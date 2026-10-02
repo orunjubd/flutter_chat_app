@@ -1336,3 +1336,33 @@ other.
 ### Changed
 - `GlobalIncomingCallListener` opens `CallScreen` for foreground ring and on accept
 - `CallSession` gains `calleeRingingAt`
+
+====================================================================
+## [1.8.5] – 2026-10-02 – One-to-One Video Call
+====================================================================
+
+### Added
+
+- One-to-one video calling (caller and callee, foreground)
+- `CallController.startVideoCall`, `toggleCamera`, `switchCamera`
+- Camera auto-enabled after connect (caller after call creation, callee after accept); speaker defaults on for video
+- `CallVideoTracks` value type (`core/models/call_video_tracks.dart`): the only LiveKit type exposed past `CallService`
+- `CallService.switchCamera`, `videoTracks`, `onVideoTracksChanged` (implemented in `LiveKitCallService`)
+- `callVideoTracksProvider` (`video_calls/providers/call_video_provider.dart`)
+- `VideoCallView` and `VideoCallControls` (`video_calls/widgets/`): fullscreen remote video, local preview, mute / camera / flip / speaker / end
+- `IncomingCallCard` shared widget (voice and video incoming card)
+- Video button in the chat header
+- Camera and microphone permissions (Android manifest, iOS Info.plist)
+### Changed
+
+- `CallScreen` now handles both voice and video through a `type` parameter
+- `startVoiceCall` and `startVideoCall` share one `_startCall` implementation
+- `acceptCall` takes a `type`; CallKit `isVideoCall` is derived from `CallType`
+- `GlobalIncomingCallListener` passes the call type when opening `CallScreen`
+- Removed the voice-only filter in `_onIncomingCall`
+### Fixed
+
+- Duplicate `NSCameraUsageDescription` key in `Info.plist`
+### Known issues
+
+- `NetworkImage("")` throws `No host specified in URI file:///` when a user has an empty avatar URL (guard planned, see TODO)

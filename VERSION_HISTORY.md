@@ -178,6 +178,7 @@ restoring obsolete roadmap states from older documentation.
 
 | Version | Summary |
 |---|---|
+| v1.8.5 | 2026-10-02 | One-to-one video call: caller/callee video, camera toggle, mute, speaker, flip control, shared CallScreen for voice and video. Tested foreground on Pixel 8 emulator (USB webcam) → Nokia 6.1. Background/killed video not yet verified. |
 | v1.8.4 | 2026-10-01 | Voice Call Complete: hybrid incoming UI, ringing acknowledgement,
 background push via dev relay. Killed-state accept pending verification. |
 | v1.8.1 | Phase 4.9 —  Voice Call: Speaker, mute/unmute, incomingCallScreen correction, Black Screen / Red Screen correction, use copyWith.State, update GlobalIncomingCalllistner, few method update CallProvider |

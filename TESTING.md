@@ -311,8 +311,33 @@ Current Release: **ECE Chat v1.6.1**
 
 =======================================
 ## 1.8.4
+=======================================
 
 ### Voice call (v1.8.4)
+
 - Test on two devices; callee must be a real phone for FCM/CallKit.
 - Dev only: run `node push_relay/relay.js` while testing background calls.
-- Matrix: foreground / background / killed × accept / decline / caller cancel / timeout.
+- Matrix: foreground / background / killed × accept / decline / caller cancel / 
+timeout.
+
+=======================================
+### Video call (v1.8.5)
+========================================
+- Use two devices. The callee should be a real phone; a USB webcam can serve the emulator.
+- Camera behavior must be verified on real hardware (ECERules §27).
+
+Matrix:
+| Case | Expected |
+|---|---|
+| Caller starts video call | Local preview appears, ringback plays, callee card says "Incoming Video Call" |
+| Callee has no camera while ringing | Correct; camera starts only after Accept |
+| Accept | Log `📷 [Media] camera on` on callee; both sides show remote video and local preview |
+| Mute / Camera / Speaker | State and UI update |
+| Flip | Switches front/back (needs a device with two cameras) |
+| End (either side) | Both cameras stop, screen closes |
+| Caller cancel, callee decline, timeout | Cleanup as in voice calls |
+
+Results 2026-10-02 (Pixel 8 emulator + webcam → Nokia 6.1): all rows passed except Flip (not testable).
+
+Still to test: video via background push, killed-state video Accept, notification-body tap,
+camera permission denied (call should continue as voice), Flip on a two-camera phone.

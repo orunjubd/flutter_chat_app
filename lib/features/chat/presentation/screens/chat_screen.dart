@@ -1,3 +1,4 @@
+import 'package:chat_app/features/calls/core/models/call_type.dart';
 import 'package:chat_app/features/chat/search/screens/search_messages_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -257,9 +258,40 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
               IconButton(
                 icon: const Icon(Icons.videocam_outlined),
                 tooltip: 'Video Call',
-                onPressed: () {
-                  /* same as voice, but CallScreen(..., isOutgoing: true, type: CallType.video) */
-                },
+                onPressed:
+                    callState.phase == CallState.connecting ||
+                        callState.phase == CallState.ringing ||
+                        callState.phase == CallState.connected ||
+                        callState.phase == CallState.reconnecting
+                    ? null
+                    : () async {
+                        debugPrint(
+                          '📹 [UI-Test] Video call button tapped! '
+                          'Current status map: ${callState.phase}',
+                        );
+
+                        // 🚀 Start the unified video-call backend engine.
+                        await ref
+                            .read(callProvider.notifier)
+                            .startVideoCall(calleeId: otherUserId);
+
+                        if (!context.mounted) return;
+
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            settings: const RouteSettings(name: 'call_screen'),
+                            builder: (_) => CallScreen(
+                              peerId: otherUserId,
+                              peerName:
+                                  otherUserAsync.value?.username ??
+                                  'Unknown User',
+                              peerAvatarUrl: otherUserAsync.value?.imageUrl,
+                              isOutgoing: true,
+                              type: CallType.video,
+                            ),
+                          ),
+                        );
+                      },
               ),
               IconButton(
                 icon: const Icon(Icons.call_outlined),
@@ -289,6 +321,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                               peerName:
                                   otherUserAsync.value?.username ??
                                   'Unknown User',
+                              peerAvatarUrl: otherUserAsync.value?.imageUrl,
                               isOutgoing: true,
                             ),
                             // ============================================================

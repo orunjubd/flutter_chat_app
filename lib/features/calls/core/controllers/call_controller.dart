@@ -13,6 +13,7 @@ import 'dart:async';
 
 import 'package:chat_app/features/calls/core/services/pending_call_service.dart';
 import 'package:chat_app/features/calls/core/utils/app_lifecycle_utils.dart';
+import 'package:chat_app/features/chat/providers/user_provider.dart';
 //import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 //import 'package:firebase_messaging/firebase_messaging.dart';
@@ -40,7 +41,7 @@ import 'package:chat_app/features/calls/core/services/livekit_call_service.dart'
 import 'package:chat_app/features/chat/providers/conversation_message_provider.dart';
 import 'package:chat_app/features/chat/providers/conversation_provider.dart';
 import 'package:chat_app/core/config/call_config.dart';
-import 'package:chat_app/features/chat/providers/user_provider.dart';
+//import 'package:chat_app/features/chat/providers/user_provider.dart';
 
 final callProvider = NotifierProvider<CallController, CallUiState>(
   CallController.new,
@@ -92,22 +93,6 @@ class CallController extends Notifier<CallUiState> {
       onTimeout: _onCallKitTimeout,
       //onNativeUiVisibilityChanged: _onNativeUiVisibilityChanged, // add new
     )..start();
-
-    // ── 2b. Foreground data push — goes through the same _callKit instance,
-    // so isShowingNativeUi stays accurate. (Background isolate push handling
-    // is separate: call_push_handler.dart uses CallKitBridge.showRaw, which
-    // cannot see this instance at all — see the isolate note on that method.)
-    // _foregroundPushSub = FirebaseMessaging.onMessage.listen((message) {
-    //   if (message.data['type'] != 'incoming_call') return;
-    //   debugPrint('📥 [Call] trigger: foreground FCM push → native UI');
-    //   unawaited(_callKit.show(
-    //       callId: message.data['callId'] ?? '',
-    //       callerName: message.data['callerName'] ?? 'Unknown',
-    //       callerAvatarUrl: message.data['callerAvatarUrl'],
-    //       isVideoCall: message.data['callType'] == 'video',
-    //     ),
-    //   );
-    // });
 
     // ── 3. Media + lifecycle.
     _media = CallMediaController(
@@ -176,27 +161,6 @@ class CallController extends Notifier<CallUiState> {
     return CallUiState.idle;
   }
 
-  // =======================================================================
-  // 🔕 NATIVE UI VISIBILITY SYNC HANDLER (RESOLVES COMPILER ERROR)
-  // =======================================================================
-  // ✅ REQUIREMENT MET: Defined the missing callback inside the new CallController scope!
-  // void _onNativeUiVisibilityChanged(bool isVisible) {
-  //   debugPrint(
-  //     '🔔 [CallKit] Native system UI visibility state flipped '
-  //     '➔ isVisible: $isVisible',
-  //   );
-
-  //   state = state.copyWith(nativeUiVisible: isVisible);
-
-  //   final session = state.incomingCall;
-
-  //   if (session != null) {
-  //     unawaited(
-  //       _audioCoordinator.onSession(session, speakerOn: state.speakerOn),
-  //     );
-  //   }
-  // }
-
   void _subscribeToRoomEvents() {
     final callService = ref.read(liveKitCallServiceProvider);
 
@@ -241,17 +205,29 @@ class CallController extends Notifier<CallUiState> {
 
   // --- public API ------------------------------------------------------------
 
-  Future<void> startVoiceCall({required String calleeId}) async {
+  // Replace startVoiceCall with these three:
+  Future<void> startVoiceCall({required String calleeId}) =>
+      _startCall(calleeId: calleeId, type: CallType.voice);
+  Future<void> startVideoCall({required String calleeId}) =>
+      _startCall(calleeId: calleeId, type: CallType.video);
+
+  Future<void> _startCall({
+    required String calleeId,
+    required CallType type,
+  }) async {
+    debugPrint('📡 [Call] start ignored — Its for check is _startCall running');
     final uid = _uid;
     if (uid == null) return _fail('No authenticated user.');
     if (state.phase.isBusy) {
       debugPrint('⚠️ [Call] start ignored — ${state.phase.name}');
       return;
     }
+
     state = state.copyWith(
       phase: call_model.CallState.connecting,
       clearError: true,
     );
+
     String? callerName;
     try {
       final myProfile = await ref.read(currentUserProvider.future);
@@ -259,27 +235,49 @@ class CallController extends Notifier<CallUiState> {
     } catch (e) {
       debugPrint('⚠️ [Call] Failed to resolve own display name: $e');
     }
+
     final result = await _lifecycle.startCall(
       callerId: uid,
       calleeId: calleeId,
-      type: CallType.voice,
+      type: type,
       callerName: callerName,
       onTimeout: () => unawaited(_onRingTimeout()),
       onSessionCreated: (session) => _signaling.watchActive(callId: session.id),
     );
     if (!result.ok) return _fail(result.error ?? 'Could not start the call.');
+
     _subscribeToRoomEvents();
     state = state.copyWith(
       phase: call_model.CallState.ringing,
       activeCall: result.session,
-      micEnabled:
-          false, // _lifecycle.startCall() already turned the mic off — keep state in sync
+      micEnabled: false, // startCall already turned the mic off
+    );
+
+    if (type == CallType.video) await _enableVideoMedia();
+  }
+
+  Future<void> _enableVideoMedia() async {
+    final cam = await _media.setCameraEnabled(true);
+    final spk = await _media.setSpeakerphoneEnabled(
+      true,
+    ); // video defaults to speaker
+    state = state.copyWith(
+      cameraEnabled: cam.cameraEnabled,
+      speakerOn: spk.speakerOn,
     );
   }
+
+  Future<void> toggleCamera() async {
+    final s = await _media.toggleCamera();
+    state = state.copyWith(cameraEnabled: s.cameraEnabled);
+  }
+
+  Future<void> switchCamera() => _media.switchCamera();
 
   Future<void> acceptCall({
     required String callId,
     required String roomName,
+    CallType type = CallType.voice,
   }) async {
     final uid = _uid;
     if (uid == null) return _fail('No authenticated user.');
@@ -309,6 +307,7 @@ class CallController extends Notifier<CallUiState> {
       phase: call_model.CallState.connected,
       micEnabled: true,
     );
+    if (type == CallType.video) await _enableVideoMedia();
   }
 
   // Pending accept (killed-state Accept):
@@ -451,7 +450,7 @@ class CallController extends Notifier<CallUiState> {
   // --- signaling callbacks ---------------------------------------------------
 
   void _onIncomingCall(CallSession session) {
-    if (session.type != CallType.voice) return;
+    //  if (session.type != CallType.voice) return; // Ignore non-voice calls.
 
     // Same call already being handled (the snapshot re-fired after our own write).
     if (state.incomingCall?.id == session.id) return;
@@ -487,7 +486,7 @@ class CallController extends Notifier<CallUiState> {
         _callKit.show(
           callId: session.id,
           callerName: session.callerName ?? 'Unknown',
-          isVideoCall: false,
+          isVideoCall: session.type == CallType.video,
         ),
       );
     }
@@ -569,7 +568,11 @@ class CallController extends Notifier<CallUiState> {
       await _callKit.dismiss(callId);
       return;
     }
-    await acceptCall(callId: session.id, roomName: session.roomName);
+    await acceptCall(
+      callId: session.id,
+      roomName: session.roomName,
+      type: session.type,
+    );
   }
 
   Future<void> _onCallKitDecline(String callId) => rejectCall(callId: callId);

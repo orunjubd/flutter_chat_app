@@ -814,4 +814,53 @@ incoming-call UI, call history and push-based background ringing.
   fresh call look stale.
 - Some strings and colors in the call UI are still hard-coded
   (ECERules §15/§16).
-- Video calls are NOT part of this release (in progress).
+- Video call groundwork included, not yet tested", rather than "Video calls are NOT part of this release
+
+==============================================================
+# ECE v1.8.5 – Video Call
+==============================================================
+
+## Release date: 2026-10-02
+
+One-to-one video calling built on the existing call engine (Firestore signaling,
+LiveKit media, hybrid incoming UI). Voice calls are unchanged.
+
+## Major features
+- Start a video call from the chat header.
+- Incoming video call card ("Incoming Video Call") in the foreground; native
+  CallKit UI with the video flag in the background.
+- Fullscreen remote video with a local preview in the corner.
+- Controls: mute, camera on/off, flip camera, speaker, end.
+- Caller sees their own preview while the call is ringing; the callee's camera
+  starts only after Accept.
+- Camera and microphone permissions for Android and iOS.
+
+## Architecture
+- `CallScreen` is shared by voice and video (`type` parameter).
+- `CallVideoTracks` is the only LiveKit type exposed past `CallService`;
+  the `Room` object stays hidden from the UI layer.
+- Video-specific code lives under `features/calls/video_calls/`.
+
+## Testing status
+| Scenario | Result |
+|---|---|
+| Caller ringing with local camera preview | Passed |
+| Callee incoming video card and ringtone | Passed |
+| Accept: both cameras start, each side sees the other fullscreen | Passed |
+| Mute, Camera on/off, Speaker | Passed |
+| End from either side stops both cameras | Passed |
+| Caller cancel while ringing | Passed |
+| Flip camera | Not verified (single webcam only) |
+| Video call via background / killed push | Not yet verified |
+| Killed-state Accept, notification-body tap | Not yet verified |
+
+Test pair: Pixel 8 emulator (USB webcam) → Nokia 6.1.
+
+## Known limitations
+- Foreground video is verified; background and killed video are not.
+- Background/killed ringing still uses the dev push relay (Cloud Functions need Blaze).
+- Firestore rules are the open dev rules and must be tightened before release.
+- Empty avatar URLs cause a `NetworkImage` error log (cosmetic, fix planned).
+- Some call strings and colors are still hard-coded.
+- `CallController` is about 540 lines; a no-behavior-change split is planned.
+- Group calls are not part of this release.
