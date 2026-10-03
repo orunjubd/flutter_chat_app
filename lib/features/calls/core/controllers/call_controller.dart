@@ -10,10 +10,6 @@
 // (call_model.CallState) directly — see call_phase.dart.
 
 import 'dart:async';
-
-import 'package:chat_app/features/calls/core/services/pending_call_service.dart';
-import 'package:chat_app/features/calls/core/utils/app_lifecycle_utils.dart';
-import 'package:chat_app/features/chat/providers/user_provider.dart';
 //import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 //import 'package:firebase_messaging/firebase_messaging.dart';
@@ -41,7 +37,12 @@ import 'package:chat_app/features/calls/core/services/livekit_call_service.dart'
 import 'package:chat_app/features/chat/providers/conversation_message_provider.dart';
 import 'package:chat_app/features/chat/providers/conversation_provider.dart';
 import 'package:chat_app/core/config/call_config.dart';
-//import 'package:chat_app/features/chat/providers/user_provider.dart';
+import 'package:chat_app/features/calls/core/constants/call_strings.dart';
+import 'package:chat_app/features/calls/core/controllers/call_room_events_binder.dart';
+import 'package:chat_app/features/calls/core/services/pending_call_service.dart';
+import 'package:chat_app/features/calls/core/utils/app_lifecycle_utils.dart';
+import 'package:chat_app/features/chat/providers/user_provider.dart';
+//import 'package:shared_preferences/shared_preferences.dart';
 
 final callProvider = NotifierProvider<CallController, CallUiState>(
   CallController.new,
@@ -67,19 +68,24 @@ class CallController extends Notifier<CallUiState> {
   late final CallKitBridge _callKit;
   late final CallAudioCoordinator _audioCoordinator;
   late final CallHistoryRecorder _history;
+  late final CallRoomEventsBinder _roomEvents;
 
   StreamSubscription<User?>? _authSub;
   //StreamSubscription<RemoteMessage>? _foregroundPushSub;
-  StreamSubscription<void>? _peerGoneSub;
-  StreamSubscription<void>? _reconnectingSub;
-  StreamSubscription<void>? _reconnectedSub;
 
   String? _acceptingCallId;
   String? get _uid => FirebaseAuth.instance.currentUser?.uid;
 
   @override
   CallUiState build() {
-    // ── 1. Audio FIRST. Anything below may fire a callback that touches it.
+    // ── 0. Room events binder FIRST: pure callbacks, nothing runs yet.
+    _roomEvents = CallRoomEventsBinder(
+      callService: ref.read(liveKitCallServiceProvider),
+      repository: ref.read(callSignalingRepositoryProvider),
+      activeCallId: () => _signaling.activeCallId,
+      onPeerGone: endCurrentCall,
+    );
+    // ── 1. Audio SECOND. Anything below may fire a callback that touches it.
     _audioCoordinator = CallAudioCoordinator(
       audio: ref.read(callAudioServiceProvider),
       localUserId: () => _uid, // callback, not a captured value
@@ -132,13 +138,12 @@ class CallController extends Notifier<CallUiState> {
     _authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
       if (user != null) {
         _signaling.watchInbox(userId: user.uid);
+        unawaited(_consumeNativeAccept());
       } else {
         _signaling.stopInbox();
         _signaling.stopActive();
-        _peerGoneSub?.cancel();
-        _reconnectingSub?.cancel();
-        _reconnectedSub?.cancel();
-        unawaited(_consumePendingAccept());
+        _roomEvents.unbind();
+        debugPrint('👤 [Call] User logged out — dismissing all calls');
         unawaited(_audioCoordinator.reset());
         unawaited(_callKit.dismissAll());
         unawaited(ref.read(liveKitCallServiceProvider).disconnect());
@@ -149,9 +154,7 @@ class CallController extends Notifier<CallUiState> {
     ref.onDispose(() {
       _authSub?.cancel();
       //_foregroundPushSub?.cancel();
-      _peerGoneSub?.cancel();
-      _reconnectingSub?.cancel();
-      _reconnectedSub?.cancel();
+      _roomEvents.dispose();
       _lifecycle.dispose();
       unawaited(_signaling.dispose());
       unawaited(_callKit.dispose());
@@ -159,48 +162,6 @@ class CallController extends Notifier<CallUiState> {
     });
 
     return CallUiState.idle;
-  }
-
-  void _subscribeToRoomEvents() {
-    final callService = ref.read(liveKitCallServiceProvider);
-
-    _peerGoneSub?.cancel();
-    _peerGoneSub = callService.onPeerGone.listen((_) {
-      debugPrint(
-        '👻 [Call] onPeerGone fired — activeCallId=${_signaling.activeCallId}',
-      );
-      if (_signaling.activeCallId != null) unawaited(endCurrentCall());
-    });
-
-    _reconnectingSub?.cancel();
-    _reconnectingSub = callService.onRoomReconnecting.listen((_) {
-      final callId = _signaling.activeCallId;
-      debugPrint('🔄 [Call] onRoomReconnecting fired — activeCallId=$callId');
-      if (callId == null) return;
-      unawaited(
-        ref
-            .read(callSignalingRepositoryProvider)
-            .updateCallState(
-              callId: callId,
-              state: call_model.CallState.reconnecting,
-            ),
-      );
-    });
-
-    _reconnectedSub?.cancel();
-    _reconnectedSub = callService.onRoomReconnected.listen((_) {
-      final callId = _signaling.activeCallId;
-      debugPrint('✅ [Call] onRoomReconnected fired — activeCallId=$callId');
-      if (callId == null) return;
-      unawaited(
-        ref
-            .read(callSignalingRepositoryProvider)
-            .updateCallState(
-              callId: callId,
-              state: call_model.CallState.connected,
-            ),
-      );
-    });
   }
 
   // --- public API ------------------------------------------------------------
@@ -215,7 +176,6 @@ class CallController extends Notifier<CallUiState> {
     required String calleeId,
     required CallType type,
   }) async {
-    debugPrint('📡 [Call] start ignored — Its for check is _startCall running');
     final uid = _uid;
     if (uid == null) return _fail('No authenticated user.');
     if (state.phase.isBusy) {
@@ -246,7 +206,7 @@ class CallController extends Notifier<CallUiState> {
     );
     if (!result.ok) return _fail(result.error ?? 'Could not start the call.');
 
-    _subscribeToRoomEvents();
+    _roomEvents.bind();
     state = state.copyWith(
       phase: call_model.CallState.ringing,
       activeCall: result.session,
@@ -278,6 +238,7 @@ class CallController extends Notifier<CallUiState> {
     required String callId,
     required String roomName,
     CallType type = CallType.voice,
+    CallSession? session,
   }) async {
     final uid = _uid;
     if (uid == null) return _fail('No authenticated user.');
@@ -287,7 +248,8 @@ class CallController extends Notifier<CallUiState> {
     _signaling.watchActive(callId: callId);
     state = state.copyWith(
       phase: call_model.CallState.connecting,
-      clearIncomingCall: true,
+      incomingCall: session, // kept so the listener can open CallScreen
+      clearIncomingCall: session == null,
     );
     final error = await _lifecycle.acceptCall(
       callId: callId,
@@ -302,7 +264,7 @@ class CallController extends Notifier<CallUiState> {
       if (u != null) _signaling.watchInbox(userId: u);
       return _fail(error);
     }
-    _subscribeToRoomEvents();
+    _roomEvents.bind();
     state = state.copyWith(
       phase: call_model.CallState.connected,
       micEnabled: true,
@@ -310,10 +272,7 @@ class CallController extends Notifier<CallUiState> {
     if (type == CallType.video) await _enableVideoMedia();
   }
 
-  // Pending accept (killed-state Accept):
-  Future<void> _consumePendingAccept() async {
-    final callId = await PendingCallService.instance.consumeAcceptedCall();
-    if (callId == null) return;
+  Future<bool> _acceptCallById(String callId) async {
     final session = await ref
         .read(callSignalingRepositoryProvider)
         .fetchCallOnce(callId: callId);
@@ -321,26 +280,71 @@ class CallController extends Notifier<CallUiState> {
         session.calleeId != _uid ||
         session.state.isTerminal) {
       await _callKit.dismiss(callId);
-      return;
+      return false;
     }
-    await acceptCall(callId: session.id, roomName: session.roomName);
+    await acceptCall(
+      callId: session.id,
+      roomName: session.roomName,
+      type: session.type,
+      session: session,
+    );
+    return true;
   }
+
+  Future<bool> _consumeNativeAccept() async {
+    final pending = await PendingCallService.instance.consumeAcceptedCall();
+    if (pending != null && await _acceptCallById(pending)) return true;
+
+    final nativeId = await CallKitBridge.acceptedNativeCallId();
+    if (nativeId != null) return _acceptCallById(nativeId);
+    return false;
+  }
+  // Pending accept (killed-state Accept):
+  // Future<bool> _consumePendingAccept() async {
+  //   final callId = await PendingCallService.instance.consumeAcceptedCall();
+  //   if (callId == null) return false;
+
+  //   final session = await ref
+  //       .read(callSignalingRepositoryProvider)
+  //       .fetchCallOnce(callId: callId);
+
+  //   if (session == null ||
+  //       session.calleeId != _uid ||
+  //       session.state.isTerminal) {
+  //     await _callKit.dismiss(callId);
+  //     return false;
+  //   }
+
+  //   await acceptCall(
+  //     callId: session.id,
+  //     roomName: session.roomName,
+  //     type: session.type,
+  //     session: session,
+  //   );
+  //   return true;
+  // }
 
   // Resume handler (notification-body tap):
   Future<void> _onAppResumed() async {
-    if (_uid != null) unawaited(_consumePendingAccept());
+    if (_uid != null && await _consumeNativeAccept()) {
+      return; // accept handled, no card
+    }
 
-    // Give a native Accept event time to arrive first; it changes the phase.
     await Future.delayed(const Duration(milliseconds: 600));
+    if (_acceptingCallId != null) return;
 
     final incoming = state.incomingCall;
     if (incoming == null || state.phase != call_model.CallState.ringing) return;
+
+    // Source of truth: is it still ringing in Firestore?
+    final fresh = await ref
+        .read(callSignalingRepositoryProvider)
+        .fetchCallOnce(callId: incoming.id);
+    if (fresh == null || fresh.state != call_model.CallState.ringing) return;
     if (!await CallKitBridge.isActiveNatively(incoming.id)) return;
 
-    debugPrint('📲 [Call] resumed while native UI ringing → own UI');
     await _callKit.dismiss(incoming.id);
     await _audioCoordinator.takeOverRingtone();
-    // Re-emit so GlobalIncomingCallListener re-evaluates and pushes the card.
     state = state.copyWith(incomingCall: incoming);
   }
 
@@ -447,14 +451,25 @@ class CallController extends Notifier<CallUiState> {
       );
     }
   }
+
   // --- signaling callbacks ---------------------------------------------------
+  String? _routingCallId;
+  // bool _routingCancelled = false;
 
   void _onIncomingCall(CallSession session) {
-    //  if (session.type != CallType.voice) return; // Ignore non-voice calls.
-
     // Same call already being handled (the snapshot re-fired after our own write).
     if (state.incomingCall?.id == session.id) return;
+    if (_routingCallId == session.id) {
+      return; // snapshot re-fired while we check
+    }
+    _routingCallId = session.id;
+    // _routingCancelled = false;
+    unawaited(
+      _routeIncoming(session).whenComplete(() => _routingCallId = null),
+    );
+  }
 
+  Future<void> _routeIncoming(CallSession session) async {
     final age = DateTime.now().difference(session.createdAt.toDate());
     if (age > const Duration(seconds: 60)) {
       debugPrint(
@@ -463,6 +478,41 @@ class CallController extends Notifier<CallUiState> {
       unawaited(_lifecycle.markMissed(callId: session.id));
       return;
     }
+
+    var declined = false;
+    final shownByPush = await PendingCallService.instance.consumeNativeShown(
+      session.id,
+    );
+    if (shownByPush) {
+      // Killed-state start: let the plugin settle, then trust Firestore.
+      await Future.delayed(const Duration(milliseconds: 1500));
+      final fresh = await ref
+          .read(callSignalingRepositoryProvider)
+          .fetchCallOnce(callId: session.id);
+      if (fresh == null || fresh.state != call_model.CallState.ringing) {
+        debugPrint(
+          '↩️ [Call] no longer ringing (${fresh?.state.name}) → ${session.id}',
+        );
+        unawaited(_callKit.dismiss(session.id)); // harmless if already gone
+        return; // cancelled by caller, or accept already in progress
+      }
+      declined = !await CallKitBridge.isActiveNatively(session.id);
+    }
+
+    if (_acceptingCallId == session.id) return;
+
+    if (declined) {
+      debugPrint(
+        '🚫 [Call] declined on native UI before app start → reject ${session.id}',
+      );
+      await rejectCall(callId: session.id);
+      return;
+    }
+    _presentIncoming(session);
+  }
+
+  /// Your original _onIncomingCall body, minus the guards that moved above.
+  void _presentIncoming(CallSession session) {
     // Tell the caller this device received the call (one write per call).
     if (session.calleeRingingAt == null) {
       unawaited(
@@ -471,6 +521,7 @@ class CallController extends Notifier<CallUiState> {
             .markCalleeRinging(callId: session.id),
       );
     }
+
     state = state.copyWith(
       incomingCall: session,
       phase: call_model.CallState.ringing,
@@ -485,16 +536,22 @@ class CallController extends Notifier<CallUiState> {
       unawaited(
         _callKit.show(
           callId: session.id,
-          callerName: session.callerName ?? 'Unknown',
+          callerName: session.callerName ?? CallStrings.unknownCaller,
           isVideoCall: session.type == CallType.video,
         ),
       );
     }
+
     unawaited(_audioCoordinator.onSession(session, speakerOn: state.speakerOn));
   }
 
   void _onIncomingCleared(String callId) {
-    unawaited(_callKit.dismiss(callId)); // fixes BUG #4
+    //if (callId == _routingCallId) _routingCancelled = true;
+    if (state.incomingCall?.id != callId ||
+        state.phase != call_model.CallState.ringing) {
+      return; // already accepted, or handled elsewhere
+    }
+    unawaited(_callKit.dismiss(callId));
     unawaited(_audioCoordinator.reset());
     state = CallUiState.idle;
   }
@@ -535,9 +592,7 @@ class CallController extends Notifier<CallUiState> {
       ),
     );
     await _callKit.dismiss(session.id);
-    _peerGoneSub?.cancel();
-    _reconnectingSub?.cancel();
-    _reconnectedSub?.cancel();
+    _roomEvents.unbind();
     await _lifecycle.endCall(); // disconnect only; state already terminal
     _signaling.stopActive();
     state = CallUiState(
