@@ -11,6 +11,7 @@
 
 import 'dart:async';
 //import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:chat_app/features/calls/core/controllers/call_kit_callbacks.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 //import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -69,7 +70,7 @@ class CallController extends Notifier<CallUiState> {
   late final CallAudioCoordinator _audioCoordinator;
   late final CallHistoryRecorder _history;
   late final CallRoomEventsBinder _roomEvents;
-
+  late final CallKitCallbacks _kitCallbacks;
   StreamSubscription<User?>? _authSub;
   //StreamSubscription<RemoteMessage>? _foregroundPushSub;
 
@@ -91,13 +92,20 @@ class CallController extends Notifier<CallUiState> {
       localUserId: () => _uid, // callback, not a captured value
       isNativeIncomingUiVisible: () => _callKit.isShowingNativeUi,
     );
+    _kitCallbacks = CallKitCallbacks(
+      repository: ref.read(callSignalingRepositoryProvider),
+      localUid: () => _uid,
+      dismissNative: (id) => _callKit.dismiss(id),
+      acceptCall: acceptCall,
+      rejectCall: rejectCall,
+      markMissed: ({required String callId}) =>
+          _lifecycle.markMissed(callId: callId),
+    );
 
-    // ── 2. CallKit bridge. ONE subscription, started once.
     _callKit = CallKitBridge(
-      onAccept: _onCallKitAccept,
-      onDecline: _onCallKitDecline,
-      onTimeout: _onCallKitTimeout,
-      //onNativeUiVisibilityChanged: _onNativeUiVisibilityChanged, // add new
+      onAccept: _kitCallbacks.onAccept,
+      onDecline: _kitCallbacks.onDecline,
+      onTimeout: _kitCallbacks.onTimeout,
     )..start();
 
     // ── 3. Media + lifecycle.
@@ -138,7 +146,7 @@ class CallController extends Notifier<CallUiState> {
     _authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
       if (user != null) {
         _signaling.watchInbox(userId: user.uid);
-        unawaited(_consumeNativeAccept());
+        unawaited(_kitCallbacks.consumeNativeAccept());
       } else {
         _signaling.stopInbox();
         _signaling.stopActive();
@@ -272,61 +280,9 @@ class CallController extends Notifier<CallUiState> {
     if (type == CallType.video) await _enableVideoMedia();
   }
 
-  Future<bool> _acceptCallById(String callId) async {
-    final session = await ref
-        .read(callSignalingRepositoryProvider)
-        .fetchCallOnce(callId: callId);
-    if (session == null ||
-        session.calleeId != _uid ||
-        session.state.isTerminal) {
-      await _callKit.dismiss(callId);
-      return false;
-    }
-    await acceptCall(
-      callId: session.id,
-      roomName: session.roomName,
-      type: session.type,
-      session: session,
-    );
-    return true;
-  }
-
-  Future<bool> _consumeNativeAccept() async {
-    final pending = await PendingCallService.instance.consumeAcceptedCall();
-    if (pending != null && await _acceptCallById(pending)) return true;
-
-    final nativeId = await CallKitBridge.acceptedNativeCallId();
-    if (nativeId != null) return _acceptCallById(nativeId);
-    return false;
-  }
-  // Pending accept (killed-state Accept):
-  // Future<bool> _consumePendingAccept() async {
-  //   final callId = await PendingCallService.instance.consumeAcceptedCall();
-  //   if (callId == null) return false;
-
-  //   final session = await ref
-  //       .read(callSignalingRepositoryProvider)
-  //       .fetchCallOnce(callId: callId);
-
-  //   if (session == null ||
-  //       session.calleeId != _uid ||
-  //       session.state.isTerminal) {
-  //     await _callKit.dismiss(callId);
-  //     return false;
-  //   }
-
-  //   await acceptCall(
-  //     callId: session.id,
-  //     roomName: session.roomName,
-  //     type: session.type,
-  //     session: session,
-  //   );
-  //   return true;
-  // }
-
   // Resume handler (notification-body tap):
   Future<void> _onAppResumed() async {
-    if (_uid != null && await _consumeNativeAccept()) {
+    if (_uid != null && await _kitCallbacks.consumeNativeAccept()) {
       return; // accept handled, no card
     }
 
@@ -609,31 +565,6 @@ class CallController extends Notifier<CallUiState> {
     debugPrint('⌛ [Call] ring timeout → missed');
     await _lifecycle.markMissed(callId: callId);
     // The signaling listener will pick up `missed` and run _onTerminal.
-  }
-
-  // --- CallKit callbacks -----------------------------------------------------
-
-  Future<void> _onCallKitAccept(String callId) async {
-    final repo = ref.read(callSignalingRepositoryProvider);
-    final session = await repo.fetchCallOnce(callId: callId);
-    if (session == null || session.calleeId != _uid) {
-      debugPrint(
-        '⚠️ [Call] CallKit accept rejected — invalid or foreign call → $callId',
-      );
-      await _callKit.dismiss(callId);
-      return;
-    }
-    await acceptCall(
-      callId: session.id,
-      roomName: session.roomName,
-      type: session.type,
-    );
-  }
-
-  Future<void> _onCallKitDecline(String callId) => rejectCall(callId: callId);
-
-  Future<void> _onCallKitTimeout(String callId) async {
-    await _lifecycle.markMissed(callId: callId);
   }
 
   // --- helpers ---------------------------------------------------------------
