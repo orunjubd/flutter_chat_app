@@ -11,11 +11,8 @@
 
 import 'dart:async';
 //import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:chat_app/features/calls/core/controllers/call_kit_callbacks.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-//import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:chat_app/features/calls/core/models/call_phase.dart'; // CallUiState
@@ -43,7 +40,8 @@ import 'package:chat_app/features/calls/core/controllers/call_room_events_binder
 import 'package:chat_app/features/calls/core/services/pending_call_service.dart';
 import 'package:chat_app/features/calls/core/utils/app_lifecycle_utils.dart';
 import 'package:chat_app/features/chat/providers/user_provider.dart';
-//import 'package:shared_preferences/shared_preferences.dart';
+import 'package:chat_app/features/calls/core/controllers/call_app_lifecycle_handler.dart';
+import 'package:chat_app/features/calls/core/controllers/call_kit_callbacks.dart';
 
 final callProvider = NotifierProvider<CallController, CallUiState>(
   CallController.new,
@@ -71,6 +69,8 @@ class CallController extends Notifier<CallUiState> {
   late final CallHistoryRecorder _history;
   late final CallRoomEventsBinder _roomEvents;
   late final CallKitCallbacks _kitCallbacks;
+  late final CallAppLifecycleHandler _appLifecycle;
+
   StreamSubscription<User?>? _authSub;
   //StreamSubscription<RemoteMessage>? _foregroundPushSub;
 
@@ -135,12 +135,23 @@ class CallController extends Notifier<CallUiState> {
       onConnected: _onRemoteConnected,
       onTerminal: _onTerminal,
     );
-
+    _appLifecycle = CallAppLifecycleHandler(
+      localUid: () => _uid,
+      consumeNativeAccept: _kitCallbacks.consumeNativeAccept,
+      incomingCall: () => state.incomingCall,
+      phase: () => state.phase,
+      isAccepting: () => _acceptingCallId != null,
+      fetchCall: (id) =>
+          ref.read(callSignalingRepositoryProvider).fetchCallOnce(callId: id),
+      dismissNative: (id) => _callKit.dismiss(id),
+      takeOverRingtone: () => _audioCoordinator.takeOverRingtone(),
+      reEmitIncoming: (s) => state = state.copyWith(incomingCall: s),
+    )..start();
     // 🛡️ d) APP LIFECYCLE WATCHDOG INTEGRATION
-    final lifecycle = AppLifecycleListener(
-      onResume: () => unawaited(_onAppResumed()),
-    );
-    ref.onDispose(lifecycle.dispose);
+    // final lifecycle = AppLifecycleListener(
+    //   onResume: () => unawaited(_onAppResumed()),
+    // );
+    ref.onDispose(_appLifecycle.dispose);
 
     // ── 5. Auth last.
     _authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
@@ -281,28 +292,28 @@ class CallController extends Notifier<CallUiState> {
   }
 
   // Resume handler (notification-body tap):
-  Future<void> _onAppResumed() async {
-    if (_uid != null && await _kitCallbacks.consumeNativeAccept()) {
-      return; // accept handled, no card
-    }
+  // Future<void> _onAppResumed() async {
+  //   if (_uid != null && await _kitCallbacks.consumeNativeAccept()) {
+  //     return; // accept handled, no card
+  //   }
 
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (_acceptingCallId != null) return;
+  //   await Future.delayed(const Duration(milliseconds: 600));
+  //   if (_acceptingCallId != null) return;
 
-    final incoming = state.incomingCall;
-    if (incoming == null || state.phase != call_model.CallState.ringing) return;
+  //   final incoming = state.incomingCall;
+  //   if (incoming == null || state.phase != call_model.CallState.ringing) return;
 
-    // Source of truth: is it still ringing in Firestore?
-    final fresh = await ref
-        .read(callSignalingRepositoryProvider)
-        .fetchCallOnce(callId: incoming.id);
-    if (fresh == null || fresh.state != call_model.CallState.ringing) return;
-    if (!await CallKitBridge.isActiveNatively(incoming.id)) return;
+  //   // Source of truth: is it still ringing in Firestore?
+  //   final fresh = await ref
+  //       .read(callSignalingRepositoryProvider)
+  //       .fetchCallOnce(callId: incoming.id);
+  //   if (fresh == null || fresh.state != call_model.CallState.ringing) return;
+  //   if (!await CallKitBridge.isActiveNatively(incoming.id)) return;
 
-    await _callKit.dismiss(incoming.id);
-    await _audioCoordinator.takeOverRingtone();
-    state = state.copyWith(incomingCall: incoming);
-  }
+  //   await _callKit.dismiss(incoming.id);
+  //   await _audioCoordinator.takeOverRingtone();
+  //   state = state.copyWith(incomingCall: incoming);
+  // }
 
   Future<void> rejectCall({required String callId}) async {
     await _callKit.dismiss(callId);
