@@ -1366,3 +1366,28 @@ other.
 ### Known issues
 
 - `NetworkImage("")` throws `No host specified in URI file:///` when a user has an empty avatar URL (guard planned, see TODO)
+
+---------------------------------------------------------------
+## [1.9.0] – 2026-10-06 – Group Video Call + Call History Tab
+---------------------------------------------------------------
+### Added
+
+- Group video call (foreground): create room, invite 2–7 contacts, accept/decline, join, leave
+- `groupCalls` collection, `GroupCallSession`, `ParticipantStatus`, `GroupCallPolicy` (max 8 video, min 3)
+- `GroupCallSignalingRepository` (transactional join/leave; call ends when nobody is left)
+- Ring timeout: unanswered invitees become `missed` after 30 s
+- `GroupCallController`, `GlobalGroupCallListener`, `GroupCallPickerScreen`
+- Grid view with tap-to-pin spotlight (`GroupVideoGrid`, `GroupVideoSpotlight`)
+- `CallService.participants` / `onParticipantsChanged`, `RoomParticipantView` (Room stays hidden)
+- Group call history tab (video and voice tabs): `users/{uid}/groupCallHistory`
+- 1:1 busy auto-reject with "Busy…" label and busy tone
+- Call buttons disabled while any call is active
+### Fixed
+- Caller stuck on "ringing" when callee declined during connect
+- Voice/video header buttons did nothing (leftover ternary)
+- Chat "System" sender name replaced by caller name
+- "Busy…" message now shown for 4 s
+### Known issues
+- No push for background/killed group calls
+- No mid-call invite, rejoin, or ring-timeout reaper
+- Firestore rules still open (dev)

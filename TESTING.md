@@ -341,3 +341,19 @@ Results 2026-10-02 (Pixel 8 emulator + webcam → Nokia 6.1): all rows passed ex
 
 Still to test: video via background push, killed-state video Accept, notification-body tap,
 camera permission denied (call should continue as voice), Flip on a two-camera phone.
+
+----------------------------------------------
+### Group video call (v1.9.0)
+----------------------------------------------
+Devices: Pixel 6 (creator), Nokia 6, Mi CC 9e.
+| Case | Result |
+|---|---|
+| Ring + ringtone on invitees | Pass |
+| Accept / join others | Pass |
+| Leave (others continue) | Pass |
+| Decline | Pass |
+| Unanswered → ends after 30 s | Pass |
+| Call history (joined / declined / missed) | Pass |
+| 1:1 busy ("Busy…" + tone) | Pass |
+| Group in background / killed | Not supported (no push) |
+| 1:1 kill-state accept/decline | Verify before release |

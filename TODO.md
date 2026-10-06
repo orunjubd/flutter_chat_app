@@ -269,3 +269,21 @@ Last Updated:
 
 ## Planned
 - [ ] Group voice and video calls (design review first: model, signaling, size limit, admin policy)
+
+-----------------------------------------------------
+## v1.9.0
+
+## Next
+- [ ] Group voice call (in progress)
+- [ ] Group push (relay watches groupCalls, background handler, CallKit, killed-state paths)
+- [ ] Group chat conversations (type, adminIds) + call bubbles
+## Later
+- [ ] Mid-call invite, rejoin, host rights, ring-timeout reaper
+- [ ] 1:1 → group escalation (origin: escalated)
+- [ ] Meetings with IDs/links (token server, guests)
+- [ ] Screen share, recording, waiting room, reactions, in-call chat
+## Before release
+- [ ] Replace open Firestore rules (add groupCalls get/list split, users/{uid}/groupCallHistory owner-only)
+- [ ] Server-side check that invitees are real contacts
+- [ ] Move call strings/colors fully to CallStrings/tokens
+- [ ] Remove timing debug prints
