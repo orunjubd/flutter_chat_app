@@ -11,6 +11,7 @@
 
 import 'dart:async';
 //import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:chat_app/features/calls/core/controllers/group_call_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -195,6 +196,9 @@ class CallController extends Notifier<CallUiState> {
     required String calleeId,
     required CallType type,
   }) async {
+    if (ref.read(groupCallProvider).phase.isBusy) {
+      return _fail('You are already in a group call.');
+    }
     final uid = _uid;
     if (uid == null) return _fail('No authenticated user.');
     if (state.phase.isBusy) {
@@ -224,7 +228,12 @@ class CallController extends Notifier<CallUiState> {
       onSessionCreated: (session) => _signaling.watchActive(callId: session.id),
     );
     if (!result.ok) return _fail(result.error ?? 'Could not start the call.');
-
+    // The call may have ended (declined/cancelled) while we were still connecting.
+    if (_signaling.activeCallId != result.session?.id) {
+      debugPrint('↩️ [Call] call ended while connecting → drop');
+      await _lifecycle.endCall(); // disconnect only, no id
+      return; // keep the terminal state set by _onTerminal
+    }
     _roomEvents.bind();
     state = state.copyWith(
       phase: call_model.CallState.ringing,
@@ -290,30 +299,6 @@ class CallController extends Notifier<CallUiState> {
     );
     if (type == CallType.video) await _enableVideoMedia();
   }
-
-  // Resume handler (notification-body tap):
-  // Future<void> _onAppResumed() async {
-  //   if (_uid != null && await _kitCallbacks.consumeNativeAccept()) {
-  //     return; // accept handled, no card
-  //   }
-
-  //   await Future.delayed(const Duration(milliseconds: 600));
-  //   if (_acceptingCallId != null) return;
-
-  //   final incoming = state.incomingCall;
-  //   if (incoming == null || state.phase != call_model.CallState.ringing) return;
-
-  //   // Source of truth: is it still ringing in Firestore?
-  //   final fresh = await ref
-  //       .read(callSignalingRepositoryProvider)
-  //       .fetchCallOnce(callId: incoming.id);
-  //   if (fresh == null || fresh.state != call_model.CallState.ringing) return;
-  //   if (!await CallKitBridge.isActiveNatively(incoming.id)) return;
-
-  //   await _callKit.dismiss(incoming.id);
-  //   await _audioCoordinator.takeOverRingtone();
-  //   state = state.copyWith(incomingCall: incoming);
-  // }
 
   Future<void> rejectCall({required String callId}) async {
     await _callKit.dismiss(callId);
@@ -426,6 +411,14 @@ class CallController extends Notifier<CallUiState> {
   void _onIncomingCall(CallSession session) {
     // Same call already being handled (the snapshot re-fired after our own write).
     if (state.incomingCall?.id == session.id) return;
+    if (session.id != _signaling.activeCallId &&
+        (state.phase.isBusy || ref.read(groupCallProvider).phase.isBusy)) {
+      debugPrint('📵 [Call] busy → auto-reject ${session.id}');
+      unawaited(
+        ref.read(callSignalingRepositoryProvider).markBusy(callId: session.id),
+      );
+      return;
+    }
     if (_routingCallId == session.id) {
       return; // snapshot re-fired while we check
     }
@@ -556,6 +549,7 @@ class CallController extends Notifier<CallUiState> {
         session: session,
         status: CallHistory.fromCallState(reason),
         localUserId: _uid ?? '',
+        callerName: session.callerName,
       ),
     );
     await _callKit.dismiss(session.id);
@@ -565,6 +559,9 @@ class CallController extends Notifier<CallUiState> {
     state = CallUiState(
       phase:
           reason, // reason is already the specific terminal value (ended/rejected/cancelled/failed/missed)
+      errorMessage: session.endReason == call_model.CallEndReason.busy
+          ? CallStrings.busy
+          : null,
     );
     final uid = _uid;
     if (uid != null) _signaling.watchInbox(userId: uid);

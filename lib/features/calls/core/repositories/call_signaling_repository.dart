@@ -121,6 +121,14 @@ class CallSignalingRepository {
     debugPrint('📡 [CallSignalingRepository] Call $callId → missed');
   }
 
+  Future<void> markBusy({required String callId}) async {
+    await _callsCollection.doc(callId).update({
+      'state': CallState.rejected.name,
+      'endReason': 'busy',
+      'endedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<CallSession?> fetchCallOnce({required String callId}) async {
     try {
       final doc = await _firestore.collection('calls').doc(callId).get();

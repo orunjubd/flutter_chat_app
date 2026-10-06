@@ -1,5 +1,7 @@
 import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:chat_app/core/widgets/app_scaffold.dart';
+import 'package:chat_app/features/calls/core/screens/group_call_history_screen.dart';
+import 'package:chat_app/features/calls/group_video_calls/screens/group_call_picker_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -19,7 +21,36 @@ class ConversationListScreen extends ConsumerWidget {
 
     return AppScaffold(
       //backgroundColor:
-      appBar: AppBar(title: const Text('Chats'), actions: []),
+      appBar: AppBar(
+        title: const Text('Chats'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'Call History',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const GroupCallHistoryScreen(),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.groups_outlined),
+            tooltip: 'Group video call',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  settings: const RouteSettings(name: 'group_call_picker'),
+                  builder: (_) =>
+                      const GroupCallPickerScreen(), // 🚀 Navigates cleanly to the multi-user picker panel!
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
 
       body: conversationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),

@@ -2,6 +2,7 @@
 import 'dart:async';
 
 import 'package:chat_app/features/calls/core/models/call_video_tracks.dart';
+import 'package:chat_app/features/calls/core/models/room_participant_view.dart';
 import 'package:flutter/foundation.dart';
 import 'package:livekit_client/livekit_client.dart';
 import 'package:chat_app/core/config/call_config.dart';
@@ -11,12 +12,65 @@ import 'package:chat_app/features/calls/core/services/call_service.dart';
 class LiveKitCallService implements CallService {
   Room? _room;
   EventsListener<RoomEvent>? _roomListener;
+  @override
+  bool groupMode = false; // in a group call one person leaving must NOT end the call
+
   Timer? _peerGoneTimer;
   final _peerGoneController = StreamController<void>.broadcast();
   final _reconnectingController = StreamController<void>.broadcast();
   final _reconnectedController = StreamController<void>.broadcast();
   final _videoTracksController = StreamController<CallVideoTracks>.broadcast();
   bool _frontCamera = true;
+
+  final _participantsController =
+      StreamController<List<RoomParticipantView>>.broadcast();
+
+  @override
+  Stream<List<RoomParticipantView>> get onParticipantsChanged =>
+      _participantsController.stream;
+
+  @override
+  List<RoomParticipantView> get participants {
+    final room = _room;
+    if (room == null) return const [];
+
+    RoomParticipantView view(Participant p, {required bool local}) {
+      VideoTrack? video;
+      for (final pub in p.videoTrackPublications) {
+        final t = pub.track;
+        if (t is VideoTrack && // also covers null
+            !pub.muted &&
+            (local || pub.subscribed) &&
+            pub.source != TrackSource.screenShareVideo) {
+          video = t;
+          break;
+        }
+      }
+      final muted =
+          p.audioTrackPublications.isEmpty ||
+          p.audioTrackPublications.every((a) => a.muted);
+      return RoomParticipantView(
+        identity: p.identity,
+        name: p.name.isNotEmpty ? p.name : p.identity,
+        video: video,
+        isMuted: muted,
+        isSpeaking: p.isSpeaking,
+        isLocal: local,
+      );
+    }
+
+    final me = room.localParticipant;
+    return [
+      if (me != null) view(me, local: true),
+      for (final p in room.remoteParticipants.values) view(p, local: false),
+    ];
+  }
+
+  void _emitParticipants() {
+    if (!_participantsController.isClosed) {
+      _participantsController.add(participants);
+    }
+  }
 
   @override
   Stream<CallVideoTracks> get onVideoTracksChanged =>
@@ -55,6 +109,7 @@ class LiveKitCallService implements CallService {
     if (!_videoTracksController.isClosed) {
       _videoTracksController.add(videoTracks);
     }
+    _emitParticipants();
   }
 
   @override
@@ -115,6 +170,10 @@ class LiveKitCallService implements CallService {
 
     listener
       ..on<ParticipantDisconnectedEvent>((event) {
+        if (groupMode) {
+          _emitParticipants();
+          return;
+        }
         debugPrint(
           '👤 [LiveKit] Remote participant disconnected: '
           '${event.participant.identity} — starting grace period',
@@ -139,6 +198,7 @@ class LiveKitCallService implements CallService {
         }
         _peerGoneTimer?.cancel();
         _peerGoneTimer = null;
+        _emitParticipants();
       })
       ..on<RoomDisconnectedEvent>((event) {
         // The whole room went away (server closed it, we lost our own
@@ -159,6 +219,7 @@ class LiveKitCallService implements CallService {
         debugPrint('✅ [LiveKit] Reconnected to room.');
         if (!_reconnectedController.isClosed) _reconnectedController.add(null);
       })
+      ..on<ActiveSpeakersChangedEvent>((_) => _emitParticipants())
       ..on<LocalTrackPublishedEvent>((_) => _emitTracks())
       ..on<LocalTrackUnpublishedEvent>((_) => _emitTracks())
       ..on<TrackSubscribedEvent>((_) => _emitTracks())
@@ -216,6 +277,7 @@ class LiveKitCallService implements CallService {
     debugPrint('🔌 [LiveKit] Disconnecting...');
     await room.disconnect();
     _room = null;
+    _emitParticipants();
     _emitTracks();
     debugPrint('✅ [LiveKit] Disconnected.');
   }
@@ -225,6 +287,7 @@ class LiveKitCallService implements CallService {
   /// the next call's subscription.
   Future<void> dispose() async {
     await disconnect();
+    await _participantsController.close();
     await _peerGoneController.close();
     await _reconnectingController.close();
     await _reconnectedController.close();

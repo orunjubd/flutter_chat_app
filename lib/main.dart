@@ -1,5 +1,3 @@
-import 'package:chat_app/core/navigation/app_navigator_key.dart';
-import 'package:chat_app/features/calls/core/widgets/global_incoming_call_listener.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +9,9 @@ import 'package:chat_app/core/theme/app_theme.dart';
 import 'package:chat_app/features/authentication/presentation/gate/auth_gate.dart';
 import 'firebase_options.dart';
 import 'package:chat_app/features/calls/core/services/call_push_handler.dart';
+import 'package:chat_app/core/navigation/app_navigator_key.dart';
+import 'package:chat_app/features/calls/core/widgets/global_group_call_listener.dart';
+import 'package:chat_app/features/calls/core/widgets/global_incoming_call_listener.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,7 +56,9 @@ class MyApp extends ConsumerWidget {
         // depth — not just the initial `home` route's content. This
         // is what actually makes the incoming-call overlay global.
         return GlobalIncomingCallListener(
-          child: child ?? const SizedBox.shrink(),
+          child: GlobalGroupCallListener(
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
         //final safeChild = child ?? const SizedBox.shrink();
         // return GlobalIncomingCallListener(child: safeChild);

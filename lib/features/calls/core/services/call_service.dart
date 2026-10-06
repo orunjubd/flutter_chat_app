@@ -2,6 +2,7 @@
 
 // features/calls/services/call_service.dart
 import 'package:chat_app/features/calls/core/models/call_video_tracks.dart';
+import 'package:chat_app/features/calls/core/models/room_participant_view.dart';
 
 /// Common contract for all RTC providers. Swapping LiveKit for
 /// Agora/self-hosted later means writing one new class here and
@@ -17,6 +18,16 @@ abstract class CallService {
   Future<void> switchCamera();
   CallVideoTracks get videoTracks;
   Stream<CallVideoTracks> get onVideoTracksChanged;
+
+  /// Indicates whether the active session layout operates as a one-to-one call or a group room.
+  /// Refactored from a literal value to an abstract getter to maintain safe interface bounds.
+  bool get groupMode;
+
+  /// A structured array containing all currently active participants inside the streaming room.
+  List<RoomParticipantView> get participants;
+
+  /// Fires real-time state stream updates whenever a participant joins, leaves, or alters media tracks.
+  Stream<List<RoomParticipantView>> get onParticipantsChanged;
 
   /// Fires once when the remote participant is gone and hasn't come back
   /// within a short grace period — NOT on every raw disconnect event, which

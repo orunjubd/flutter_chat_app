@@ -116,7 +116,7 @@ class CallSignalingListener {
 
     // While a call is active the inbox is noise, and worse, it can clobber
     // state. Your old code cancelled it in three different places.
-    stopInbox();
+    // stopInbox();
 
     debugPrint('📡 [Signaling] watching active call $callId');
 
