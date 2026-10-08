@@ -4,9 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/search_history_provider.dart';
 
 class RecentSearchList extends ConsumerWidget {
-  const RecentSearchList({super.key, required this.onSelected});
+  const RecentSearchList({super.key, required this.onSelected, this.emptyHint});
 
   final ValueChanged<String> onSelected;
+  final String? emptyHint;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,7 +44,7 @@ class RecentSearchList extends ConsumerWidget {
                   const SizedBox(height: 8),
 
                   Text(
-                    'Search messages to quickly find past conversations.\n'
+                    '${emptyHint ?? "Search messages to quickly find past conversations."}\n'
                     'Your recent searches will appear here.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(

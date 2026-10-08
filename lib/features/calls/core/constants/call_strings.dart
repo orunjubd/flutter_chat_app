@@ -24,6 +24,8 @@ abstract final class CallStrings {
   static const incomingGroupVideo = 'Incoming Group Video Call';
   static const incomingGroupVoice = 'Incoming Group Voice Call';
   static const groupVoiceCall = 'Group voice call';
+  static const groupVideoCall = 'Group video call';
+  static const callHistory = 'Call History';
   static const liveGroupVideo = '🟢 Live Group Video Call';
   static const liveGroupVoice = '🔊 Live Group Voice Call';
   static const join = 'JOIN';
