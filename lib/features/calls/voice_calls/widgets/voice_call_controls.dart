@@ -6,6 +6,8 @@
 // adding one more _ControlButton here with the same controlsEnabled — never
 // its own bespoke readiness check.
 
+import 'package:chat_app/core/extensions/theme_extensions.dart';
+import 'package:chat_app/features/calls/core/constants/call_strings.dart';
 import 'package:flutter/material.dart';
 
 class VoiceCallControls extends StatelessWidget {
@@ -29,13 +31,13 @@ class VoiceCallControls extends StatelessWidget {
       children: [
         _ControlButton(
           icon: Icons.mic_off,
-          label: 'Mute',
+          label: CallStrings.mute,
           onPressed: onToggleMute,
         ),
         _EndCallButton(onPressed: onEndCall),
         _ControlButton(
           icon: Icons.volume_up,
-          label: 'Speaker',
+          label: CallStrings.speaker,
           onPressed: onToggleSpeaker,
         ),
       ],
@@ -61,14 +63,18 @@ class _ControlButton extends StatelessWidget {
       children: [
         IconButton(
           iconSize: 32,
-          color: enabled ? Colors.white : Colors.white24,
+          color: enabled
+              ? context.theme.colorScheme.onSurface
+              : context.theme.colorScheme.onSurface.withValues(alpha: 0.24),
           icon: Icon(icon),
           onPressed: onPressed,
         ),
         Text(
           label,
           style: TextStyle(
-            color: enabled ? Colors.white70 : Colors.white24,
+            color: enabled
+                ? context.theme.colorScheme.onSurface
+                : context.theme.colorScheme.onSurface.withValues(alpha: 0.24),
             fontSize: 12,
           ),
         ),
@@ -85,7 +91,7 @@ class _EndCallButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.red,
+      color: context.callDeclineColor,
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),

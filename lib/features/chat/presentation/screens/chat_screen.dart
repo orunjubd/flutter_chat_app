@@ -1,4 +1,7 @@
+import 'package:chat_app/features/calls/core/controllers/group_call_controller.dart';
 import 'package:chat_app/features/calls/core/models/call_type.dart';
+import 'package:chat_app/features/calls/group_video_calls/screens/group_call_picker_screen.dart';
+//import 'package:chat_app/features/calls/group_video_calls/screens/group_video_call_screen.dart';
 import 'package:chat_app/features/chat/search/screens/search_messages_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -6,13 +9,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:chat_app/core/extensions/theme_extensions.dart';
-import 'package:chat_app/core/theme/app_colors.dart';
+//import 'package:chat_app/core/theme/app_colors.dart';
 import 'package:chat_app/core/utils/date_time_formatter.dart';
 import 'package:chat_app/core/widgets/app_scaffold.dart';
 import 'package:chat_app/features/calls/core/controllers/call_controller.dart'; // callProvider
 //import 'package:chat_app/features/calls/core/models/call_phase.dart'; // CallUiState
 import 'package:chat_app/features/calls/core/models/call_state.dart'; // CallState
-import 'package:chat_app/features/calls/voice_calls/screens/call_screen.dart';
+import 'package:chat_app/features/calls/core/screens/call_screen.dart';
 import 'package:chat_app/features/chat/presentation/widgets/reply_preview.dart';
 import 'package:chat_app/features/chat/providers/reply_repository_provider.dart';
 
@@ -28,6 +31,9 @@ import 'package:chat_app/features/chat/providers/conversation_message_provider.d
 import 'package:chat_app/features/chat/providers/conversation_provider.dart';
 import 'package:chat_app/features/chat/providers/reply_provider.dart';
 import 'package:chat_app/features/chat/providers/message_scroll_provider.dart';
+import 'package:chat_app/features/calls/core/constants/call_strings.dart';
+
+enum ChatMenuAction { voiceCall, videoCall, groupVoiceCall, groupVideoCall }
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key, required this.conversation});
@@ -198,6 +204,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
 
   @override
   Widget build(BuildContext context) {
+    final inCall =
+        ref.watch(callProvider.select((s) => s.phase.isBusy)) ||
+        ref.watch(groupCallProvider.select((s) => s.phase.isBusy));
     final typingAsync = ref.watch(typingProvider);
     final currentUserId = ref.watch(currentUserIdProvider);
     final conversationId = widget.conversation.id;
@@ -208,7 +217,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
 
     final presenceAsync = ref.watch(userPresenceProvider(otherUserId));
     final otherUserAsync = ref.watch(userByIdProvider(otherUserId));
-    final callState = ref.watch(callProvider);
+    // final callState = ref.watch(callProvider);
     //final otherUser = otherUserAsync.valueOrNull;
 
     return Stack(
@@ -246,7 +255,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                           : 'Last seen ${DateTimeFormatter.formatLastSeen(presence.lastSeen)}',
                       style: context.captionText?.copyWith(
                         color: presence.isOnline
-                            ? AppColors.lastSeen
+                            ? const Color.fromARGB(255, 253, 149, 51)
                             : context.textSecondaryColor,
                       ),
                     );
@@ -255,82 +264,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
               ],
             ),
             actions: [
-              IconButton(
-                icon: const Icon(Icons.videocam_outlined),
-                tooltip: 'Video Call',
-                onPressed:
-                    callState.phase == CallState.connecting ||
-                        callState.phase == CallState.ringing ||
-                        callState.phase == CallState.connected ||
-                        callState.phase == CallState.reconnecting
-                    ? null
-                    : () async {
-                        debugPrint(
-                          '📹 [UI-Test] Video call button tapped! '
-                          'Current status map: ${callState.phase}',
-                        );
-
-                        // 🚀 Start the unified video-call backend engine.
-                        await ref
-                            .read(callProvider.notifier)
-                            .startVideoCall(calleeId: otherUserId);
-
-                        if (!context.mounted) return;
-
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            settings: const RouteSettings(name: 'call_screen'),
-                            builder: (_) => CallScreen(
-                              peerId: otherUserId,
-                              peerName:
-                                  otherUserAsync.value?.username ??
-                                  'Unknown User',
-                              peerAvatarUrl: otherUserAsync.value?.imageUrl,
-                              isOutgoing: true,
-                              type: CallType.video,
-                            ),
-                          ),
-                        );
-                      },
-              ),
-              IconButton(
-                icon: const Icon(Icons.call_outlined),
-                tooltip: 'Voice Call',
-                onPressed:
-                    callState.phase == CallState.connecting ||
-                        callState.phase == CallState.ringing ||
-                        callState.phase == CallState.connected ||
-                        callState.phase == CallState.reconnecting
-                    ? null
-                    : () async {
-                        debugPrint(
-                          '📞 [UI-Test] Call button tapped! Current status map: ${callState.phase}',
-                        );
-                        await ref
-                            .read(callProvider.notifier)
-                            .startVoiceCall(calleeId: otherUserId);
-
-                        if (!context.mounted) return;
-                        // ============================================================
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            settings: const RouteSettings(name: 'call_screen'),
-                            builder: (_) => CallScreen(
-                              peerId: otherUserId,
-                              //peerName: otherUser?.username ?? 'Unknown User',
-                              peerName:
-                                  otherUserAsync.value?.username ??
-                                  'Unknown User',
-                              peerAvatarUrl: otherUserAsync.value?.imageUrl,
-                              isOutgoing: true,
-                            ),
-                            // ============================================================
-                          ),
-                        );
-                      },
-              ),
+              // ------------------------------------------------------------
+              // Search
+              // Primary conversation action — keep visible.
+              // ------------------------------------------------------------
               IconButton(
                 icon: const Icon(Icons.search),
+                tooltip: 'Search messages',
                 onPressed: () async {
                   final selectedMessage = await Navigator.push<Message>(
                     context,
@@ -339,12 +279,135 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                           SearchMessagesScreen(conversationId: conversationId),
                     ),
                   );
+
                   if (!context.mounted || selectedMessage == null) {
                     return;
                   }
+
                   await _jumpToMessage(selectedMessage);
                 },
               ),
+
+              // ------------------------------------------------------------
+              // More actions
+              // Secondary conversation/call actions.
+              // ------------------------------------------------------------
+              PopupMenuButton<ChatMenuAction>(
+                tooltip: 'More options',
+                icon: const Icon(Icons.more_vert),
+                onSelected: (action) async {
+                  switch (action) {
+                    case ChatMenuAction.voiceCall:
+                      if (inCall) return;
+
+                      if (!context.mounted) return;
+
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          settings: const RouteSettings(name: 'call_screen'),
+                          builder: (_) => CallScreen(
+                            peerId: otherUserId,
+                            peerName:
+                                otherUserAsync.value?.username ??
+                                'Unknown User',
+                            peerAvatarUrl: otherUserAsync.value?.imageUrl,
+                            isOutgoing: true,
+                          ),
+                        ),
+                      );
+                      break;
+
+                    case ChatMenuAction.videoCall:
+                      if (inCall) return;
+
+                      if (!context.mounted) return;
+
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          settings: const RouteSettings(name: 'call_screen'),
+                          builder: (_) => CallScreen(
+                            peerId: otherUserId,
+                            peerName:
+                                otherUserAsync.value?.username ??
+                                'Unknown User',
+                            peerAvatarUrl: otherUserAsync.value?.imageUrl,
+                            isOutgoing: true,
+                            type: CallType.video,
+                          ),
+                        ),
+                      );
+                      break;
+
+                    case ChatMenuAction.groupVoiceCall:
+                      if (inCall) return;
+
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          settings: const RouteSettings(
+                            name: 'group_call_picker',
+                          ),
+                          builder: (_) =>
+                              const GroupCallPickerScreen(type: CallType.voice),
+                        ),
+                      );
+                      break;
+
+                    case ChatMenuAction.groupVideoCall:
+                      if (inCall) return;
+
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          settings: const RouteSettings(
+                            name: 'group_call_picker',
+                          ),
+                          builder: (_) =>
+                              const GroupCallPickerScreen(type: CallType.video),
+                        ),
+                      );
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: ChatMenuAction.voiceCall,
+                    enabled: !inCall,
+                    child: ListTile(
+                      leading: const Icon(Icons.call_outlined),
+                      title: Text(CallStrings.voiceCall),
+                    ),
+                  ),
+
+                  PopupMenuItem(
+                    value: ChatMenuAction.videoCall,
+                    enabled: !inCall,
+                    child: ListTile(
+                      leading: const Icon(Icons.videocam_outlined),
+                      title: Text(CallStrings.videoCall),
+                    ),
+                  ),
+
+                  const PopupMenuDivider(),
+
+                  PopupMenuItem(
+                    value: ChatMenuAction.groupVoiceCall,
+                    enabled: !inCall,
+                    child: ListTile(
+                      leading: const Icon(Icons.phone_forwarded),
+                      title: Text(CallStrings.groupVoiceCall),
+                    ),
+                  ),
+
+                  PopupMenuItem(
+                    value: ChatMenuAction.groupVideoCall,
+                    enabled: !inCall,
+                    child: const ListTile(
+                      leading: Icon(Icons.video_call),
+                      title: Text('Group video call'),
+                    ),
+                  ),
+                ],
+              ),
+
               const SizedBox(width: 8),
             ],
           ),

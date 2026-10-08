@@ -44,7 +44,7 @@ class _List extends StatelessWidget {
     if (items.isEmpty) return const Center(child: Text('No group calls yet'));
     return ListView.separated(
       itemCount: items.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, i) {
         final e = items[i];
         final bad = e.outcome != GroupCallOutcome.joined;

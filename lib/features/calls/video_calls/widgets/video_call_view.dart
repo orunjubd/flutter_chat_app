@@ -1,3 +1,4 @@
+import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:chat_app/features/calls/core/models/call_video_tracks.dart';
 import 'package:chat_app/features/calls/video_calls/providers/call_video_provider.dart';
 import 'package:flutter/material.dart';
@@ -42,7 +43,7 @@ class VideoCallView extends ConsumerWidget {
     final local = tracks.local;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: context.callScreenBackground,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -66,15 +67,19 @@ class VideoCallView extends ConsumerWidget {
                     children: [
                       Text(
                         peerName,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.theme.colorScheme.onSurface,
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       Text(
                         statusLabel,
-                        style: const TextStyle(color: Colors.white70),
+                        style: TextStyle(
+                          color: context.theme.colorScheme.onSurface.withValues(
+                            alpha: 0.7,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -140,20 +145,25 @@ class _Waiting extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 56,
-          backgroundColor: Colors.white24,
+          backgroundColor: context.theme.colorScheme.onSurface.withValues(
+            alpha: 0.24,
+          ),
           backgroundImage: hasAvatar ? NetworkImage(avatarUrl!.trim()) : null,
           child: hasAvatar
               ? null
               : Text(
                   name.isNotEmpty ? name[0].toUpperCase() : '?',
-                  style: const TextStyle(color: Colors.white, fontSize: 40),
+                  style: TextStyle(
+                    color: context.theme.colorScheme.onSurface,
+                    fontSize: 40,
+                  ),
                 ),
         ),
         const SizedBox(height: 24),
         Text(
           name,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: context.theme.colorScheme.onSurface,
             fontSize: 24,
             fontWeight: FontWeight.w600,
           ),
@@ -161,7 +171,10 @@ class _Waiting extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           status,
-          style: const TextStyle(color: Colors.white70, fontSize: 16),
+          style: TextStyle(
+            color: context.theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            fontSize: 16,
+          ),
         ),
       ],
     );

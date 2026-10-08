@@ -10,8 +10,8 @@ class FirestoreRepository {
   CollectionReference<Map<String, dynamic>> get usersCollection =>
       _firestore.collection('users');
 
-  CollectionReference<Map<String, dynamic>> get messagesCollection =>
-      _firestore.collection('messages');
+  // CollectionReference<Map<String, dynamic>> get messagesCollection =>
+  //     _firestore.collection('messages');
 
   Future<void> createUser(AppUser user) async {
     await usersCollection.doc(user.id).set(user.toMap());

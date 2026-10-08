@@ -63,6 +63,37 @@ class GroupCallSignalingRepository {
         return null;
       });
 
+  /// Active calls that list [uid] but where [uid] is not currently in (or being
+  /// rung for) the call, i.e. missed, declined or left, with 2+ people inside.
+  Stream<List<GroupCallSession>> watchJoinable(String uid) => _col
+      .where('participantIds', arrayContains: uid)
+      .where('state', isEqualTo: 'active')
+      .snapshots()
+      .map((snap) {
+        final out = <GroupCallSession>[];
+        for (final doc in snap.docs) {
+          final s = GroupCallSession.fromMap(doc.id, doc.data());
+          final mine = s.statuses[uid];
+          if (mine == null ||
+              mine == ParticipantStatus.joined ||
+              mine == ParticipantStatus.invited) {
+            continue;
+          }
+          final joined = s.statuses.values
+              .where((v) => v == ParticipantStatus.joined)
+              .length;
+          if (joined >= 2) out.add(s);
+        }
+        return out;
+      });
+  Future<GroupCallSession?> fetchOnce(String callId) async {
+    final s = await _col.doc(callId).get();
+    final d = s.data();
+    return d == null ? null : GroupCallSession.fromMap(s.id, d);
+  }
+
+  Future<void> markMissed(String callId, String uid) =>
+      _setStatus(callId, uid, ParticipantStatus.missed);
   Future<void> join(String callId, String uid) =>
       _setStatus(callId, uid, ParticipantStatus.joined);
   Future<void> decline(String callId, String uid) =>

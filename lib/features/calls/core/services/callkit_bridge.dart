@@ -64,11 +64,37 @@ class CallKitBridge {
   static Future<bool> isActiveNatively(String callId) async {
     try {
       final calls = await FlutterCallkitIncoming.activeCalls();
+      // for (final c in calls) {
+      //   debugPrint('🔎 [CallKit] active: ${c.toJson()}');
+      // }
       return calls.any((c) => c is Map && c.id == callId);
     } catch (e) {
       debugPrint('⚠️ [CallKit] activeCalls failed: $e');
     }
     return false;
+  }
+
+  static Future<void> endNative(String callId) async {
+    try {
+      await FlutterCallkitIncoming.endCall(callId);
+    } catch (e) {
+      debugPrint('⚠️ [CallKit] endNative failed: $e');
+    }
+  }
+
+  /// Id of a call the user already accepted on the native UI, if any.
+  /// Covers a cold start where the accept event was emitted before our
+  /// listener existed (the plugin does not replay it).
+  static Future<String?> acceptedNativeCallId() async {
+    try {
+      final calls = await FlutterCallkitIncoming.activeCalls();
+      for (final c in calls) {
+        if ((c as dynamic).isAccepted == true) return c.id;
+      }
+    } catch (e) {
+      debugPrint('⚠️ [CallKit] acceptedNativeCallId unavailable: $e');
+    }
+    return null;
   }
 
   Future<void> _handle(CallEvent? event) async {
@@ -128,6 +154,7 @@ class CallKitBridge {
     required String callerName,
     String? callerAvatarUrl,
     required bool isVideoCall,
+    bool isGroup = false, // ignored
     Duration timeout = const Duration(seconds: 30),
   }) async {
     if (await isActiveNatively(callId)) {
@@ -138,7 +165,7 @@ class CallKitBridge {
     }
     final params = CallKitParams(
       id: callId,
-      nameCaller: callerName,
+      nameCaller: isGroup ? '$callerName · Group' : callerName, // CHANGED,
       appName: 'ECE',
       avatar: callerAvatarUrl,
       handle: callerName,

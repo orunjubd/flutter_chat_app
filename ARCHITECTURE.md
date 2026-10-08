@@ -1681,3 +1681,38 @@ Firestore inbox listener → CallController._onIncomingCall
   background → CallKitBridge.show (native UI)
 FCM push (background isolate) → CallKitBridge.showRaw (deduped via activeCalls())
 Decision: Firestore is the source of truth; push only wakes the app.
+
+====================================================
+## v1.10.0
+## Calls
+
+### Layout
+features/calls/
+  core/        controllers, models, repositories, services, widgets (shared by every call type)
+  voice_calls/, video_calls/                 1:1 UI
+  group_voice_calls/, group_video_calls/     group UI
+
+### 1:1 calls
+Firestore `calls/{id}` is the source of truth. `CallController` is the composition root;
+extracted helpers: `CallRoomEventsBinder`, `CallKitCallbacks`, `CallAppLifecycleHandler`.
+LiveKit is hidden behind `CallService`; the only LiveKit types exposed are
+`CallVideoTracks` and `RoomParticipantView`.
+
+### Group calls
+Firestore `groupCalls/{id}`: `participantIds`, `invitedIds`, `statuses`, `names`, `state`.
+`GroupCallController` (separate from `CallController`; they block each other via isBusy).
+Rules: ends when one participant is left and nobody is invited; 30 s ring timeout marks
+`missed`; any status can join an active call (`joinActive`).
+History: `users/{uid}/groupCallHistory/{callId}`, written by each participant.
+Policy: `GroupCallPolicy` (max 8 video / 16 voice, min 3).
+
+### Incoming routing
+Foreground: Firestore inbox → in-app card + Dart ringtone.
+Background/killed: FCM (relay) → `call_push_handler` → CallKit (`showRaw`, deduped via
+`activeCalls()`), then `PendingCallService` markers recover native accept/decline on cold start.
+`CallKitCallbacks` tries the group path first, then 1:1.
+
+### Decisions
+- Push sender is the only part that changes with Blaze; client code stays.
+- Ad-hoc group calls have no conversation; tiles take over once group chats exist.
+- Group call history is per user, keyed by call, so a later chat bubble is a second view.

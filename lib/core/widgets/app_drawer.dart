@@ -37,23 +37,46 @@ class AppDrawer extends ConsumerWidget {
 
               data: (user) {
                 final username = user?.username ?? 'Unknown User';
-
                 final email = user?.email ?? '';
 
+                final imageUrl = user?.imageUrl.trim() ?? '';
+                final hasImage = imageUrl.isNotEmpty;
+
                 return UserAccountsDrawerHeader(
-                  decoration: BoxDecoration(color: context.primaryColor),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.surfaceContainer,
+                  ),
 
                   accountName: Text(username, style: context.titleText),
 
                   accountEmail: Text(email, style: context.captionText),
 
-                  currentAccountPicture: CircleAvatar(
-                    backgroundColor: context.colorScheme.onPrimary,
-                    child: Text(
-                      username.isEmpty ? '?' : username[0].toUpperCase(),
-                      style: context.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+                  currentAccountPicture: GestureDetector(
+                    onTap: () {
+                      _showProfilePhotoOptions(
+                        context,
+                        username: username,
+                        imageUrl: imageUrl,
+                      );
+                    },
+
+                    child: CircleAvatar(
+                      backgroundColor: context.colorScheme.primary.withValues(
+                        alpha: 0.12,
                       ),
+
+                      backgroundImage: hasImage ? NetworkImage(imageUrl) : null,
+
+                      child: hasImage
+                          ? null
+                          : Text(
+                              username.isEmpty
+                                  ? '?'
+                                  : username[0].toUpperCase(),
+                              style: context.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
                 );
@@ -66,6 +89,7 @@ class AppDrawer extends ConsumerWidget {
               subtitle: const Text('Available soon'),
               onTap: () {
                 Navigator.pop(context);
+
                 AppSnackBar.info(context, 'Profile coming soon');
               },
             ),
@@ -76,6 +100,7 @@ class AppDrawer extends ConsumerWidget {
               subtitle: const Text('Available soon'),
               onTap: () {
                 Navigator.pop(context);
+
                 AppSnackBar.info(
                   context,
                   'Settings available soon',
@@ -119,13 +144,14 @@ class AppDrawer extends ConsumerWidget {
               ),
 
               onTap: () async {
-                // Close the drawer
+                // Close the drawer.
                 Navigator.pop(context);
 
-                // Remove every page above the ConversationListScreen
+                // Remove every page above the ConversationListScreen.
                 Navigator.of(context).popUntil((route) => route.isFirst);
 
-                // Allow the disposed widgets to cancel their Firestore listeners.
+                // Allow disposed widgets to cancel their
+                // Firestore listeners.
                 await Future.delayed(const Duration(milliseconds: 50));
 
                 // Logout.
@@ -147,6 +173,116 @@ class AppDrawer extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // PROFILE PHOTO OPTIONS
+  // ---------------------------------------------------------------------------
+
+  void _showProfilePhotoOptions(
+    BuildContext context, {
+    required String username,
+    required String imageUrl,
+  }) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: const Text('Change profile photo'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+
+                  //AppSnackBar.info(context, 'Profile photo upload coming next');
+                  Navigator.pop(context);
+                },
+              ),
+
+              if (imageUrl.isNotEmpty)
+                ListTile(
+                  leading: Icon(
+                    Icons.delete_outline,
+                    color: context.errorColor,
+                  ),
+                  title: Text(
+                    'Remove profile photo',
+                    style: TextStyle(color: context.errorColor),
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+
+                    AppSnackBar.info(
+                      context,
+                      'Profile photo removal coming next',
+                    );
+                  },
+                ),
+
+              if (imageUrl.isNotEmpty)
+                ListTile(
+                  leading: const Icon(Icons.visibility_outlined),
+                  title: const Text('View profile photo'),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+
+                    _showProfilePhoto(
+                      context,
+                      username: username,
+                      imageUrl: imageUrl,
+                    );
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // PROFILE PHOTO PREVIEW
+  // ---------------------------------------------------------------------------
+
+  void _showProfilePhoto(
+    BuildContext context, {
+    required String username,
+    required String imageUrl,
+  }) {
+    showDialog<void>(
+      context: context,
+      builder: (_) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(20),
+          child: InteractiveViewer(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) {
+                  return Container(
+                    height: 280,
+                    width: 280,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: context.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(Icons.broken_image_outlined, size: 64),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -24,34 +24,26 @@ import 'package:chat_app/features/calls/core/models/call_state.dart'
 ///
 /// For an incoming call, we show the native CallKit UI.
 ///
-/// IMPORTANT:
-/// This function runs in a background isolate.
-/// Therefore it must be an entry point.
-// @pragma('vm:entry-point')
-// Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-//   final type = message.data['type'];
-//   if (type != 'incoming_call') return; // ignore anything that isn't a call
-
-//   await CallKitBridge.showRaw(
-//     callId: message.data['callId'] ?? '',
-//     callerName: message.data['callerName'] ?? 'Unknown',
-//     callerAvatarUrl: message.data['callerAvatarUrl'],
-//     isVideoCall: message.data['callType'] == 'video',
-//   );
-// }
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  if (message.data['type'] != 'incoming_call') return;
+  final type = message.data['type'];
   final callId = (message.data['callId'] as String?)?.trim();
-  if (callId == null || callId.isEmpty) {
-    debugPrint('❌ [CallPush] Incoming FCM ignored: missing callId');
+  if (callId == null || callId.isEmpty) return;
+
+  if (type == 'group_call_cancelled') {
+    debugPrint('🔕 [CallPush] group call cancelled → $callId');
+    await CallKitBridge.endNative(callId);
     return;
   }
+  if (type != 'incoming_call' && type != 'incoming_group_call') return;
+
+  final isGroup = type == 'incoming_group_call';
   final callerName = (message.data['callerName'] as String?)?.trim();
   final avatarUrl = (message.data['callerAvatarUrl'] as String?)?.trim();
   debugPrint(
-    '🔔 [CallPush] Incoming FCM: callId=$callId, callType=${message.data['callType']}',
+    '🔔 [CallPush] Incoming ${isGroup ? "GROUP " : ""}FCM: callId=$callId, '
+    'callType=${message.data['callType']}',
   );
   try {
     await CallKitBridge.showRaw(
@@ -63,9 +55,10 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
           ? null
           : avatarUrl,
       isVideoCall: message.data['callType'] == 'video',
+      isGroup: isGroup,
     );
-    debugPrint('✅ [CallPush] showRaw returned: callId=$callId');
-    await _markCalleeRingingFromBackground(callId); // after the UI is up
+    await PendingCallService.instance.markNativeShown(callId);
+    if (!isGroup) await _markCalleeRingingFromBackground(callId);
   } catch (error, stackTrace) {
     debugPrint('❌ [CallPush] showRaw failed: callId=$callId, error=$error');
     debugPrintStack(stackTrace: stackTrace);
@@ -98,30 +91,6 @@ Future<void> _markCalleeRingingFromBackground(String callId) async {
     ); // best-effort
   }
 }
-
-/// ===============================================================
-/// FCM FOREGROUND MESSAGE LISTENER
-/// ===============================================================
-///
-/// Called when an FCM message arrives while the app is currently
-/// open and in the foreground.
-///
-/// We also show CallKit so incoming calls use the same native
-/// incoming-call experience.
-///
-// void registerForegroundCallListener() {
-//   FirebaseMessaging.onMessage.listen((message) async {
-//     if (message.data['type'] != 'incoming_call') return;
-
-//     final service = IncomingCallService();
-//     await service.showIncomingCall(
-//       callId: message.data['callId'] ?? '',
-//       callerName: message.data['callerName'] ?? 'Unknown',
-//       callerAvatarUrl: message.data['callerAvatarUrl'],
-//       isVideoCall: message.data['callType'] == 'video',
-//     );
-//   });
-// }
 
 /// ===============================================================
 /// BACKGROUND CALL ACCEPT
@@ -179,6 +148,10 @@ Future<void> _handleBackgroundCallDecline(String callId) async {
     final callDoc = await firestore.collection('calls').doc(callId).get();
 
     if (!callDoc.exists || callDoc.data() == null) {
+      await _setGroupStatusFromBackground(
+        callId,
+        'declined',
+      ); // 'missed' in timeout handler
       return;
     }
 
@@ -217,6 +190,7 @@ Future<void> _handleBackgroundCallTimeout(String callId) async {
     final callDoc = await firestore.collection('calls').doc(callId).get();
 
     if (!callDoc.exists || callDoc.data() == null) {
+      await _setGroupStatusFromBackground(callId, 'missed');
       return;
     }
 
@@ -233,6 +207,33 @@ Future<void> _handleBackgroundCallTimeout(String callId) async {
     });
   } catch (error) {
     // Keep background callback safe.
+  }
+}
+
+/// Group twin of the 1:1 background decline/timeout. Plain writes: no Riverpod here.
+Future<void> _setGroupStatusFromBackground(String callId, String status) async {
+  try {
+    await _initializeFirebaseForBackground();
+    final user =
+        FirebaseAuth.instance.currentUser ??
+        await FirebaseAuth.instance.authStateChanges().first.timeout(
+          const Duration(seconds: 3),
+          onTimeout: () => null,
+        );
+    if (user == null) return;
+
+    final ref = FirebaseFirestore.instance.collection('groupCalls').doc(callId);
+    final d = (await ref.get()).data();
+    if (d == null || d['state'] == 'ended') return;
+    if ((d['statuses'] as Map?)?[user.uid] != 'invited') return;
+
+    await ref.update({
+      'statuses.${user.uid}': status,
+      'invitedIds': FieldValue.arrayRemove([user.uid]),
+    });
+    debugPrint('📡 [CallKit Background] group $status → $callId');
+  } catch (e) {
+    debugPrint('⚠️ [CallKit Background] group status write failed: $e');
   }
 }
 

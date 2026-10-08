@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chat_app/features/calls/core/models/call_state.dart';
 import 'package:chat_app/features/calls/core/models/call_phase.dart';
 //import 'package:chat_app/features/calls/core/widgets/incoming_voice_call_dialog.dart';
-import 'package:chat_app/features/calls/voice_calls/screens/call_screen.dart';
+import 'package:chat_app/features/calls/core/screens/call_screen.dart';
 import 'package:chat_app/core/navigation/app_navigator_key.dart';
 
 //import 'package:chat_app/features/chat/providers/user_provider.dart';
@@ -35,7 +35,8 @@ class GlobalIncomingCallListener extends ConsumerWidget {
         '🔔 [GlobalIncomingCallListener.listen] previous=${previous?.phase} → next=${next.phase}',
       );
       debugPrint(
-        '🔔 [GlobalIncomingCallListener.listen] next.incomingCall=${next.incomingCall}',
+        '🔔 [GlobalIncomingCallListener] ${previous?.phase} → ${next.phase}, '
+        'incoming=${next.incomingCall?.id}',
       );
 
       final justAccepted =
@@ -49,24 +50,56 @@ class GlobalIncomingCallListener extends ConsumerWidget {
           next.incomingCall != null &&
           isAppInForeground; // same check the controller used
 
-      if (!justAccepted && !justStartedRinging) return;
+      final acceptedWithoutCard =
+          next.phase == CallState.connecting &&
+          next.incomingCall != null &&
+          previous?.phase != CallState.connecting;
 
-      final call = justAccepted ? previous!.incomingCall! : next.incomingCall!;
+      if (!justAccepted && !justStartedRinging && !acceptedWithoutCard) return;
+      debugPrint(
+        '🎯 [GlobalIncomingCallListener] trigger: accepted=$justAccepted '
+        'ringing=$justStartedRinging acceptedWithoutCard=$acceptedWithoutCard',
+      );
+      final call = (justAccepted ? previous!.incomingCall : next.incomingCall)!;
 
-      if (_pushScheduled) return;
+      // if (!justAccepted && !justStartedRinging) return;
+      if (_pushScheduled) {
+        debugPrint('⏭️ [GlobalIncomingCallListener] push already scheduled');
+        return;
+      }
       _pushScheduled = true;
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _pushScheduled = false;
-        if (CallScreen.instances > 0) return; // foreground card already open
+      void tryPush(int attempt) {
+        if (CallScreen.instances > 0) {
+          debugPrint('⏭️ [GlobalIncomingCallListener] skip: CallScreen open');
+          _pushScheduled = false;
+          return;
+        }
         final navigator = appNavigatorKey.currentState;
-        if (navigator == null) {
-          debugPrint('❌ [GlobalIncomingCallListener] navigator is null');
+        final resumed =
+            WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+        if (navigator == null || !resumed) {
+          if (attempt >= 40) {
+            // ~20 s
+            debugPrint(
+              '❌ [GlobalIncomingCallListener] gave up: navigator=${navigator != null} resumed=$resumed',
+            );
+            _pushScheduled = false;
+            return;
+          }
+          debugPrint(
+            '⏳ [GlobalIncomingCallListener] waiting (navigator=${navigator != null}, resumed=$resumed) #$attempt',
+          );
+          Future.delayed(
+            const Duration(milliseconds: 500),
+            () => tryPush(attempt + 1),
+          );
           return;
         }
         debugPrint(
-          '🎯 [GlobalIncomingCallListener] pushing CallScreen (instances=${CallScreen.instances})',
+          '🎯 [GlobalIncomingCallListener] pushing CallScreen type=${call.type}',
         );
+        _pushScheduled = false;
         navigator.push(
           MaterialPageRoute(
             settings: const RouteSettings(name: 'call_screen'),
@@ -78,7 +111,13 @@ class GlobalIncomingCallListener extends ConsumerWidget {
             ),
           ),
         );
-      });
+      }
+
+      debugPrint(
+        '🕒 [GlobalIncomingCallListener] scheduled, lifecycle='
+        '${WidgetsBinding.instance.lifecycleState}',
+      );
+      Future.microtask(() => tryPush(0)); // no frame needed, just schedule
     });
     return child;
   }

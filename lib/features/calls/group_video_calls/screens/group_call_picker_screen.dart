@@ -1,4 +1,5 @@
 import 'package:chat_app/features/calls/group_video_calls/screens/group_video_call_screen.dart';
+import 'package:chat_app/features/calls/group_voice_calls/screens/group_voice_call_screen.dart';
 import 'package:chat_app/features/chat/providers/conversation_provider.dart';
 import 'package:chat_app/features/chat/providers/user_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,7 +10,10 @@ import 'package:chat_app/features/calls/core/models/call_type.dart';
 // + imports: conversationsProvider, userByIdProvider, GroupVideoCallScreen
 
 class GroupCallPickerScreen extends ConsumerStatefulWidget {
-  const GroupCallPickerScreen({super.key});
+  const GroupCallPickerScreen({super.key, this.type = CallType.video});
+
+  final CallType type;
+
   @override
   ConsumerState<GroupCallPickerScreen> createState() => _State();
 }
@@ -31,13 +35,19 @@ class _State extends ConsumerState<GroupCallPickerScreen> {
     final problem = _selected.isEmpty
         ? null
         : _policy.validateStart(
-            type: CallType.video,
+            type: widget.type, // Maps audio/video constraints dynamically
             inviteeCount: _selected.length,
           );
     final canStart = _selected.isNotEmpty && problem == null;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('New group video call')),
+      appBar: AppBar(
+        title: Text(
+          widget.type == CallType.voice
+              ? 'New group voice call'
+              : 'New group video call',
+        ),
+      ),
       body: Column(
         children: [
           Expanded(
@@ -85,7 +95,9 @@ class _State extends ConsumerState<GroupCallPickerScreen> {
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: FilledButton.icon(
-                icon: const Icon(Icons.videocam),
+                icon: Icon(
+                  widget.type == CallType.voice ? Icons.call : Icons.videocam,
+                ),
                 label: Text('Start call (${_selected.length + 1})'),
                 onPressed: canStart ? _start : null,
               ),
@@ -100,12 +112,25 @@ class _State extends ConsumerState<GroupCallPickerScreen> {
     final me = FirebaseAuth.instance.currentUser!;
     final myProfile = await ref.read(currentUserProvider.future);
     if (!mounted) return;
+
+    // Compile unified profile collection maps for current user and chosen contacts
+    final Map<String, String> names = {
+      me.uid: myProfile?.username ?? 'Me',
+      ..._selected,
+    };
+
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => GroupVideoCallScreen.outgoing(
-          inviteeIds: _selected.keys.toList(),
-          names: {me.uid: myProfile?.username ?? 'Me', ..._selected},
-        ),
+        builder: (_) => widget.type == CallType.voice
+            ? GroupVoiceCallScreen.outgoing(
+                inviteeIds: _selected.keys.toList(),
+                names: names,
+              )
+            : GroupVideoCallScreen.outgoing(
+                type: widget.type,
+                inviteeIds: _selected.keys.toList(),
+                names: names,
+              ),
       ),
     );
   }

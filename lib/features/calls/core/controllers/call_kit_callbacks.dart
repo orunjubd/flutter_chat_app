@@ -12,6 +12,9 @@ import 'package:chat_app/features/calls/core/services/pending_call_service.dart'
 /// the UI shows.
 class CallKitCallbacks {
   CallKitCallbacks({
+    this.tryGroupAccept,
+    this.tryGroupDecline,
+    this.tryGroupTimeout,
     required CallSignalingRepository repository,
     required String? Function() localUid,
     required Future<void> Function(String callId) dismissNative,
@@ -30,6 +33,10 @@ class CallKitCallbacks {
        _acceptCall = acceptCall,
        _rejectCall = rejectCall,
        _markMissed = markMissed;
+
+  final Future<bool> Function(String callId)? tryGroupAccept;
+  final Future<bool> Function(String callId)? tryGroupDecline;
+  final Future<bool> Function(String callId)? tryGroupTimeout;
 
   final CallSignalingRepository _repository;
   final String? Function() _localUid;
@@ -50,15 +57,24 @@ class CallKitCallbacks {
     await acceptById(callId);
   }
 
-  Future<void> onDecline(String callId) => _rejectCall(callId: callId);
+  Future<void> onDecline(String callId) async {
+    if (await tryGroupDecline?.call(callId) == true) return;
+    await _rejectCall(callId: callId);
+  }
 
-  Future<void> onTimeout(String callId) => _markMissed(callId: callId);
+  Future<void> onTimeout(String callId) async {
+    if (await tryGroupTimeout?.call(callId) == true) return;
+    await _markMissed(callId: callId);
+  }
 
   // --- shared accept path ----------------------------------------------------
 
   /// Validates the call, then accepts it. Returns false if it was invalid
   /// (missing, not ours, or already finished); the native UI is dismissed.
   Future<bool> acceptById(String callId) async {
+    if (await tryGroupAccept?.call(callId) == true) {
+      return true; // NEW, first line
+    }
     final session = await _repository.fetchCallOnce(callId: callId);
     if (session == null ||
         session.calleeId != _localUid() ||

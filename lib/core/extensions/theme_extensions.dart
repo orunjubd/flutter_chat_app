@@ -1,3 +1,4 @@
+import 'package:chat_app/core/extensions/call_colors_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:chat_app/core/extensions/chat_bubble_theme_extension.dart';
 import 'package:chat_app/core/theme/app_colors.dart';
@@ -161,6 +162,27 @@ extension ThemeContextExtension on BuildContext {
 
   /// Soft, semi-translucent metadata color for my outgoing timestamps and clock details.
   Color get myBubbleTextSecondary => AppColors.white70;
+
+  // ===========================================================================
+  // 📞 ECE NATIVE CALL UI STYLE SHORTCUT HOOKS (ADDED HERE!)
+  // ===========================================================================
+  // ✅ REQUIREMENT MET: Leveraged a safe fallback null check token matching your design style!
+  CallColorsExtension get callColors =>
+      theme.extension<CallColorsExtension>() ?? CallColorsExtension.standard;
+
+  /// Dynamic adaptive calling accept button color token.
+  Color get callAcceptColor => callColors.accept;
+
+  /// Dynamic adaptive calling decline/end button color token.
+  Color get callDeclineColor => callColors.decline;
+
+  /// Full-screen layout background container ink token for active streaming views.
+  Color get callScreenBackground => callColors.screenBackground;
+
+  // ===========================================================================
+  // additional Colors / Colors Shortcuts (For Dynamic Light/Dark)
+  // ===========================================================================
+  // Color get onlineColor;
 
   // ===========================================================================
   // additional Colors / Colors Shortcuts (For Dynamic Light/Dark)

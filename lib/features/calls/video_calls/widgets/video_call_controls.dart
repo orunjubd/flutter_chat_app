@@ -1,3 +1,5 @@
+import 'package:chat_app/core/extensions/theme_extensions.dart';
+import 'package:chat_app/features/calls/core/constants/call_strings.dart';
 import 'package:flutter/material.dart';
 
 class VideoCallControls extends StatelessWidget {
@@ -28,26 +30,26 @@ class VideoCallControls extends StatelessWidget {
       children: [
         _Btn(
           icon: micEnabled ? Icons.mic : Icons.mic_off,
-          label: 'Mute',
+          label: CallStrings.mute,
           onPressed: gated(onToggleMute),
         ),
         _Btn(
           icon: cameraEnabled ? Icons.videocam : Icons.videocam_off,
-          label: 'Camera',
+          label: CallStrings.camera,
           onPressed: gated(onToggleCamera),
         ),
         _Btn(
           icon: Icons.cameraswitch,
-          label: 'Flip',
+          label: CallStrings.flip,
           onPressed: cameraEnabled ? gated(onSwitchCamera) : null,
         ),
         _Btn(
           icon: speakerOn ? Icons.volume_up : Icons.hearing,
-          label: 'Speaker',
+          label: CallStrings.speaker,
           onPressed: gated(onToggleSpeaker),
         ),
         Material(
-          color: Colors.red,
+          color: context.callDeclineColor,
           shape: const CircleBorder(),
           child: InkWell(
             customBorder: const CircleBorder(),
@@ -81,14 +83,18 @@ class _Btn extends StatelessWidget {
       children: [
         IconButton(
           iconSize: 28,
-          color: on ? Colors.white : Colors.white24,
+          color: on
+              ? context.theme.colorScheme.onSurface
+              : context.theme.colorScheme.onSurface.withValues(alpha: 0.24),
           icon: Icon(icon),
           onPressed: onPressed,
         ),
         Text(
           label,
           style: TextStyle(
-            color: on ? Colors.white70 : Colors.white24,
+            color: on
+                ? context.theme.colorScheme.onSurface
+                : context.theme.colorScheme.onSurface.withValues(alpha: 0.24),
             fontSize: 11,
           ),
         ),

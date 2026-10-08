@@ -1,8 +1,5 @@
 import 'dart:async';
 
-import 'package:chat_app/features/calls/core/models/call_state.dart';
-import 'package:chat_app/features/calls/core/models/group_call_history_entry.dart';
-import 'package:chat_app/features/calls/core/repositories/group_call_history_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +12,12 @@ import 'package:chat_app/features/calls/core/policies/group_call_policy.dart';
 import 'package:chat_app/features/calls/core/repositories/group_call_signaling_repository.dart';
 import 'package:chat_app/features/calls/core/services/call_audio_service.dart';
 import 'package:chat_app/features/calls/core/utils/app_lifecycle_utils.dart';
+import 'package:chat_app/features/calls/core/models/call_state.dart';
+import 'package:chat_app/features/calls/core/models/group_call_history_entry.dart';
+import 'package:chat_app/features/calls/core/models/participant_status.dart';
+import 'package:chat_app/features/calls/core/repositories/group_call_history_repository.dart';
+import 'package:chat_app/features/calls/core/services/callkit_bridge.dart';
+import 'package:chat_app/features/calls/core/services/pending_call_service.dart';
 
 enum GroupCallPhase { idle, incoming, connecting, connected, ended, failed }
 
@@ -130,6 +133,7 @@ class GroupCallController extends Notifier<GroupCallUiState> {
   }
 
   // --- incoming (foreground only in v1) --------------------------------------
+  String? _routingId;
 
   void _watchInbox(String uid) {
     _inboxSub?.cancel();
@@ -153,27 +157,121 @@ class GroupCallController extends Notifier<GroupCallUiState> {
           const Duration(seconds: 60)) {
         return; // stale
       }
+      unawaited(_presentIncoming(s, uid));
+    }, onError: (Object e) => debugPrint('❌ [GroupCall] inbox error: $e'));
+  }
+
+  Future<void> _presentIncoming(GroupCallSession s, String uid) async {
+    if (_routingId == s.id) return; // snapshot re-fired while we check
+    _routingId = s.id;
+    try {
+      if (await _nativeOwnsOrDeclined(s, uid)) return;
+      if (state.phase.isBusy || ref.read(callProvider).phase.isBusy) return;
       state = GroupCallUiState(phase: GroupCallPhase.incoming, session: s);
       unawaited(
         ref.read(callAudioServiceProvider).startRingtone(handledByOs: false),
       );
-    }, onError: (Object e) => debugPrint('❌ [GroupCall] inbox error: $e'));
+    } finally {
+      _routingId = null;
+    }
   }
 
+  /// True when the native CallKit UI owns this call (still ringing, or already
+  /// accepted) or the user declined it there before the app started.
+  Future<bool> _nativeOwnsOrDeclined(GroupCallSession s, String uid) async {
+    final shownByPush = await PendingCallService.instance.consumeNativeShown(
+      s.id,
+    );
+    if (!shownByPush) return false;
+    await Future.delayed(
+      const Duration(milliseconds: 1500),
+    ); // let the plugin settle
+    if (await CallKitBridge.isActiveNatively(s.id)) return true;
+    debugPrint(
+      '🚫 [GroupCall] declined on native UI before app start → ${s.id}',
+    );
+    await _repo.decline(s.id, uid);
+    unawaited(_record(GroupCallOutcome.declined, session: s));
+    return true;
+  }
+
+  /// Each returns true when [callId] is a group call (so 1:1 code must not run).
+  Future<bool> acceptFromNative(String callId) async {
+    final uid = _uid;
+    if (uid == null) return false;
+    final s = await _repo.fetchOnce(callId);
+    if (s == null) return false;
+    if (_acceptingId == callId ||
+        (state.session?.id == callId &&
+            (state.phase == GroupCallPhase.connecting ||
+                state.phase == GroupCallPhase.connected))) {
+      return true; // duplicate trigger, already joining
+    }
+
+    await CallKitBridge.endNative(callId);
+    if (state.phase == GroupCallPhase.incoming && state.session?.id == callId) {
+      await acceptIncoming();
+      return true;
+    }
+    if (s.isEnded ||
+        s.statuses[uid] != ParticipantStatus.invited ||
+        state.phase.isBusy) {
+      return true; // stale: nothing to join
+    }
+    state = GroupCallUiState(phase: GroupCallPhase.incoming, session: s);
+    await acceptIncoming();
+    return true;
+  }
+
+  Future<bool> declineFromNative(String callId) async {
+    final uid = _uid;
+    if (uid == null) return false;
+    final s = await _repo.fetchOnce(callId);
+    if (s == null) return false;
+
+    await CallKitBridge.endNative(callId);
+    if (s.statuses[uid] == ParticipantStatus.invited) {
+      await _repo.decline(callId, uid);
+      unawaited(_record(GroupCallOutcome.declined, session: s));
+    }
+    if (state.session?.id == callId && state.phase == GroupCallPhase.incoming) {
+      await ref.read(callAudioServiceProvider).stopLoop();
+      state = GroupCallUiState.idle;
+    }
+    return true;
+  }
+
+  Future<bool> timeoutFromNative(String callId) async {
+    final uid = _uid;
+    if (uid == null) return false;
+    final s = await _repo.fetchOnce(callId);
+    if (s == null) return false;
+    if (s.statuses[uid] == ParticipantStatus.invited) {
+      await _repo.markMissed(callId, uid);
+      unawaited(_record(GroupCallOutcome.missed, session: s));
+    }
+    return true;
+  }
+
+  String? _acceptingId;
   Future<void> acceptIncoming() async {
     final s = state.session;
     final uid = _uid;
     if (s == null || uid == null || state.phase != GroupCallPhase.incoming) {
       return;
     }
-    await ref.read(callAudioServiceProvider).stopLoop();
+    if (_acceptingId == s.id) return; // snapshot re-fired while we check
+    _acceptingId = s.id;
     state = state.copyWith(phase: GroupCallPhase.connecting, clearError: true);
+    await ref.read(callAudioServiceProvider).stopLoop();
+
     await _repo.join(s.id, uid);
     _watchCall(s.id);
     await _joinRoom(s);
   }
 
   Future<void> declineIncoming() async {
+    _acceptingId = null; // 🚀 Flush the atomic lock!
     final s = state.session;
     final uid = _uid;
     await ref.read(callAudioServiceProvider).stopLoop();
@@ -185,7 +283,8 @@ class GroupCallController extends Notifier<GroupCallUiState> {
 
   // --- outgoing --------------------------------------------------------------
 
-  Future<void> startGroupVideoCall({
+  Future<void> startGroupCall({
+    required CallType type,
     String? conversationId,
     required List<String> inviteeIds,
     required Map<String, String> names,
@@ -197,7 +296,7 @@ class GroupCallController extends Notifier<GroupCallUiState> {
       return;
     }
     final problem = _policy.validateStart(
-      type: CallType.video,
+      type: type,
       inviteeCount: inviteeIds.length,
     );
     if (problem != null) return _fail(problem);
@@ -210,7 +309,7 @@ class GroupCallController extends Notifier<GroupCallUiState> {
         callerName: names[uid],
         inviteeIds: inviteeIds,
         names: names,
-        type: CallType.video,
+        type: type,
       );
       state = state.copyWith(session: session);
       _watchCall(session.id);
@@ -226,8 +325,11 @@ class GroupCallController extends Notifier<GroupCallUiState> {
     }
   }
 
-  Future<void> _record(GroupCallOutcome outcome) async {
-    final s = state.session;
+  Future<void> _record(
+    GroupCallOutcome outcome, {
+    GroupCallSession? session,
+  }) async {
+    final s = session ?? state.session;
     final uid = _uid;
     if (s == null || uid == null || _recordedCallId == s.id) return;
     _recordedCallId = s.id;
@@ -254,8 +356,9 @@ class GroupCallController extends Notifier<GroupCallUiState> {
     final uid = _uid!;
     final room = ref.read(liveKitCallServiceProvider);
     try {
+      final isVideo = s.type == CallType.video;
       room.groupMode = true;
-      _media.reset(speakerOn: true);
+      _media.reset(speakerOn: isVideo);
       final token = await ref
           .read(callTokenServiceProvider)
           .fetchDevelopmentToken(
@@ -269,21 +372,45 @@ class GroupCallController extends Notifier<GroupCallUiState> {
       _roomLostSub = room.onPeerGone.listen((_) => unawaited(leave()));
 
       final mic = await _media.setMicrophoneEnabled(true);
-      final cam = await _media.setCameraEnabled(true);
-      final spk = await _media.setSpeakerphoneEnabled(true);
+      final cam = isVideo ? await _media.setCameraEnabled(true) : null;
+      final spk = await _media.setSpeakerphoneEnabled(
+        isVideo,
+      ); // voice starts on earpiece
 
       state = state.copyWith(
         phase: GroupCallPhase.connected,
         participants: room.participants,
         micEnabled: mic.micEnabled,
-        cameraEnabled: cam.cameraEnabled,
+        cameraEnabled: cam?.cameraEnabled ?? false,
         speakerOn: spk.speakerOn,
       );
       _joinedAt = DateTime.now();
     } catch (e) {
+      _acceptingId =
+          null; // 🚀 Flush the atomic lock here on connection failures!
       debugPrint('❌ [GroupCall] join failed: $e');
       await _repo.leave(s.id, uid);
       await _cleanup();
+      _fail(e.toString());
+    }
+  }
+
+  /// Ad-hoc join of a call that is already running: no ringing handshake.
+  Future<void> joinActive(GroupCallSession s) async {
+    final uid = _uid;
+    if (uid == null) return;
+    if (state.phase.isBusy || ref.read(callProvider).phase.isBusy) return;
+    if (_acceptingId == s.id) return;
+    _acceptingId = s.id;
+    _recordedCallId =
+        null; // a missed/declined entry for this call gets replaced by "joined"
+    state = GroupCallUiState(phase: GroupCallPhase.connecting, session: s);
+    try {
+      await _repo.join(s.id, uid);
+      _watchCall(s.id);
+      await _joinRoom(s);
+    } catch (e) {
+      _acceptingId = null;
       _fail(e.toString());
     }
   }
@@ -323,6 +450,7 @@ class GroupCallController extends Notifier<GroupCallUiState> {
   }
 
   Future<void> _cleanup() async {
+    _acceptingId = null; // 🚀 Flush the atomic lock!
     _joinedAt = null;
     _callSub?.cancel();
     _callSub = null;

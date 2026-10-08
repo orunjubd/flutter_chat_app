@@ -1,3 +1,9 @@
+import 'package:chat_app/core/theme/app_colors.dart';
+import 'package:chat_app/features/calls/core/constants/call_strings.dart';
+import 'package:chat_app/features/calls/core/models/call_type.dart';
+import 'package:chat_app/features/calls/core/providers/joinable_group_call_provider.dart';
+import 'package:chat_app/features/calls/core/widgets/group_call_join_button.dart';
+import 'package:chat_app/features/calls/core/widgets/pulsing_dot.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,7 +11,7 @@ import 'package:chat_app/features/chat/data/models/conversation.dart';
 import 'package:chat_app/features/chat/providers/user_provider.dart';
 
 import 'conversation_avatar.dart';
-import 'conversation_preview.dart';
+import 'package:chat_app/features/chat/presentation/widgets/conversation_preview.dart';
 import 'conversation_time.dart';
 import 'unread_badge.dart';
 //import 'package:chat_app/core/utils/date_time_formatter.dart';
@@ -22,6 +28,9 @@ class ConversationTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final live = ref.watch(
+      liveGroupCallForConversationProvider(conversation.id),
+    );
     final currentUserId = ref.read(currentUserIdProvider);
 
     final unreadCount = conversation.unreadCounts[currentUserId] ?? 0;
@@ -50,7 +59,19 @@ class ConversationTile extends ConsumerWidget {
         return ListTile(
           onTap: onTap,
 
-          leading: ConversationAvatar(user: user),
+          leading: Stack(
+            children: [
+              ConversationAvatar(user: user),
+              if (live != null)
+                const Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: PulsingDot(
+                    color: AppColors.online,
+                  ), // 🚀 Pulsing presence green dot!
+                ),
+            ],
+          ),
 
           title: Text(
             user?.username ?? 'Unknown User',
@@ -58,21 +79,35 @@ class ConversationTile extends ConsumerWidget {
             overflow: TextOverflow.ellipsis,
           ),
 
-          subtitle: ConversationPreview(message: conversation.lastMessage),
+          subtitle: live != null
+              ? Text(
+                  live.type == CallType.video
+                      ? CallStrings.liveGroupVideo
+                      : CallStrings.liveGroupVoice,
+                  style: TextStyle(
+                    color: AppColors.online,
+                    fontWeight: FontWeight.w500,
+                  ),
+                )
+              : ConversationPreview(message: conversation.lastMessage),
 
-          trailing: IntrinsicWidth(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                ConversationTime(timestamp: conversation.lastMessageTime),
+          trailing: live != null
+              ? GroupCallJoinButton(
+                  session: live,
+                ) // 🚀 Direct entry point button on the tile row
+              : IntrinsicWidth(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      ConversationTime(timestamp: conversation.lastMessageTime),
 
-                const SizedBox(height: 6),
+                      const SizedBox(height: 6),
 
-                UnreadBadge(unreadCount: unreadCount),
-              ],
-            ),
-          ),
+                      UnreadBadge(unreadCount: unreadCount),
+                    ],
+                  ),
+                ),
         );
       },
     );

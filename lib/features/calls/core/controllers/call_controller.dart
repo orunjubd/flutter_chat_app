@@ -101,6 +101,12 @@ class CallController extends Notifier<CallUiState> {
       rejectCall: rejectCall,
       markMissed: ({required String callId}) =>
           _lifecycle.markMissed(callId: callId),
+      tryGroupAccept: (id) =>
+          ref.read(groupCallProvider.notifier).acceptFromNative(id),
+      tryGroupDecline: (id) =>
+          ref.read(groupCallProvider.notifier).declineFromNative(id),
+      tryGroupTimeout: (id) =>
+          ref.read(groupCallProvider.notifier).timeoutFromNative(id),
     );
 
     _callKit = CallKitBridge(

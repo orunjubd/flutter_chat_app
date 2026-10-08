@@ -1,3 +1,5 @@
+import 'package:chat_app/core/extensions/theme_extensions.dart';
+import 'package:chat_app/features/calls/core/constants/call_strings.dart';
 import 'package:flutter/material.dart';
 
 class IncomingCallCard extends StatelessWidget {
@@ -20,14 +22,14 @@ class IncomingCallCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black87,
+      backgroundColor: context.callScreenBackground,
       body: SafeArea(
         child: Center(
           child: Container(
             width: 320,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
+              color: context.theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Column(
@@ -75,15 +77,15 @@ class IncomingCallActions extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         _RoundAction(
-          color: Colors.red,
+          color: context.callDeclineColor,
           icon: Icons.call_end,
-          label: 'Decline',
+          label: CallStrings.decline,
           onTap: enabled ? onDecline : null,
         ),
         _RoundAction(
-          color: Colors.green,
+          color: context.callAcceptColor,
           icon: Icons.call,
-          label: 'Accept',
+          label: CallStrings.accept,
           onTap: enabled ? onAccept : null,
         ),
       ],

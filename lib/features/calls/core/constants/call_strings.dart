@@ -1,0 +1,30 @@
+abstract final class CallStrings {
+  static const calling = 'Calling…';
+  static const ringing = 'Ringing…';
+  static const incomingCall = 'Incoming call…';
+  static const incomingVoice = 'Incoming Voice Call';
+  static const incomingVideo = 'Incoming Video Call';
+  static const connecting = 'Connecting…';
+  static const reconnecting = 'Reconnecting…';
+  static const callFailed = 'Call failed';
+  static const callEnded = 'Call ended';
+  static const callDeclined = 'Call declined';
+  static const callCancelled = 'Call cancelled';
+  static const noAnswer = 'No answer';
+  static const accept = 'Accept';
+  static const decline = 'Decline';
+  static const mute = 'Mute';
+  static const speaker = 'Speaker';
+  static const camera = 'Camera';
+  static const flip = 'Flip';
+  static const voiceCall = 'Voice Call';
+  static const videoCall = 'Video Call';
+  static const unknownCaller = 'Unknown Caller';
+  static const busy = 'User is busy ...';
+  static const incomingGroupVideo = 'Incoming Group Video Call';
+  static const incomingGroupVoice = 'Incoming Group Voice Call';
+  static const groupVoiceCall = 'Group voice call';
+  static const liveGroupVideo = '🟢 Live Group Video Call';
+  static const liveGroupVoice = '🔊 Live Group Voice Call';
+  static const join = 'JOIN';
+}

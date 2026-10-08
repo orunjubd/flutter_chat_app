@@ -8,6 +8,22 @@ class PendingCallService {
 
   static final PendingCallService instance = PendingCallService._();
 
+  static const String _nativeShownKey = 'pending_native_shown_call_id';
+
+  Future<void> markNativeShown(String callId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_nativeShownKey, callId);
+  }
+
+  /// True once if the push handler showed native UI for this call.
+  Future<bool> consumeNativeShown(String callId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload(); // value was written from another isolate
+    if (prefs.getString(_nativeShownKey) != callId) return false;
+    await prefs.remove(_nativeShownKey);
+    return true;
+  }
+
   /// Stores the call accepted from the native CallKit background UI.
   Future<void> setAcceptedCall(String callId) async {
     final preferences = await SharedPreferences.getInstance();

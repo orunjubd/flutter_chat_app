@@ -27,71 +27,122 @@ class CallSystemMessageBubble extends StatelessWidget {
       message.status,
       message.callType,
       message.durationSeconds,
-      isMe,
     );
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: GestureDetector(
-          onTap: onCallBack,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            constraints: const BoxConstraints(maxWidth: 260),
-            decoration: BoxDecoration(
-              color: context.isDarkMode
-                  ? Colors.white.withValues(alpha: 0.06)
-                  : Colors.black.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: context.isDarkMode ? Colors.white12 : Colors.black12,
+    //final alignment = isMe ? Alignment.centerRight : Alignment.centerLeft;
+
+    final bubbleColor = isMe ? context.myBubbleColor : context.otherBubbleColor;
+
+    final primaryTextColor = isMe
+        ? context.myBubbleTextPrimary
+        : context.colorScheme.onSurface;
+
+    final secondaryTextColor = isMe
+        ? context.myBubbleTextPrimary.withValues(alpha: 0.65)
+        : context.textSecondaryColor.withValues(alpha: 0.65);
+
+    final statusColor = display.color ?? primaryTextColor;
+
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: GestureDetector(
+        onTap: onCallBack,
+        child: Container(
+          // ------------------------------------------------------------
+          // FIXED CONTEXTUAL WIDTH
+          // ------------------------------------------------------------
+          width: MediaQuery.of(context).size.width * 0.60,
+
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+
+          decoration: BoxDecoration(
+            color: bubbleColor,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(14),
+              topRight: const Radius.circular(14),
+              bottomLeft: Radius.circular(isMe ? 14 : 4),
+              bottomRight: Radius.circular(isMe ? 4 : 14),
+            ),
+          ),
+
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ----------------------------------------------------------
+              // ROW 1
+              // Call icon + Call type + Duration
+              // ----------------------------------------------------------
+              Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: statusColor.withValues(alpha: 0.12),
+                    ),
+                    child: Icon(display.icon, size: 20, color: statusColor),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  Expanded(
+                    child: Text(
+                      message.callType == CallType.video
+                          ? 'Video call'
+                          : 'Voice call',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.bodyTextMedium?.copyWith(
+                        color: primaryTextColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+
+                  if (message.status == CallHistoryStatus.completed &&
+                      message.durationSeconds != null) ...[
+                    const SizedBox(width: 10),
+                    Text(
+                      _formatDuration(message.durationSeconds!),
+                      style: context.captionText?.copyWith(
+                        color: secondaryTextColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: (display.color ?? context.textSecondaryColor)
-                        .withValues(alpha: 0.12),
-                  ),
-                  child: Icon(
-                    display.icon,
-                    size: 16,
-                    color: display.color ?? context.textSecondaryColor,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Flexible(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        display.label,
-                        style: context.bodyTextMedium?.copyWith(
-                          color: display.color ?? context.primaryColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        DateTimeFormatter.messageTime(
-                          message.createdAt.toDate(),
-                        ),
-                        style: context.captionText?.copyWith(
-                          color: context.textSecondaryColor,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
+
+              const SizedBox(height: 6),
+
+              // ----------------------------------------------------------
+              // DIVIDER
+              // ----------------------------------------------------------
+              Container(
+                height: 1,
+                color: secondaryTextColor.withValues(alpha: 0.18),
+              ),
+
+              const SizedBox(height: 4),
+
+              // ----------------------------------------------------------
+              // ROW 2
+              // Timestamp - right aligned
+              // ----------------------------------------------------------
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  DateTimeFormatter.messageTime(message.createdAt.toDate()),
+                  style: context.captionText?.copyWith(
+                    color: secondaryTextColor,
+                    fontSize: 11,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -102,47 +153,42 @@ class CallSystemMessageBubble extends StatelessWidget {
     CallHistoryStatus status,
     CallType type,
     int? durationSeconds,
-    bool isMe,
   ) {
-    final typeLabel = type == CallType.video ? 'Video call' : 'Voice call';
-    final typeIcon = type == CallType.video
-        ? Icons.videocam_outlined
-        : Icons.call_outlined;
-
     switch (status) {
       case CallHistoryStatus.completed:
-        final duration = durationSeconds != null
-            ? ' · ${_formatDuration(durationSeconds)}'
-            : '';
         return _CallDisplay(
-          icon: typeIcon,
-          label: '$typeLabel$duration',
+          icon: type == CallType.video
+              ? Icons.videocam_outlined
+              : Icons.call_outlined,
+          label: 'Call completed',
           color: null,
         );
+
       case CallHistoryStatus.missed:
-        final label = isMe ? 'No answer' : 'Missed $typeLabel';
         return _CallDisplay(
-          icon: Icons.call_missed,
-          label: label,
+          icon: Icons.call_missed_outlined,
+          label: 'Missed Call',
           color: Colors.red,
         );
+
       case CallHistoryStatus.rejected:
-        final label = isMe ? 'Call declined' : 'You declined this call';
         return _CallDisplay(
-          icon: Icons.call_end,
-          label: label,
+          icon: Icons.call_end_outlined,
+          label: 'Call Declined',
           color: Colors.red,
         );
+
       case CallHistoryStatus.cancelled:
         return _CallDisplay(
-          icon: Icons.call_end,
-          label: 'Call cancelled',
+          icon: Icons.call_end_outlined,
+          label: 'Call Cancelled',
           color: null,
         );
+
       case CallHistoryStatus.failed:
         return _CallDisplay(
           icon: Icons.error_outline,
-          label: 'Call failed',
+          label: 'Call Failed',
           color: Colors.red,
         );
     }
@@ -151,6 +197,7 @@ class CallSystemMessageBubble extends StatelessWidget {
   String _formatDuration(int totalSeconds) {
     final minutes = totalSeconds ~/ 60;
     final seconds = totalSeconds % 60;
+
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 }
@@ -161,6 +208,7 @@ class _CallDisplay {
     required this.label,
     required this.color,
   });
+
   final IconData icon;
   final String label;
   final Color? color;

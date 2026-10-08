@@ -74,10 +74,7 @@ class CallHistoryRecorder {
       final message = CallSystemMessage(
         id: session.id,
         senderId: session.callerId,
-        // senderName: callerName ?? 'Unknown',
-        senderName:
-            'System', // deliberate placeholder — call bubbles don't need a real name today
-        // ... rest unchanged ...
+        senderName: callerName ?? 'Unknown',
         createdAt: session.endedAt ?? Timestamp.now(),
         readBy: const [],
         deletedForEveryone: false,

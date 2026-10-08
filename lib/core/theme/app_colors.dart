@@ -143,4 +143,11 @@ class AppColors {
   static const Color white70 = Colors.white70;
   static const Color black = Colors.black;
   static const Color transparent = Colors.transparent;
+  // ===========================================================================
+  // 📞 CALL
+  // ===========================================================================
+  static const Color callAccept = Color(0xFF2E7D32);
+  static const Color callDecline = Color(0xFFD32F2F);
+  static const Color callScreenBackground =
+      Colors.black; // call screens are always dark
 }

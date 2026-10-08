@@ -287,3 +287,27 @@ Last Updated:
 - [ ] Server-side check that invitees are real contacts
 - [ ] Move call strings/colors fully to CallStrings/tokens
 - [ ] Remove timing debug prints
+
+-------------------------------------------------------------
+## Blaze migration: group + 1:1 push (redo when Cloud Functions are available)
+
+Replace `push_relay/relay.js` with Cloud Functions: `onCallRinging` (1:1, exists in functions/src/index.ts)
+and a new `onGroupCallCreated` / `onGroupCallEnded` (types: incoming_group_call, group_call_cancelled).
+
+ Files that stay unchanged (client side, already done):
+
+- core/services/call_push_handler.dart  (background handler, group + 1:1)
+- core/services/callkit_bridge.dart  (showRaw isGroup, endNative, isActiveNatively)
+- core/services/pending_call_service.dart
+- core/controllers/call_kit_callbacks.dart  (group-first routing)
+- core/controllers/group_call_controller.dart  (acceptFromNative / declineFromNative / timeoutFromNative)
+- core/widgets/global_group_call_listener.dart
+Files that get replaced/retired:
+- push_relay/relay.js
+Known limits to revisit:
+- Notification-body tap while ringing: no group in-app takeover
+- Accept after the 30 s ring timeout is refused as stale
+- Group history not written if the call was never delivered
+- Pixel emulators may not receive FCM (no Play Services token): verify on real devices
+- Group killed-state accept/decline: test once more with the double-accept fix
+- [ ] Group chat feature → then tile-owned live calls (conversationId set), banner only for ad-hoc calls

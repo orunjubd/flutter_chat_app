@@ -178,6 +178,7 @@ restoring obsolete roadmap states from older documentation.
 
 | Version | Summary |
 |---|---|
+| v1.10.0 | 2026-10-08 | Phase 4 Media complete: group voice call, joinable group call banner, group call push (dev relay), double-accept fix. Tested Pixel 6 + Pixel 8 + Nokia 6 + Mi CC 9e. Group kill-state accept/decline re-test and Blaze push migration pending. |
 | v1.9.0 | 2026-10-06 | Group video call (foreground), group call history tab, 1:1 busy handling. Tested Pixel 6 + Nokia 6 + Mi CC 9e. Group background/kill not supported yet. |
 | v1.8.5 | 2026-10-02 | One-to-one video call: caller/callee video, camera toggle, mute, speaker, flip control, shared CallScreen for voice and video. Tested foreground on Pixel 8 emulator (USB webcam) → Nokia 6.1. Background/killed video not yet verified. |
 | v1.8.4 | 2026-10-01 | Voice Call Complete: hybrid incoming UI, ringing acknowledgement,

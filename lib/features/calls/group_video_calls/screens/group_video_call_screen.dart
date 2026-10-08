@@ -1,3 +1,6 @@
+import 'package:chat_app/features/calls/core/constants/call_strings.dart';
+import 'package:chat_app/features/calls/core/models/call_type.dart';
+//import 'package:chat_app/features/calls/group_video_calls/screens/group_call_picker_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chat_app/core/extensions/theme_extensions.dart';
@@ -9,17 +12,20 @@ import 'package:chat_app/features/calls/core/widgets/group_video_spotlight.dart'
 
 class GroupVideoCallScreen extends ConsumerStatefulWidget {
   const GroupVideoCallScreen({super.key})
-    : inviteeIds = const [],
+    : type = CallType.video,
+      inviteeIds = const [],
       names = const {},
       conversationId = null;
 
   const GroupVideoCallScreen.outgoing({
     super.key,
+    required this.type,
     this.conversationId,
     required this.inviteeIds,
     required this.names,
   });
 
+  final CallType type;
   final String? conversationId;
   final List<String> inviteeIds;
   final Map<String, String> names;
@@ -44,7 +50,8 @@ class _GroupVideoCallScreenState extends ConsumerState<GroupVideoCallScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref
             .read(groupCallProvider.notifier)
-            .startGroupVideoCall(
+            .startGroupCall(
+              type: widget.type,
               conversationId: widget.conversationId,
               inviteeIds: widget.inviteeIds,
               names: widget.names,
@@ -90,9 +97,9 @@ class _GroupVideoCallScreenState extends ConsumerState<GroupVideoCallScreen> {
       },
       child: switch (s.phase) {
         GroupCallPhase.incoming => IncomingCallCard(
-          title: 'Incoming Group Video Call',
+          title: CallStrings.incomingGroupVideo,
           icon: Icons.groups,
-          callerName: session?.callerName ?? 'Unknown',
+          callerName: session?.callerName ?? CallStrings.unknownCaller,
           actionsEnabled: true,
           onAccept: call.acceptIncoming,
           onDecline: call.declineIncoming,

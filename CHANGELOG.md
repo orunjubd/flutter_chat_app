@@ -1391,3 +1391,30 @@ other.
 - No push for background/killed group calls
 - No mid-call invite, rejoin, or ring-timeout reaper
 - Firestore rules still open (dev)
+
+---------------------------------------------------------------
+## [1.10.0] – 2026-10-08 – Phase 4 Media Complete (Calls, Group Calls, Joinable Calls)
+---------------------------------------------------------------
+### Added
+
+- Group voice call (shares controller, repository, policy and history with group video)
+- Animated sine-wave speaking indicator on voice tiles (`SineWave`)
+- Group call push for background/killed states (dev relay `push_relay/relay.js`):
+  `incoming_group_call`, `group_call_cancelled`
+- Group-first routing for native CallKit accept/decline/timeout (`CallKitCallbacks`)
+- Joinable group calls: carousel banner on the conversation list (`GroupCallJoinBanner`),
+  `GroupCallJoinButton`, `PulsingDot`, `joinableGroupCallsProvider`, `GroupCallController.joinActive`
+- Tile-level live-call indicator (wired by `conversationId`, dormant until group chats exist)
+- Entry points: separate group voice and group video buttons
+### Changed
+- `startGroupVideoCall` generalized to `startGroupCall(type: ...)`
+- Last participant standing ends the group call (any host or member)
+### Fixed
+- Double accept in background (`duplicateIdentity`, ICE timeout): `_acceptingId` guard
+- Group voice invitees receiving a video call (type not passed through)
+- Voice/video header buttons doing nothing (leftover ternary)
+### Known limits
+- Group push depends on the dev relay; replace with Cloud Functions (Blaze)
+- Notification-body tap while a group call rings has no in-app takeover
+- Non-invited chat members cannot join (needs group chats)
+- Firestore rules still open (dev)

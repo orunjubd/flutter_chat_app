@@ -1,4 +1,5 @@
 // lib/core/theme/app_theme.dart
+import 'package:chat_app/core/extensions/call_colors_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:chat_app/core/theme/app_colors.dart';
 import 'package:chat_app/core/theme/app_text_theme.dart';
@@ -62,6 +63,21 @@ class AppTheme {
         readReceiptColor: AppColors.telegramBlue,
         unreadReceiptColor: AppColors.lightTextSecondary,
       ),
+
+      popupMenuTheme: const PopupMenuThemeData(
+        color: Colors.white,
+        elevation: 3,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
+        textStyle: TextStyle(
+          color: Color.fromARGB(255, 166, 128, 86), // Light brown
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        iconColor: Color.fromARGB(255, 166, 128, 86), // Light brown
+      ), // Synchronizes trailing/leading icons with text automatically
     );
   }
 
@@ -94,13 +110,26 @@ class AppTheme {
         readReceiptColor: AppColors.telegramBlueDark,
         unreadReceiptColor: AppColors.darkTextSecondary,
       ),
+      popupMenuTheme: const PopupMenuThemeData(
+        color: AppColors.darkBubbleMe, // Dark surface
+        elevation: 3,
+        surfaceTintColor: AppColors.darkBubbleMe,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
+        textStyle: TextStyle(
+          color: Color.fromARGB(255, 210, 175, 125), // Soft warm brown
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        iconColor: Color.fromARGB(255, 210, 175, 125), // Soft warm brown
+      ),
     );
   }
 
   // ===========================================================================
   // 🔒 THE PRIVATE THEME BUILDER CENTRALIZED UNIFIED FABRICATION CORE ENGINE
   // ===========================================================================
-  // ✅ ফিক্সড: লাইট আর ডার্ক থিমের ডুপ্লিকেট কোড দূর করতে একটি সিঙ্গেল প্রাইভেট বিল্ডার মেথড তৈরি করা হলো
   static ThemeData _buildTheme({
     required Brightness brightness,
     required ColorScheme colorScheme,
@@ -117,6 +146,7 @@ class AppTheme {
     required OutlinedButtonThemeData outlinedButtonTheme,
     required InputDecorationThemeData inputDecorationTheme,
     required ChatBubbleThemeExtension bubbleTheme,
+    PopupMenuThemeData? popupMenuTheme,
   }) {
     return ThemeData(
       useMaterial3: true,
@@ -137,8 +167,29 @@ class AppTheme {
       elevatedButtonTheme: elevatedButtonTheme,
       outlinedButtonTheme: outlinedButtonTheme,
       inputDecorationTheme: inputDecorationTheme,
-
-      extensions: <ThemeExtension<dynamic>>[bubbleTheme],
+      popupMenuTheme:
+          popupMenuTheme ??
+          const PopupMenuThemeData(
+            color: Color.fromARGB(255, 255, 255, 255),
+            elevation: 3,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+            ),
+            textStyle: TextStyle(
+              color: Color.fromARGB(
+                255,
+                255,
+                255,
+                255,
+              ), // Premium high-contrast Slate Dark Charcoal text color
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+      extensions: <ThemeExtension<dynamic>>[
+        bubbleTheme,
+        CallColorsExtension.standard,
+      ],
     );
   }
 }

@@ -2,6 +2,7 @@
 //import 'package:firebase_auth/firebase_auth.dart';
 //import 'package:chat_app/core/video/models/video_message.dart';
 import 'package:chat_app/core/contact/widgets/contact_message_bubble.dart';
+//import 'package:chat_app/core/extensions/chat_bubble_theme_extension.dart';
 import 'package:chat_app/core/location/widgets/location_message_bubble.dart';
 import 'package:chat_app/core/video/widgets/fullscreen_video_player.dart';
 import 'package:chat_app/features/calls/core/widgets/call_system_message_bubble.dart';
@@ -12,7 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:chat_app/core/extensions/theme_extensions.dart';
-import 'package:chat_app/core/theme/app_colors.dart';
+//import 'package:chat_app/core/theme/app_colors.dart';
 import 'package:chat_app/core/utils/date_time_formatter.dart';
 // import 'package:chat_app/features/chat/providers/reply_provider.dart';
 import 'package:chat_app/features/chat/data/models/message.dart';
@@ -73,15 +74,33 @@ class ChatBubble extends ConsumerWidget {
   }
 
   BorderRadius get bubbleRadius => BorderRadius.only(
-    topLeft: const Radius.circular(18),
-    topRight: const Radius.circular(18),
-    bottomLeft: Radius.circular(isMe ? 18 : 4),
-    bottomRight: Radius.circular(isMe ? 4 : 18),
+    topLeft: const Radius.circular(14),
+    topRight: const Radius.circular(14),
+    bottomLeft: Radius.circular(isMe ? 14 : 4),
+    bottomRight: Radius.circular(isMe ? 0 : 14),
   );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    // 📞 Call logs use their own dedicated bubble layout.
+    //
+    // IMPORTANT:
+    // Do not place CallSystemMessage inside the generic
+    // Material → Container message bubble.
+    //
+    // This removes the double-box inheritance problem and
+    // allows the call log to control its own alignment,
+    // background and shape.
+    if (messageData is CallSystemMessage) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: CallSystemMessageBubble(
+          message: messageData as CallSystemMessage,
+          isMe: isMe,
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: GestureDetector(
@@ -112,180 +131,211 @@ class ChatBubble extends ConsumerWidget {
                   },
                 );
               },
-        child: Material(
-          elevation: 1.5,
-          color: AppColors.transparent,
-          borderRadius: bubbleRadius,
-          child: Container(
-            constraints: BoxConstraints(maxWidth: context.screenWidth * .72),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: highlight
-                  ? context.primaryColor.withValues(alpha: .30)
-                  : _deleted
-                  ? context.colorScheme.surfaceContainerHighest
-                  : isMe
-                  ? context.myBubbleColor
-                  : context.otherBubbleColor,
-              borderRadius: bubbleRadius,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                //------------------------------------
-                // Sender
-                //------------------------------------
-                Text(
-                  messageData.senderName,
-                  style: context.bodyTextMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isMe
-                        ? context.myBubbleTextPrimary
-                        : context.colorScheme.onSurface,
-                  ),
-                ),
 
-                //--------------------------------------------
-                // Forwarded
-                //------------------------------------
-                if (messageData.forwarded) ...[
+        child: Align(
+          alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+          child: Material(
+            elevation: 1.5,
+            color: Colors.transparent,
+            borderRadius: isMe
+                ? const BorderRadius.only(
+                    topLeft: Radius.circular(14),
+                    topRight: Radius.circular(14),
+                    bottomLeft: Radius.circular(14),
+                    bottomRight: Radius.circular(
+                      4,
+                    ), // Sharp tail corner on the bottom-right side!
+                  )
+                : const BorderRadius.only(
+                    topLeft: Radius.circular(14),
+                    topRight: Radius.circular(14),
+                    bottomLeft: Radius.circular(
+                      4,
+                    ), // Sharp tail corner on the bottom-left side!
+                    bottomRight: Radius.circular(14),
+                  ),
+
+            child: Container(
+              width: messageData is CallSystemMessage
+                  ? MediaQuery.of(context).size.width * 0.60
+                  : null,
+              constraints: messageData is CallSystemMessage
+                  ? null
+                  : BoxConstraints(maxWidth: context.screenWidth * .72),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: highlight
+                    ? context.primaryColor.withValues(alpha: .30)
+                    : _deleted
+                    ? context.colorScheme.surfaceContainerHighest
+                    : isMe
+                    ? context.myBubbleColor
+                    : context.otherBubbleColor,
+                borderRadius: bubbleRadius,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  //------------------------------------
+                  // Sender
+                  //------------------------------------
+                  Text(
+                    messageData.senderName,
+                    style: context.bodyTextMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: isMe
+                          ? context.myBubbleTextPrimary
+                          : context.colorScheme.onSurface,
+                    ),
+                  ),
+
+                  //--------------------------------------------
+                  // Forwarded
+                  //------------------------------------
+                  if (messageData.forwarded) ...[
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.forward,
+                          size: 14,
+                          color: context.textSecondaryColor,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          messageData.forwardedFromUserName == null
+                              ? 'Forwarded'
+                              : 'Forwarded from ${messageData.forwardedFromUserName}',
+                          style: context.captionText?.copyWith(
+                            fontStyle: FontStyle.italic,
+                            color: context.textSecondaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 6),
+                  ],
+
+                  //------------------------------------
+                  // Reply Card
+                  //------------------------------------
+                  if (messageData.replyToMessageId != null) ...[
+                    const SizedBox(height: 6),
+
+                    ReplyCard(
+                      senderName: messageData.replyToSenderName ?? '',
+                      message: messageData.replyToText ?? '',
+                      compact: true,
+                    ),
+                  ],
+
+                  const SizedBox(height: 6),
+                  _deleted
+                      ? Text(
+                          _displayMessage,
+                          style: context.bodyText?.copyWith(
+                            fontStyle: FontStyle.italic,
+                            color: context.textSecondaryColor,
+                          ),
+                        )
+                      : switch (messageData) {
+                          // 📞 CallSystemMessage is handled above the generic
+                          // message container, so this case should never execute here.
+                          CallSystemMessage m => CallSystemMessageBubble(
+                            message: m,
+                            isMe: isMe,
+                          ),
+                          // ChatBubble switch
+                          ContactMessage m => ContactMessageBubble(
+                            message: m,
+                            isMe: isMe,
+                          ),
+                          VideoMessage m => VideoMessageBubble(
+                            message: m,
+                            isMe: isMe,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      FullscreenVideoPlayer(message: m),
+                                ),
+                              );
+                            },
+                          ),
+                          LocationMessage m => LocationMessageBubble(
+                            message: m,
+                            isMe: isMe,
+                          ),
+                          TextMessage() => Text(
+                            _displayMessage,
+                            style: context.bodyText?.copyWith(
+                              color: isMe
+                                  ? context.myBubbleTextPrimary
+                                  : context.colorScheme.onSurface,
+                            ),
+                          ),
+                          LegacyMessage m when m.type == 'file' =>
+                            FileMessageBubble(message: m, isMe: isMe),
+                          LegacyMessage m => MediaContent(
+                            message: m,
+                            isMe: isMe,
+                          ),
+                        },
+
+                  const SizedBox(height: 8),
+
+                  //------------------------------------
+                  // Reactions
+                  //------------------------------------
+                  if (messageData.reactions.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+
+                    ReactionBar(
+                      reactions: messageData.reactions,
+                      currentUserId: currentUserId,
+                    ),
+                  ],
+
+                  const SizedBox(height: 8),
+
+                  //------------------------------------
+                  // Time + Read receipt
+                  //------------------------------------
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.forward,
-                        size: 14,
-                        color: context.textSecondaryColor,
-                      ),
-                      const SizedBox(width: 4),
                       Text(
-                        messageData.forwardedFromUserName == null
-                            ? 'Forwarded'
-                            : 'Forwarded from ${messageData.forwardedFromUserName}',
+                        DateTimeFormatter.messageTime(
+                          messageData.createdAt.toDate(),
+                        ),
                         style: context.captionText?.copyWith(
-                          fontStyle: FontStyle.italic,
-                          color: context.textSecondaryColor,
+                          color: isMe
+                              ? context.unreadReceiptColor
+                              : context.textSecondaryColor,
                         ),
                       ),
-                    ],
-                  ),
 
-                  const SizedBox(height: 6),
-                ],
+                      if (isMe) ...[
+                        const SizedBox(width: 4),
 
-                //------------------------------------
-                // Reply Card
-                //------------------------------------
-                if (messageData.replyToMessageId != null) ...[
-                  const SizedBox(height: 6),
-
-                  ReplyCard(
-                    senderName: messageData.replyToSenderName ?? '',
-                    message: messageData.replyToText ?? '',
-                    compact: true,
-                  ),
-                ],
-
-                const SizedBox(height: 6),
-                _deleted
-                    ? Text(
-                        _displayMessage,
-                        style: context.bodyText?.copyWith(
-                          fontStyle: FontStyle.italic,
-                          color: context.textSecondaryColor,
-                        ),
-                      )
-                    : switch (messageData) {
-                        CallSystemMessage m => CallSystemMessageBubble(
-                          message: m,
-                          isMe: isMe,
-                        ),
-                        // ChatBubble switch
-                        ContactMessage m => ContactMessageBubble(
-                          message: m,
-                          isMe: isMe,
-                        ),
-                        VideoMessage m => VideoMessageBubble(
-                          message: m,
-                          isMe: isMe,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    FullscreenVideoPlayer(message: m),
-                              ),
-                            );
-                          },
-                        ),
-                        LocationMessage m => LocationMessageBubble(
-                          message: m,
-                          isMe: isMe,
-                        ),
-                        TextMessage() => Text(
-                          _displayMessage,
-                          style: context.bodyText?.copyWith(
-                            color: isMe
-                                ? context.myBubbleTextPrimary
-                                : context.colorScheme.onSurface,
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          child: Icon(
+                            isRead ? Icons.done_all : Icons.done,
+                            key: ValueKey(isRead),
+                            size: 16,
+                            color: isRead
+                                ? context.readReceiptColor
+                                : context.unreadReceiptColor,
                           ),
                         ),
-                        LegacyMessage m when m.type == 'file' =>
-                          FileMessageBubble(message: m, isMe: isMe),
-                        LegacyMessage m => MediaContent(message: m, isMe: isMe),
-                      },
-
-                const SizedBox(height: 8),
-
-                //------------------------------------
-                // Reactions
-                //------------------------------------
-                if (messageData.reactions.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-
-                  ReactionBar(
-                    reactions: messageData.reactions,
-                    currentUserId: currentUserId,
+                      ],
+                    ],
                   ),
                 ],
-
-                const SizedBox(height: 8),
-
-                //------------------------------------
-                // Time + Read receipt
-                //------------------------------------
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      DateTimeFormatter.messageTime(
-                        messageData.createdAt.toDate(),
-                      ),
-                      style: context.captionText?.copyWith(
-                        color: isMe
-                            ? context.unreadReceiptColor
-                            : context.textSecondaryColor,
-                      ),
-                    ),
-
-                    if (isMe) ...[
-                      const SizedBox(width: 4),
-
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 250),
-                        child: Icon(
-                          isRead ? Icons.done_all : Icons.done,
-                          key: ValueKey(isRead),
-                          size: 16,
-                          color: isRead
-                              ? context.readReceiptColor
-                              : context.unreadReceiptColor,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
         ),
