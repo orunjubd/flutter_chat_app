@@ -1,4 +1,5 @@
 import 'package:chat_app/core/extensions/theme_extensions.dart';
+import 'package:chat_app/features/profile/providers/profile_photo_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,6 +8,7 @@ import 'package:chat_app/features/authentication/providers/logout_provider.dart'
 import 'package:chat_app/core/providers/theme_provider.dart';
 import 'package:chat_app/features/settings/presentation/widgets/theme_selector_tile.dart';
 import 'package:chat_app/core/dialogs/app_snackbar.dart';
+//import 'package:chat_app/features/profile/providers/profile_photo_provider.dart';
 
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
@@ -55,6 +57,8 @@ class AppDrawer extends ConsumerWidget {
                     onTap: () {
                       _showProfilePhotoOptions(
                         context,
+                        ref: ref,
+                        userId: user!.id,
                         username: username,
                         imageUrl: imageUrl,
                       );
@@ -182,6 +186,8 @@ class AppDrawer extends ConsumerWidget {
 
   void _showProfilePhotoOptions(
     BuildContext context, {
+    required WidgetRef ref,
+    required String userId,
     required String username,
     required String imageUrl,
   }) {
@@ -197,32 +203,22 @@ class AppDrawer extends ConsumerWidget {
                 leading: const Icon(Icons.photo_camera_outlined),
                 title: const Text('Change profile photo'),
                 onTap: () {
+                  // Close bottom sheet.
                   Navigator.pop(sheetContext);
 
-                  //AppSnackBar.info(context, 'Profile photo upload coming next');
+                  // Close Drawer.
                   Navigator.pop(context);
+
+                  // Wait for the Drawer route to finish closing.
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!context.mounted) return;
+
+                    ref
+                        .read(profilePhotoProvider.notifier)
+                        .changeFromGallery(userId: userId);
+                  });
                 },
               ),
-
-              if (imageUrl.isNotEmpty)
-                ListTile(
-                  leading: Icon(
-                    Icons.delete_outline,
-                    color: context.errorColor,
-                  ),
-                  title: Text(
-                    'Remove profile photo',
-                    style: TextStyle(color: context.errorColor),
-                  ),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-
-                    AppSnackBar.info(
-                      context,
-                      'Profile photo removal coming next',
-                    );
-                  },
-                ),
 
               if (imageUrl.isNotEmpty)
                 ListTile(
@@ -236,6 +232,36 @@ class AppDrawer extends ConsumerWidget {
                       username: username,
                       imageUrl: imageUrl,
                     );
+                  },
+                ),
+
+              if (imageUrl.isNotEmpty)
+                ListTile(
+                  leading: Icon(
+                    Icons.delete_outline,
+                    color: context.errorColor,
+                  ),
+                  title: Text(
+                    'Remove profile photo',
+                    style: TextStyle(color: context.errorColor),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+
+                    final removed = await ref
+                        .read(profilePhotoProvider.notifier)
+                        .removePhoto(userId: userId);
+
+                    if (!context.mounted) return;
+
+                    if (removed) {
+                      AppSnackBar.success(context, 'Profile photo removed');
+                    } else {
+                      AppSnackBar.error(
+                        context,
+                        'Failed to remove profile photo',
+                      );
+                    }
                   },
                 ),
             ],

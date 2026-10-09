@@ -311,3 +311,59 @@ Known limits to revisit:
 - Pixel emulators may not receive FCM (no Play Services token): verify on real devices
 - Group killed-state accept/decline: test once more with the double-accept fix
 - [ ] Group chat feature → then tile-owned live calls (conversationId set), banner only for ad-hoc calls
+
+=====================================================================
+## PHASE 5 CONVERSATION
+
+## Next
+- [ ] Phase 1 leftovers: Profile Photos, User Profile
+- [ ] Group chat conversations (type, adminIds, member list). Unblocks the items below
+- [ ] Tile-owned live group calls (set conversationId), non-invited members can join (Condition 2)
+- [ ] Conversation filter "Groups" (after group chats)
+
+## Blaze migration (push work, do once Cloud Functions are available)
+Replace `push_relay/relay.js` with Cloud Functions: `onCallRinging` (1:1, exists in functions/src/index.ts)
+plus `onGroupCallCreated` / `onGroupCallEnded` (types: incoming_group_call, group_call_cancelled).
+- [ ] Mute: functions read `users/{uid}/conversationSettings` before sending message and call pushes
+Client files that stay unchanged: call_push_handler.dart, callkit_bridge.dart, pending_call_service.dart,
+call_kit_callbacks.dart, group_call_controller.dart, global_group_call_listener.dart
+- [ ] Retire push_relay/
+
+## Verify
+- [ ] Group killed-state accept/decline, re-test after the double-accept guard
+- [ ] Busy auto-reject on a real third device (passed once)
+- [ ] Notification-body tap while a group call rings (no in-app takeover yet)
+- [ ] Flip camera on a two-camera phone
+- [ ] Camera permission denied path
+- [ ] Pixel emulators do not receive FCM reliably: verify on real devices
+
+## Before release
+- [ ] Replace the open Firestore rules (delete the {document=**} wildcard last). Blocks needed:
+  users, typing, presence, conversations (+ messages), calls, callHistory, groupCalls
+  (get by participantIds, list by participantIds), users/{uid}/groupCallHistory (owner only),
+  users/{uid}/conversationSettings (owner only)
+- [ ] Confirm messages live only under conversations/{id}/messages, then delete the unused
+      FirestoreRepository.messagesCollection getter
+- [ ] Server-side check that group invitees are real contacts
+- [ ] Use serverTimestamp for call createdAt (clock skew)
+- [ ] Move remaining call strings and colors to CallStrings / AppColors tokens
+- [ ] Move ConversationStrings use into the remaining chat screens
+- [ ] Remove timing debug prints
+- [ ] Complete the Info.plist contacts usage description sentence
+- [ ] Guard NetworkImage against empty URLs everywhere (search for NetworkImage()
+
+## Known limits
+- Archived chats do not pop out on a new message
+- Accepting a group call after the 30 s ring timeout is refused as stale
+- Group call history is not written for calls that were never delivered
+- Ring-timeout reaper and heartbeat for stuck calls (needs server)
+
+## Later (cut from v1)
+- [ ] Mid-call invite, rejoin, host rights
+- [ ] 1:1 to group escalation (origin: escalated, shared LiveKit room)
+- [ ] Meetings with IDs and links (token server, guests, deep links)
+- [ ] Screen share, recording, waiting room, reactions, raise hand, in-call chat, meeting passwords
+
+## Done
+- [x] Phase 4 media: 1:1 voice and video, group voice and video, joinable banner, history tab, CallController split
+- [x] Phase 5 conversations: search, pin, archive, favorite, mute, filters

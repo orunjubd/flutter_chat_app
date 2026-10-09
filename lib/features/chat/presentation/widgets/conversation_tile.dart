@@ -4,6 +4,8 @@ import 'package:chat_app/features/calls/core/models/call_type.dart';
 import 'package:chat_app/features/calls/core/providers/joinable_group_call_provider.dart';
 import 'package:chat_app/features/calls/core/widgets/group_call_join_button.dart';
 import 'package:chat_app/features/calls/core/widgets/pulsing_dot.dart';
+import 'package:chat_app/features/chat/presentation/widgets/conversation_actions_sheet.dart';
+import 'package:chat_app/features/chat/providers/conversation_settings_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -31,6 +33,7 @@ class ConversationTile extends ConsumerWidget {
     final live = ref.watch(
       liveGroupCallForConversationProvider(conversation.id),
     );
+    final settings = ref.watch(conversationSettingsProvider(conversation.id));
     final currentUserId = ref.read(currentUserIdProvider);
 
     final unreadCount = conversation.unreadCounts[currentUserId] ?? 0;
@@ -58,7 +61,11 @@ class ConversationTile extends ConsumerWidget {
       data: (user) {
         return ListTile(
           onTap: onTap,
-
+          // =======================================================================
+          // 🛑 LONG PRESS CONTEXTUAL OPTIONS TRIGGER (ADDED HERE!)
+          // =======================================================================
+          onLongPress: () =>
+              showConversationActions(context, ref, conversation.id),
           leading: Stack(
             children: [
               ConversationAvatar(user: user),
@@ -100,11 +107,25 @@ class ConversationTile extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (settings.favorite)
+                            const Icon(Icons.star, size: 14),
+                          if (settings.isMuted)
+                            const Icon(Icons.notifications_off, size: 14),
+                          if (settings.pinned)
+                            const Icon(Icons.push_pin, size: 14),
+                        ],
+                      ),
                       ConversationTime(timestamp: conversation.lastMessageTime),
 
                       const SizedBox(height: 6),
 
-                      UnreadBadge(unreadCount: unreadCount),
+                      UnreadBadge(
+                        unreadCount: unreadCount,
+                        muted: settings.isMuted,
+                      ),
                     ],
                   ),
                 ),

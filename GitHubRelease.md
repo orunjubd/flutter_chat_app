@@ -864,3 +864,46 @@ Test pair: Pixel 8 emulator (USB webcam) → Nokia 6.1.
 - Some call strings and colors are still hard-coded.
 - `CallController` is about 540 lines; a no-behavior-change split is planned.
 - Group calls are not part of this release.
+
+==============================================================
+# ECE v1.11.0 – CONVERSATION COMPLETE
+==============================================================
+
+Release date: 2026-10-09
+
+Phase 5 is finished: find, organize and filter your chats. This release also closes Phase 4 (calls)
+with the group call work from v1.9.0 and v1.10.0.
+
+## Major features
+- Search conversations by contact name or last message, with recent searches
+- Pin up to 3 chats; pinned chats stay on top
+- Archive chats (hidden from the list, still found by search) and an Archived screen
+- Favorite chats, shown with a star
+- Mute for 8 hours, 1 week or always; muted chats show an icon and a grey badge
+- Filters: All, Unread, Favorites
+- Settings are per user and do not change the shared conversation
+
+## Phase 4 recap
+- 1:1 and group voice/video calls, joinable group call banner, call history tab
+- Group push for background and killed states (dev relay)
+
+## Architecture
+- `users/{uid}/conversationSettings/{id}` holds pinned, archived, favorite and mute state
+- `ConversationSettingsPolicy` holds the pin limit (not hard-coded in the UI)
+- `filteredConversationsProvider` takes a scope (query, archived, filter) and sorts pinned first
+
+## Testing status
+| Scenario | Result |
+|---|---|
+| Search by name and message, clear, no results, recents | Passed |
+| Pin, 4th pin refused, archive (unpins), unarchive | Passed |
+| Favorite, mute and unmute, persistence after relaunch | Passed |
+| Settings independent between two accounts | Passed |
+| Filters (Unread, Favorites, All) | Run the checklist before tagging |
+
+## Known limitations
+- Mute does not silence message or call notifications yet (needs the Cloud Functions migration)
+- Archived chats do not reappear on a new message
+- No "Groups" filter until group chats exist
+- Firestore rules are still the open dev rules and must be replaced before release
+- Background and killed group calls depend on the dev relay

@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'package:chat_app/features/chat/constants/conversation_strings.dart';
+import 'package:chat_app/features/chat/data/models/conversation_filter.dart';
+import 'package:chat_app/features/chat/presentation/screens/archived_conversations_screen.dart';
+import 'package:chat_app/features/chat/presentation/widgets/conversation_filter_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -38,6 +42,7 @@ class _ConversationListScreenState
   bool _searching = false;
   String _query = '';
   Timer? _debounce;
+  ConversationFilter _filter = ConversationFilter.all;
 
   @override
   void dispose() {
@@ -119,6 +124,22 @@ class _ConversationListScreenState
                     ),
                 ]
               : [
+                  IconButton(
+                    icon: const Icon(Icons.archive_outlined),
+                    tooltip: 'Archived Chats',
+                    onPressed: () {
+                      // Safely slides open the upcoming archived conversations manager view
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          settings: const RouteSettings(
+                            name: 'archived_conversations_screen',
+                          ),
+                          builder: (_) =>
+                              const ArchivedConversationsScreen(), // We will construct this file next!
+                        ),
+                      );
+                    },
+                  ),
                   // ------------------------------------------------------------
                   // Search
                   // Primary conversation action — always visible
@@ -250,6 +271,11 @@ class _ConversationListScreenState
         body: Column(
           children: [
             if (!_searching) const GroupCallJoinBanner(),
+            if (!_searching)
+              ConversationFilterBar(
+                selected: _filter,
+                onChanged: (f) => setState(() => _filter = f),
+              ), // 🚀 INJECTED EXACTLY HERE!
             Expanded(child: _body()),
           ],
         ),
@@ -280,7 +306,13 @@ class _ConversationListScreenState
       );
     }
 
-    final async = ref.watch(filteredConversationsProvider(_query));
+    final async = ref.watch(
+      filteredConversationsProvider((
+        query: _query,
+        archived: false,
+        filter: _filter,
+      )),
+    );
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text(FirebaseErrorMapper.message(e))),
@@ -289,8 +321,13 @@ class _ConversationListScreenState
           return Center(
             child: Text(
               _query.trim().isEmpty
-                  ? 'No conversations yet.'
-                  : 'No results for "$_query"',
+                  ? 'No results for "$_query"'
+                  : switch (_filter) {
+                      ConversationFilter.all => 'No conversations yet.',
+                      ConversationFilter.unread => ConversationStrings.noUnread,
+                      ConversationFilter.favorites =>
+                        ConversationStrings.noFavorites,
+                    },
               style: context.labelTextMedium?.copyWith(fontSize: 18),
             ),
           );

@@ -644,3 +644,41 @@ No cleanup job wired to app startup for local temp files (unchanged).
 Save-to-gallery not yet verified end-to-end on-device (unchanged).
 4.9.7 (Incoming Call) will require native CallKit/ConnectionService work beyond the Dart layer — flagged now so it isn't discovered late.
 TURN server decision (self-hosted vs. managed) not yet made — needed before Call can be considered production-reliable, not before initial two-device testing.
+
+------------------------------------------------------------------------
+# Project State (2026-10-09, v1.11.0)
+------------------------------------------------------------------------
+
+## Phase status
+
+| Phase | Status |
+|---|---|
+| 1 Foundation / Auth | Done, except Profile Photos and User Profile |
+| 2-3 Messaging, location, files, voice, video messages | Done (earlier releases) |
+| 4 Media / Calls | Done (v1.8.4 to v1.10.0) |
+| 5 Conversations | Done (5.1 to 5.7) |
+
+## Phase 4: Media (calls)
+- 1:1 voice and video call (foreground, background, killed), hybrid incoming UI (own UI in foreground, native CallKit otherwise)
+- Calling / Ringing / Busy labels, call history and chat system messages
+- Group voice and group video calls (min 3, max 8 video / 16 voice), 30 s ring timeout, last person standing ends the call
+- Joinable group call carousel banner, group call history tab (voice and video)
+- Group push for background and killed states through the dev relay
+- CallController split into CallRoomEventsBinder, CallKitCallbacks, CallAppLifecycleHandler
+- Tested on Pixel 6, Pixel 8 (emulators), Nokia 6, Mi CC 9e
+
+## Phase 5: Conversations
+- Search conversations (names and last message), recent searches
+- Pin (max 3), archive (hidden unless searching), favorite, mute (8 h / 1 week / always)
+- Filters: All, Unread, Favorites
+- Storage: users/{uid}/conversationSettings/{conversationId}, Conversation model unchanged
+
+## Known gaps
+- Push sender is the dev Node relay; Cloud Functions need Blaze
+- Firestore rules are open (dev)
+- No group chats yet, so tile-owned live calls and "Groups" filter are dormant or missing
+- Mute changes only badge and icon, not notifications
+- Killed-state group accept/decline needs a re-test
+
+## Next
+Group chat feature, Profile Photos and User Profile, then Firestore rules replacement and Blaze migration.

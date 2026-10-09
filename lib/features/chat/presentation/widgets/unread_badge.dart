@@ -3,9 +3,10 @@ import 'package:chat_app/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class UnreadBadge extends StatelessWidget {
-  const UnreadBadge({super.key, required this.unreadCount});
+  const UnreadBadge({super.key, required this.unreadCount, this.muted = false});
 
   final int unreadCount;
+  final bool muted;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +27,9 @@ class UnreadBadge extends StatelessWidget {
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
-        color: AppColors.primaryLight,
+        color: muted
+            ? Colors.grey.withValues(alpha: 0.5)
+            : Theme.of(context).colorScheme.primary,
         borderRadius: BorderRadius.circular(11),
       ),
       child: Text(

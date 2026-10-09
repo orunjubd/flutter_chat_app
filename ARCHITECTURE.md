@@ -1716,3 +1716,28 @@ Background/killed: FCM (relay) → `call_push_handler` → CallKit (`showRaw`, d
 - Push sender is the only part that changes with Blaze; client code stays.
 - Ad-hoc group calls have no conversation; tiles take over once group chats exist.
 - Group call history is per user, keyed by call, so a later chat bubble is a second view.
+
+------------------------------------------------------------------------------
+## Phase: v1.11.0 CONVERSATION COMPLETE
+
+## Conversations
+
+### Data
+- `conversations/{id}`: shared by the two participants (unchanged by Phase 5)
+- `users/{uid}/conversationSettings/{conversationId}`: per-user pinnedAt, archived, favorite, mutedUntil.
+  Default settings are not stored; the document is deleted instead.
+
+### Layers
+- Model: `ConversationSettings`, `ConversationFilter`
+- Policy: `ConversationSettingsPolicy` (maxPinned = 3)
+- Repository: `ConversationSettingsRepository`
+- Providers: `conversationSettingsMapProvider` (one stream), `conversationSettingsProvider(id)` (select per tile),
+  `conversationSettingsActionsProvider` (togglePin, toggleArchive, toggleFavorite, mute, unmute)
+- Listing: `filteredConversationsProvider(scope)` where scope = (query, archived, filter).
+  Browsing applies archive and filter; searching ignores both and looks through everything.
+
+### Decisions
+- Settings are per user because one conversation is shared by two people.
+- Archiving removes the pin. Mute is a timestamp, so expiry needs no cleanup job.
+- Mute only affects the UI today; silencing pushes belongs to the Cloud Functions migration.
+- Group chats are a separate future feature; the "Groups" filter and tile-owned live calls wait for it.

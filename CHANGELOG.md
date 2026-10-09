@@ -1418,3 +1418,22 @@ other.
 - Notification-body tap while a group call rings has no in-app takeover
 - Non-invited chat members cannot join (needs group chats)
 - Firestore rules still open (dev)
+
+---------------------------------------------------------------------
+## [1.11.0] – 2026-10-09 – Phase 5 Conversations Complete
+---------------------------------------------------------------------
+
+### Added
+- Search conversations (name, last message) with recent searches (reuses searchHistoryProvider)
+- Conversation settings: pin (max 3), archive, favorite, mute (timed) in users/{uid}/conversationSettings
+- ConversationSettings model, repository, policy, providers and actions
+- Long-press action sheet, status icons on tiles, muted badge, Archived screen
+- Filters: All, Unread, Favorites (ConversationFilterBar, ConversationFilter)
+- ConversationStrings
+### Changed
+- filteredConversationsProvider now takes a ConversationScope (query, archived, filter)
+- Conversation list sorts pinned first (latest pin on top), then newest message
+- ConversationListScreen is a ConsumerStatefulWidget with in-place search
+### Known issues
+- Mute does not silence pushes yet
+- Archived chats do not reappear on a new message
