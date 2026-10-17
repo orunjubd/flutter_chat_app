@@ -682,3 +682,25 @@ TURN server decision (self-hosted vs. managed) not yet made — needed before Ca
 
 ## Next
 Group chat feature, Profile Photos and User Profile, then Firestore rules replacement and Blaze migration.
+
+====================================================
+# Project State (2026-10-17, v1.12.0)
+====================================================
+| Phase | Status |
+|---|---|
+| 1 Foundation / Auth | Done |
+| 2-3 Messaging, media | Done (message edit added after v1.12.0) |
+| 4 Media / Calls | Done |
+| 5 Conversations | Done |
+| 6 Group Chat | Done, except Mentions (@) |
+
+## Group chat
+- conversations/{id} with type, name, avatarUrl, adminIds, joinedAt, permissions, defaultPermissions, removedFor
+- GroupRepository (transactions + system messages), GroupPolicy (max 256, name 25, min 3)
+- Privacy: email/phone in users/{uid}/private/*, sharing flags public
+- Account deletion: tombstone profile, Auth user deleted last
+
+## Known gaps
+- Push sender is the dev relay (Blaze needed); fcmToken still in the public profile
+- Group permission map values only validated client-side
+- Old messages visible to new members until the joinedAt filter ships

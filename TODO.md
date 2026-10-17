@@ -367,3 +367,80 @@ call_kit_callbacks.dart, group_call_controller.dart, global_group_call_listener.
 ## Done
 - [x] Phase 4 media: 1:1 voice and video, group voice and video, joinable banner, history tab, CallController split
 - [x] Phase 5 conversations: search, pin, archive, favorite, mute, filters
+
+=====================================================
+## PHASE 6
+=====================================================
+# TODO
+
+## Next
+- [ ] Self-healing login: create users/{uid} if the profile document is missing
+- [ ] Message edit (does not exist yet; "Allow edit info" is group name/description only)
+- [ ] Hide old messages from new group members (query by joinedAt)
+- [ ] Phase 1 leftovers and Phase 7 onward
+
+## Security
+- [ ] Move fcmToken out of the public users/{uid} document into a private document
+      (needs a client change and a relay/Cloud Function change). Low severity: a token alone cannot send a push,
+      but it is readable by every signed-in user
+- [ ] Contact privacy: email and phone live in users/{uid}/private/*, sharing flags in the public document.
+      Rules cannot check "shares a group with me", so any signed-in user may read once the flag is on
+- [ ] Group permission map values are only checked client-side; per-value checks in rules need a server
+- [ ] Server-side check that group invitees are real contacts
+- [ ] Cloudinary: restrict the unsigned preset (formats, max size, folder, unique filename, no overwrite),
+      signed uploads from a server later
+- [ ] Profile and group photos: bake EXIF orientation, square crop (512 px), optimize off the UI thread
+
+## Blaze phase (server work, do once)
+- [ ] Replace push_relay/relay.js with Cloud Functions: onCallRinging (1:1), onGroupCallCreated/Ended
+- [ ] Mute: functions read users/{uid}/conversationSettings before sending message and call pushes
+- [ ] Account deletion server job: client only signs out and requests deletion; the server evicts the user from
+      groups, formats the tombstone profile and scrubs subcollections. A client cannot delete other users' data,
+      and a cleanup interrupted by a crash or lost network leaves orphans
+- [ ] Scheduled cleanup: deleted groups (>7 days), ended group calls (>30 days), stale typing (>1 day).
+      Script exists: push_relay/cleanup.js (dry-run by default, --apply to delete)
+- [ ] Ring-timeout reaper and heartbeat for stuck calls
+- [ ] One-time migration of every account's email/phone to private documents (Admin SDK),
+      then remove contactMigrationProvider
+- [ ] Retire push_relay/
+- [ ] └── Advanced
+    └── Mentions (@)
+
+## Verify
+- [ ] Group killed-state accept/decline, after the double-accept guard
+- [ ] Notification-body tap while a group call rings (no in-app takeover)
+- [ ] Delete-messages permission: canDeleteOthers wired in MessageList
+- [ ] Creator protection (other admins cannot demote or remove the creator)
+- [ ] Flip camera on a two-camera phone, camera permission denied path
+
+## Before release
+- [ ] Confirm messages live only under conversations/{id}/messages, then delete the unused
+      FirestoreRepository.messagesCollection getter
+- [ ] Use serverTimestamp for call createdAt (clock skew)
+- [ ] Move remaining call and chat strings and colors to CallStrings / ConversationStrings / AppColors
+- [ ] Remove debug prints (typing, send, group, timing)
+- [ ] Complete the Info.plist contacts usage description sentence
+- [ ] Guard NetworkImage against empty URLs everywhere
+
+## Known limits
+- Archived chats do not pop out on a new message
+- Accepting a group call after the 30 s ring timeout is refused as stale
+- Group call history is not written for calls that were never delivered
+- A deleted group keeps its messages until the server cleanup runs
+
+## Later
+- [ ] Mid-call invite, rejoin, host rights
+- [ ] 1:1 to group escalation, meetings with IDs and links
+- [ ] Screen share, recording, waiting room, reactions, raise hand, in-call chat
+- [ ] Tile-owned live group calls and non-invited chat members joining (group chats now exist)
+- [ ] Mentions (@)
+
+## Done
+- [x] Phase 4 media, Phase 5 conversations
+- [x] Phase 6 group chat: create, info, admin actions, system messages, avatar, read-only profile, privacy migration
+
+## Limits (add to TODO.md)
+
+- Old messages and group call names keep A’s old name, because senders are stored by name at send time. Only the profile is anonymized.
+- The server job in the Blaze phase finishes cleanup for interrupted deletions. A client can’t delete other users’ data.
+- Only email and password accounts are supported, since re-authentication uses the password.

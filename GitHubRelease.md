@@ -907,3 +907,31 @@ with the group call work from v1.9.0 and v1.10.0.
 - No "Groups" filter until group chats exist
 - Firestore rules are still the open dev rules and must be replaced before release
 - Background and killed group calls depend on the dev relay
+
+==============================================================
+# ECE v1.12.0 – GROUP CHAT COMPLETE
+==============================================================
+-
+# ECE v1.12.0 – Group Chat
+
+Release date: 2026-10-17
+
+## Features
+- Groups with admins, per-member permissions, avatar, system notices, member list
+- Group voice and video calls from the chat, joinable banner
+- Contact privacy: email and phone shared only if the owner opts in
+- Delete chat for me, account deletion
+
+## Testing status
+| Scenario | Result |
+|---|---|
+| Create group, send as admin and member, read-only mode | Passed (3 devices) |
+| Add, remove, promote, demote, leave, delete | Passed |
+| Group calls from chat | Passed |
+| Account deletion and tombstone view | Passed |
+| Delete chat for me | Passed after the ref fix |
+
+## Known limitations
+- Mentions (@) not included
+- Old messages visible to new members (fix planned next)
+- Dev push relay still required for background calls

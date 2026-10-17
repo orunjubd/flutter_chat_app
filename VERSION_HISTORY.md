@@ -178,6 +178,7 @@ restoring obsolete roadmap states from older documentation.
 
 | Version | Summary |
 |---|---|
+| v1.12.0 | 2026-10-17 | Phase 6 Group Chat complete: groups, admin roles and permissions, group avatar, system messages, contact privacy migration, delete chat for me, account deletion. Tested with 3 devices. Mentions deferred. |
 | v1.11.0 | 2026-10-09 | Phase 5 Conversations complete: search conversations, pin (max 3), archive, favorite, mute, filters. Per-user settings in users/{uid}/conversationSettings. All feature tests passed. Mute does not silence pushes yet (Blaze migration). |
 | v1.10.0 | 2026-10-08 | Phase 4 Media complete: group voice call, joinable group call banner, group call push (dev relay), double-accept fix. Tested Pixel 6 + Pixel 8 + Nokia 6 + Mi CC 9e. Group kill-state accept/decline re-test and Blaze push migration pending. |
 | v1.9.0 | 2026-10-06 | Group video call (foreground), group call history tab, 1:1 busy handling. Tested Pixel 6 + Nokia 6 + Mi CC 9e. Group background/kill not supported yet. |

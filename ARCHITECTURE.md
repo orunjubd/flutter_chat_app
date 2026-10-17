@@ -1717,9 +1717,9 @@ Background/killed: FCM (relay) → `call_push_handler` → CallKit (`showRaw`, d
 - Ad-hoc group calls have no conversation; tiles take over once group chats exist.
 - Group call history is per user, keyed by call, so a later chat bubble is a second view.
 
-------------------------------------------------------------------------------
+----------------------------------------------
 ## Phase: v1.11.0 CONVERSATION COMPLETE
-
+----------------------------------------------
 ## Conversations
 
 ### Data
@@ -1741,3 +1741,17 @@ Background/killed: FCM (relay) → `call_push_handler` → CallKit (`showRaw`, d
 - Archiving removes the pin. Mute is a timestamp, so expiry needs no cleanup job.
 - Mute only affects the UI today; silencing pushes belongs to the Cloud Functions migration.
 - Group chats are a separate future feature; the "Groups" filter and tile-owned live calls wait for it.
+-----------------------------------------------
+## v1.12.0
+-----------------------------------------------
+## Group chat
+
+- Data: conversations/{id} with type=group. Members in participantIds, roles in adminIds,
+  per-member permissions map, joinedAt map. Direct chats are unchanged.
+- Layers: Conversation model (can(), isAdmin()), GroupPolicy, GroupRepository (transactions),
+  group_provider, GroupInfoScreen, AddGroupMembersScreen, CreateGroupScreen.
+- Membership changes write a group_system message in the same transaction.
+- Privacy: users/{uid} public; users/{uid}/private/{email,phone} readable by the owner or when
+  the owner's share flag is on. Rules cannot check "shares a group with me".
+- Account deletion: re-auth, leave groups, delete own data, tombstone, delete Auth user last.
+- Decision: removedFor hides a direct chat for one user without touching the other copy.

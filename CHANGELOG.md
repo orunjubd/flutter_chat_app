@@ -1437,3 +1437,34 @@ other.
 ### Known issues
 - Mute does not silence pushes yet
 - Archived chats do not reappear on a new message
+--------------------------------------------------------------
+## v1.12.0
+--------------------------------------------------------------
+-
+## [1.12.0] – 2026-10-17 – Phase 6 Group Chat Complete
+
+### Added
+
+- Group chat: create (name, members, "members can send"), group info, member list
+- Admin actions: add/remove member, promote/demote, per-member permissions (send, addMembers, deleteMessages, editInfo)
+- Last admin leaving auto-promotes the longest-standing member
+- Group avatar upload (reuses the profile photo pipeline)
+- System messages ("added", "removed", "left", "renamed", "created") written in the same transaction
+- Group calls started from a group chat, read-only bar, sender names, typing for several people
+- Read-only profile screen (same widget as own profile), contact privacy flags
+- Contact data moved to users/{uid}/private/*, with a per-login migration
+- Delete chat for me (removedFor), account deletion with tombstone profile
+- Server cleanup script (push_relay/cleanup.js, dry-run by default)
+- Staged Firestore rules
+
+### Fixed
+
+- Typing indicator scoped per conversation, stale entries ignored
+- Sending when currentUserProvider stayed in AsyncLoading (direct read fallback)
+- First group call tap for members (names lookup no longer awaits stream providers)
+
+### Known limits
+
+- Mentions (@) not built
+- Admin and permission checks in group rules are client-validated per map value
+- Old messages are not hidden from new members yet (planned)
