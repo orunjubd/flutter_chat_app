@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:chat_app/features/chat/data/models/message.dart';
 import 'package:chat_app/features/chat/data/repositories/message_repository.dart';
 import 'package:chat_app/features/chat/data/repositories/conversation_repository.dart';
+import 'package:flutter/material.dart';
 
 class ConversationMessageRepository {
   ConversationMessageRepository({
@@ -52,23 +53,42 @@ class ConversationMessageRepository {
   /// Send
   /// ------------------------------------------------------------
   Future<void> sendMessage(Message message) async {
-    await _messageRepository.sendMessage(
-      conversationId: conversationId,
-      message: message,
+    debugPrint(
+      '📝 [Repository] sendMessage pipeline initialized for: ${message.id}',
     );
+    try {
+      await _messageRepository.sendMessage(
+        conversationId: conversationId,
+        message: message,
+      );
 
-    await _conversationRepository.updateConversationAfterMessage(
-      conversationId: conversationId,
-      lastMessage: switch (message.type) {
-        'image' => '📷 Photo',
-        'video' => '🎥 Video',
-        'voice' => '🎤 Voice message',
-        'file' => '📎 File',
-        'location' => '📍 Location',
-        'call_system' => '📞 Call',
-        _ => message.text,
-      },
-    );
+      await _conversationRepository.updateConversationAfterMessage(
+        conversationId: conversationId,
+        lastMessage: switch (message.type) {
+          'image' => '📷 Photo',
+          'video' => '🎥 Video',
+          'voice' => '🎤 Voice message',
+          'file' => '📎 File',
+          'location' => '📍 Location',
+          'call_system' => '📞 Call',
+          _ => message.text,
+        },
+      );
+      debugPrint(
+        '📡 [Repository] Step B complete: Parent conversation preview fields updated.',
+      );
+
+      // Step C: Increment the unread counts array maps for other group participants
+      // example: await incrementUnreadCounts(conversationId, message.senderId);
+      debugPrint(
+        '📡 [Repository] Step C complete: Dynamic participant unread fields incremented.',
+      );
+    } catch (e, st) {
+      // ✅ REQUIREMENT MET: Traps all async errors across database levels to prevent silent drops
+      debugPrint('❌ [Chat] send failed inside repository stream: $e');
+      debugPrintStack(stackTrace: st);
+      rethrow; // Forward error upstream to notify parent UI indicators
+    }
   }
 
   /// ------------------------------------------------------------

@@ -122,6 +122,8 @@ sealed class Message {
         return ContactMessage._fromMap(documentId, data);
       case 'call_system':
         return CallSystemMessage._fromMap(documentId, data);
+      case 'group_system':
+        return GroupSystemMessage._fromMap(documentId, data);
       default:
         // image, voice, file — not yet migrated off the flat shape.
         return LegacyMessage._fromMap(documentId, data);
@@ -424,4 +426,74 @@ class LegacyMessage extends Message {
       voiceDurationMs: voiceDurationMs,
     );
   }
+}
+
+// =======================================================================
+// 👥 PHASE 6 STEPS 4 & 5: TRANSACTIONAL SYSTEM MESSAGE DATA MODEL (INJECTED HERE!)
+// =======================================================================
+class GroupSystemMessage extends Message {
+  const GroupSystemMessage({
+    required super.id,
+    super.senderId = 'system_node',
+    super.senderName = 'System',
+    required super.text,
+    required super.createdAt,
+    required super.readBy,
+    required super.deletedForEveryone,
+    required super.deletedBy,
+    super.deletedAt,
+    super.reactions,
+    this.action =
+        '', // created | added | removed | left | promoted | demoted | renamed
+    this.actorId,
+    this.targetIds = const [],
+  }) : super(type: 'group_system');
+
+  final String action;
+  final String? actorId;
+  final List<String> targetIds;
+
+  factory GroupSystemMessage._fromMap(String id, Map<String, dynamic> d) =>
+      GroupSystemMessage(
+        id: id,
+        senderId: d['senderId'] as String? ?? 'system_node',
+        senderName: d['senderName'] as String? ?? 'System',
+        text: d['text'] as String? ?? '',
+        createdAt: d['createdAt'] as Timestamp? ?? Timestamp.now(),
+        readBy: List<String>.from(d['readBy'] ?? const []),
+        deletedForEveryone: d['deletedForEveryone'] as bool? ?? false,
+        deletedBy: List<String>.from(d['deletedBy'] ?? const []),
+        deletedAt: d['deletedAt'] as Timestamp?,
+        reactions: Message.parseReactions(d['reactions']),
+        action: d['action'] as String? ?? '',
+        actorId: d['actorId'] as String?,
+        targetIds: List<String>.from(d['targetIds'] ?? const []),
+      );
+
+  @override
+  Map<String, dynamic> toMap() => {
+    ...baseMap(),
+    'action': action,
+    'actorId': actorId,
+    'targetIds': targetIds,
+  };
+
+  @override
+  Message withReply({
+    required String replyToMessageId,
+    required String replyToSenderId,
+    required String replyToSenderName,
+    required String replyToText,
+  }) => this;
+
+  @override
+  Message asForwarded({
+    required String newId,
+    required String senderId,
+    required String senderName,
+    required Timestamp createdAt,
+    required List<String> readBy,
+    required String forwardedFromUserId,
+    required String forwardedFromUserName,
+  }) => this;
 }

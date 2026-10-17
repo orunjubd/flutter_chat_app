@@ -6,12 +6,14 @@ class TypingStatus {
     required this.username,
     required this.isTyping,
     required this.updatedAt,
+    required this.conversationId,
   });
 
   final String userId;
   final String username;
   final bool isTyping;
   final Timestamp updatedAt;
+  final String conversationId;
 
   factory TypingStatus.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
@@ -23,6 +25,7 @@ class TypingStatus {
       username: data['username'] as String? ?? '',
       isTyping: data['isTyping'] as bool? ?? false,
       updatedAt: data['updatedAt'] as Timestamp? ?? Timestamp.now(),
+      conversationId: data['conversationId'] as String? ?? '',
     );
   }
 
@@ -32,6 +35,7 @@ class TypingStatus {
       'username': username,
       'isTyping': isTyping,
       'updatedAt': updatedAt,
+      'conversationId': conversationId,
     };
   }
 }

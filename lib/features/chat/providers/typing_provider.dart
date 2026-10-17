@@ -13,8 +13,19 @@ final typingRepositoryProvider = Provider<TypingRepository>((ref) {
 /// ------------------------------------------------------------
 /// Typing Stream Provider
 /// ------------------------------------------------------------
-final typingProvider = StreamProvider.autoDispose<List<TypingStatus>>((ref) {
-  final repository = ref.watch(typingRepositoryProvider);
-
-  return repository.typingStream();
-});
+// provider
+final typingProvider = StreamProvider.autoDispose
+    .family<List<TypingStatus>, String>((ref, conversationId) {
+      return ref
+          .watch(typingRepositoryProvider)
+          .typingStream()
+          .map(
+            (list) => [
+              for (final t in list)
+                if (t.conversationId == conversationId &&
+                    DateTime.now().difference(t.updatedAt.toDate()).inSeconds <
+                        8)
+                  t,
+            ],
+          );
+    });

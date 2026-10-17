@@ -15,6 +15,7 @@ class ConversationFilterBar extends StatelessWidget {
     ConversationFilter.all: ConversationStrings.filterAll,
     ConversationFilter.unread: ConversationStrings.filterUnread,
     ConversationFilter.favorites: ConversationStrings.filterFavorites,
+    ConversationFilter.groups: ConversationStrings.filterGroups,
   };
 
   @override

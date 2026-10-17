@@ -1,8 +1,4 @@
-//import 'package:cloud_firestore/cloud_firestore.dart';
-//import 'package:firebase_auth/firebase_auth.dart';
-//import 'package:chat_app/core/video/models/video_message.dart';
 import 'package:chat_app/core/contact/widgets/contact_message_bubble.dart';
-//import 'package:chat_app/core/extensions/chat_bubble_theme_extension.dart';
 import 'package:chat_app/core/location/widgets/location_message_bubble.dart';
 import 'package:chat_app/core/video/widgets/fullscreen_video_player.dart';
 import 'package:chat_app/features/calls/core/widgets/call_system_message_bubble.dart';
@@ -11,11 +7,8 @@ import 'package:chat_app/features/chat/presentation/widgets/video_message_bubble
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:chat_app/core/extensions/theme_extensions.dart';
-//import 'package:chat_app/core/theme/app_colors.dart';
 import 'package:chat_app/core/utils/date_time_formatter.dart';
-// import 'package:chat_app/features/chat/providers/reply_provider.dart';
 import 'package:chat_app/features/chat/data/models/message.dart';
 import 'package:chat_app/features/chat/presentation/widgets/reply_card.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_menu.dart';
@@ -39,7 +32,7 @@ import 'package:chat_app/core/media/widgets/media_content.dart';
 class ChatBubble extends ConsumerWidget {
   const ChatBubble({
     super.key,
-    //required this.senderName,
+    // this.senderName = false,
     required this.messageData,
     required this.isMe,
     required this.isRead,
@@ -51,6 +44,7 @@ class ChatBubble extends ConsumerWidget {
     required this.highlight,
   });
 
+  //final bool? senderName;
   final Message messageData;
   final bool isMe;
   final bool isRead;
@@ -79,7 +73,7 @@ class ChatBubble extends ConsumerWidget {
     bottomLeft: Radius.circular(isMe ? 14 : 4),
     bottomRight: Radius.circular(isMe ? 0 : 14),
   );
-
+  bool get showSenderNameGlobal => false;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -177,17 +171,19 @@ class ChatBubble extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   //------------------------------------
-                  // Sender
+                  // SenderName
                   //------------------------------------
-                  Text(
-                    messageData.senderName,
-                    style: context.bodyTextMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isMe
-                          ? context.myBubbleTextPrimary
-                          : context.colorScheme.onSurface,
+                  if (showSenderNameGlobal) ...[
+                    Text(
+                      messageData.senderName,
+                      style: context.bodyTextMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isMe
+                            ? context.myBubbleTextPrimary
+                            : context.colorScheme.onSurface,
+                      ),
                     ),
-                  ),
+                  ],
 
                   //--------------------------------------------
                   // Forwarded
@@ -282,6 +278,7 @@ class ChatBubble extends ConsumerWidget {
                             message: m,
                             isMe: isMe,
                           ),
+                          GroupSystemMessage _ => const SizedBox.shrink(),
                         },
 
                   const SizedBox(height: 8),

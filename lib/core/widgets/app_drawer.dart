@@ -1,14 +1,14 @@
-import 'package:chat_app/core/extensions/theme_extensions.dart';
-import 'package:chat_app/features/profile/providers/profile_photo_provider.dart';
+import 'package:chat_app/features/settings/presentation/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:chat_app/core/extensions/theme_extensions.dart';
+import 'package:chat_app/features/profile/controllers/profile_photo_controller.dart';
 import 'package:chat_app/features/chat/providers/user_provider.dart';
 import 'package:chat_app/features/authentication/providers/logout_provider.dart';
 import 'package:chat_app/core/providers/theme_provider.dart';
 import 'package:chat_app/features/settings/presentation/widgets/theme_selector_tile.dart';
-import 'package:chat_app/core/dialogs/app_snackbar.dart';
-//import 'package:chat_app/features/profile/providers/profile_photo_provider.dart';
+import 'package:chat_app/shared/widgets/app_avatar.dart';
+import 'package:chat_app/features/profile/presentation/screens/profile_screen.dart';
 
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
@@ -41,8 +41,8 @@ class AppDrawer extends ConsumerWidget {
                 final username = user?.username ?? 'Unknown User';
                 final email = user?.email ?? '';
 
-                final imageUrl = user?.imageUrl.trim() ?? '';
-                final hasImage = imageUrl.isNotEmpty;
+                //final imageUrl = user?.imageUrl.trim() ?? '';
+                //final hasImage = imageUrl.isNotEmpty;
 
                 return UserAccountsDrawerHeader(
                   decoration: BoxDecoration(
@@ -54,33 +54,28 @@ class AppDrawer extends ConsumerWidget {
                   accountEmail: Text(email, style: context.captionText),
 
                   currentAccountPicture: GestureDetector(
-                    onTap: () {
-                      _showProfilePhotoOptions(
-                        context,
-                        ref: ref,
-                        userId: user!.id,
-                        username: username,
-                        imageUrl: imageUrl,
-                      );
-                    },
+                    onTap: user == null
+                        ? null
+                        : () {
+                            final userId = user.id;
+                            //final userImg = user.imageUrl;
 
-                    child: CircleAvatar(
-                      backgroundColor: context.colorScheme.primary.withValues(
-                        alpha: 0.12,
-                      ),
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (!context.mounted) return;
 
-                      backgroundImage: hasImage ? NetworkImage(imageUrl) : null,
-
-                      child: hasImage
-                          ? null
-                          : Text(
-                              username.isEmpty
-                                  ? '?'
-                                  : username[0].toUpperCase(),
-                              style: context.textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                              _showProfilePhotoOptions(
+                                context,
+                                ref: ref,
+                                userId: userId,
+                                username: username,
+                                imageUrl: user.imageUrl,
+                              );
+                            });
+                          },
+                    child: AppAvatar(
+                      username: username,
+                      imageUrl: user?.imageUrl,
+                      radius: 28,
                     ),
                   ),
                 );
@@ -90,25 +85,32 @@ class AppDrawer extends ConsumerWidget {
             ListTile(
               leading: const Icon(Icons.person_outline_rounded),
               title: const Text('Profile'),
-              subtitle: const Text('Available soon'),
+              subtitle: const Text('View and manage your profile'),
               onTap: () {
                 Navigator.pop(context);
 
-                AppSnackBar.info(context, 'Profile coming soon');
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    settings: const RouteSettings(name: 'profile_screen'),
+                    builder: (_) => const ProfileScreen(),
+                  ),
+                );
               },
             ),
 
             ListTile(
-              leading: const Icon(Icons.settings),
+              leading: const Icon(Icons.settings_outlined),
               title: const Text('Settings'),
-              subtitle: const Text('Available soon'),
+              subtitle: const Text('Privacy and app preferences'),
+              trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Navigator.pop(context);
 
-                AppSnackBar.info(
-                  context,
-                  'Settings available soon',
-                  duration: const Duration(seconds: 2),
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    settings: const RouteSettings(name: 'settings_screen'),
+                    builder: (_) => const SettingsScreen(),
+                  ),
                 );
               },
             ),
@@ -184,58 +186,99 @@ class AppDrawer extends ConsumerWidget {
   // PROFILE PHOTO OPTIONS
   // ---------------------------------------------------------------------------
 
-  void _showProfilePhotoOptions(
+  Future<void> _showProfilePhotoOptions(
     BuildContext context, {
     required WidgetRef ref,
+    // required BuildContext context,
     required String userId,
     required String username,
     required String imageUrl,
-  }) {
-    showModalBottomSheet<void>(
+  }) async {
+    // Capture dependencies before opening the bottom sheet.
+    final photoController = ref.read(profilePhotoProvider.notifier);
+
+    final drawerNavigator = Navigator.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    await showModalBottomSheet<void>(
       context: context,
-      showDragHandle: true,
       builder: (sheetContext) {
+        // Capture the navigator that owns the bottom sheet.
+        final sheetNavigator = Navigator.of(sheetContext);
+
+        // Prevent duplicate actions while a photo operation is running.
+        bool actionStarted = false;
+
+        Future<void> launchPicker({required bool fromCamera}) async {
+          if (actionStarted) return;
+          actionStarted = true;
+
+          // Close the bottom sheet first.
+          sheetNavigator.pop();
+
+          // Start the selected operation.
+          if (fromCamera) {
+            await photoController.changeFromCamera(userId: userId);
+          } else {
+            await photoController.changeFromGallery(userId: userId);
+          }
+
+          // Do not show an error when the user cancels the picker.
+          final photoState = ref.read(profilePhotoProvider);
+
+          if (photoState.status != ProfilePhotoStatus.failure) {
+            return;
+          }
+
+          // Wait until the sheet's dismissal frame completes.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!context.mounted) return;
+
+            scaffoldMessenger.showSnackBar(
+              SnackBar(
+                content: Text(photoController.getUserFriendlyError()),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          });
+        }
+
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.photo_camera_outlined),
-                title: const Text('Change profile photo'),
-                onTap: () {
-                  // Close bottom sheet.
-                  Navigator.pop(sheetContext);
-
-                  // Close Drawer.
-                  Navigator.pop(context);
-
-                  // Wait for the Drawer route to finish closing.
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (!context.mounted) return;
-
-                    ref
-                        .read(profilePhotoProvider.notifier)
-                        .changeFromGallery(userId: userId);
-                  });
-                },
+                leading: const Icon(Icons.camera_alt_outlined),
+                title: const Text('Take photo'),
+                onTap: () => launchPicker(fromCamera: true),
               ),
-
-              if (imageUrl.isNotEmpty)
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Choose from gallery'),
+                onTap: () => launchPicker(fromCamera: false),
+              ),
+              if (imageUrl.trim().isNotEmpty)
                 ListTile(
                   leading: const Icon(Icons.visibility_outlined),
                   title: const Text('View profile photo'),
                   onTap: () {
-                    Navigator.pop(sheetContext);
+                    if (actionStarted) return;
+                    actionStarted = true;
 
-                    _showProfilePhoto(
-                      context,
-                      username: username,
-                      imageUrl: imageUrl,
-                    );
+                    sheetNavigator.pop();
+
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!context.mounted) return;
+
+                      _showProfilePhoto(
+                        context,
+                        username: username,
+                        imageUrl: imageUrl,
+                      );
+                    });
                   },
                 ),
-
-              if (imageUrl.isNotEmpty)
+              if (imageUrl.trim().isNotEmpty)
                 ListTile(
                   leading: Icon(
                     Icons.delete_outline,
@@ -246,31 +289,59 @@ class AppDrawer extends ConsumerWidget {
                     style: TextStyle(color: context.errorColor),
                   ),
                   onTap: () async {
-                    Navigator.pop(sheetContext);
+                    if (actionStarted) return;
+                    actionStarted = true;
 
-                    final removed = await ref
-                        .read(profilePhotoProvider.notifier)
-                        .removePhoto(userId: userId);
+                    // 1. Close the bottom sheet.
+                    sheetNavigator.pop();
 
-                    if (!context.mounted) return;
+                    // 2. Remove the photo from Cloudinary-independent
+                    //    profile data in Firestore via the controller.
+                    final removed = await photoController.removePhoto(
+                      userId: userId,
+                    );
 
-                    if (removed) {
-                      AppSnackBar.success(context, 'Profile photo removed');
-                    } else {
-                      AppSnackBar.error(
-                        context,
-                        'Failed to remove profile photo',
-                      );
-                    }
+                    // 3. Wait for the sheet dismissal to finish.
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!context.mounted) return;
+
+                      // 4. Close the drawer if it is still open.
+                      if (drawerNavigator.mounted && drawerNavigator.canPop()) {
+                        drawerNavigator.pop();
+                      }
+
+                      // 5. Show the notification after the drawer closes.
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!context.mounted) return;
+
+                        if (removed) {
+                          scaffoldMessenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('Profile photo removed'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        } else {
+                          scaffoldMessenger.showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                photoController.getUserFriendlyError(),
+                              ),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      });
+                    });
                   },
                 ),
+              const SizedBox(height: 12),
             ],
           ),
         );
       },
     );
   }
-
   // ---------------------------------------------------------------------------
   // PROFILE PHOTO PREVIEW
   // ---------------------------------------------------------------------------

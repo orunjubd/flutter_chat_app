@@ -1,4 +1,6 @@
+import 'package:chat_app/features/profile/repositories/private_contact_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 //import 'package:flutter/foundation.dart';
 
 class AuthRepository {
@@ -23,10 +25,18 @@ class AuthRepository {
     required String email,
     required String password,
   }) async {
-    return await _firebaseAuth.createUserWithEmailAndPassword(
+    final credential = await _firebaseAuth.createUserWithEmailAndPassword(
       email: email,
       password: password,
     );
+    try {
+      await PrivateContactRepository().setEmail(credential.user!.uid, email);
+    } catch (e) {
+      debugPrint(
+        '⚠️ [Privacy] could not store private email: $e',
+      ); // the Auth email still exists
+    }
+    return credential;
   }
 
   Future<void> signOut() async {

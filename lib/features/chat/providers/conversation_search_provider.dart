@@ -29,6 +29,7 @@ final filteredConversationsProvider = FutureProvider.autoDispose
             return false;
           }
           return switch (scope.filter) {
+            ConversationFilter.groups => c.isGroup,
             ConversationFilter.all => true,
             ConversationFilter.unread => (c.unreadCounts[myUid] ?? 0) > 0,
             ConversationFilter.favorites => settings[c.id]?.favorite ?? false,
@@ -38,14 +39,15 @@ final filteredConversationsProvider = FutureProvider.autoDispose
         // Searching: everything, archived included.
         final hits = await Future.wait(
           all.map((c) async {
+            if (c.lastMessage.toLowerCase().contains(q)) return true;
+            if (c.isGroup) return (c.name ?? '').toLowerCase().contains(q);
             final otherId = c.participantIds.firstWhere(
               (id) => id != myUid,
               orElse: () => '',
             );
             if (otherId.isEmpty) return false;
             final user = await ref.read(userByIdProvider(otherId).future);
-            return (user?.username ?? '').toLowerCase().contains(q) ||
-                c.lastMessage.toLowerCase().contains(q);
+            return (user?.username ?? '').toLowerCase().contains(q);
           }),
         );
         list = [

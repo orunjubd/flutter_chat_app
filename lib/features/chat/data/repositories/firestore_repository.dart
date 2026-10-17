@@ -26,4 +26,13 @@ class FirestoreRepository {
 
     return AppUser.fromMap(document.id, document.data()!);
   }
+
+  Stream<AppUser?> watchUser(String uid) {
+    return usersCollection
+        .doc(uid)
+        .snapshots()
+        .map(
+          (s) => s.exists && s.data() != null ? AppUser.fromFirestore(s) : null,
+        );
+  }
 }

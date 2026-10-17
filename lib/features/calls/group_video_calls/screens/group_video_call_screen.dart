@@ -12,20 +12,20 @@ import 'package:chat_app/features/calls/core/widgets/group_video_spotlight.dart'
 
 class GroupVideoCallScreen extends ConsumerStatefulWidget {
   const GroupVideoCallScreen({super.key})
-    : type = CallType.video,
+    : //type = CallType.video,
       inviteeIds = const [],
       names = const {},
       conversationId = null;
 
   const GroupVideoCallScreen.outgoing({
     super.key,
-    required this.type,
+    //required this.type,
     this.conversationId,
     required this.inviteeIds,
     required this.names,
   });
 
-  final CallType type;
+  //final CallType type;
   final String? conversationId;
   final List<String> inviteeIds;
   final Map<String, String> names;
@@ -51,7 +51,7 @@ class _GroupVideoCallScreenState extends ConsumerState<GroupVideoCallScreen> {
         ref
             .read(groupCallProvider.notifier)
             .startGroupCall(
-              type: widget.type,
+              type: CallType.video,
               conversationId: widget.conversationId,
               inviteeIds: widget.inviteeIds,
               names: widget.names,

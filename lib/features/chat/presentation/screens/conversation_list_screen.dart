@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:chat_app/features/chat/constants/conversation_strings.dart';
 import 'package:chat_app/features/chat/data/models/conversation_filter.dart';
 import 'package:chat_app/features/chat/presentation/screens/archived_conversations_screen.dart';
+import 'package:chat_app/features/chat/presentation/screens/create_group_screen.dart';
 import 'package:chat_app/features/chat/presentation/widgets/conversation_filter_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -140,6 +141,19 @@ class _ConversationListScreenState
                       );
                     },
                   ),
+                  IconButton(
+                    icon: const Icon(Icons.group_add_outlined),
+                    tooltip: 'New group',
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        settings: const RouteSettings(
+                          name: 'create_group_screen',
+                        ),
+                        builder: (_) =>
+                            const CreateGroupScreen(), // 🚀 Triggers the upcoming CreateGroupScreen view!
+                      ),
+                    ),
+                  ),
                   // ------------------------------------------------------------
                   // Search
                   // Primary conversation action — always visible
@@ -264,6 +278,7 @@ class _ConversationListScreenState
                           ],
                         ),
                       ),
+                      const PopupMenuDivider(),
                     ],
                   ),
                 ],
@@ -323,6 +338,7 @@ class _ConversationListScreenState
               _query.trim().isEmpty
                   ? 'No results for "$_query"'
                   : switch (_filter) {
+                      ConversationFilter.groups => ConversationStrings.noGroups,
                       ConversationFilter.all => 'No conversations yet.',
                       ConversationFilter.unread => ConversationStrings.noUnread,
                       ConversationFilter.favorites =>

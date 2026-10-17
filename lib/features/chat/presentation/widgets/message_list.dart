@@ -1,3 +1,6 @@
+import 'package:chat_app/features/chat/data/models/message.dart';
+import 'package:chat_app/features/chat/presentation/widgets/group_sender_label.dart';
+import 'package:chat_app/features/chat/presentation/widgets/group_system_bubble.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_date_separator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,30 +24,26 @@ class MessageList extends ConsumerStatefulWidget {
     required this.conversationId,
 
     this.highlightMessageId,
+    this.showSenderNames = false,
+    this.memberCount = 2,
+    this.onSenderTap,
+    this.canDeleteOthers = false,
   });
 
   final ScrollController scrollController;
   final String conversationId;
 
   final String? highlightMessageId;
+  final bool showSenderNames;
+  final int memberCount;
+  final void Function(String userId)? onSenderTap;
+  final bool canDeleteOthers;
 
   @override
   ConsumerState<MessageList> createState() => _MessageListState();
 }
 
 class _MessageListState extends ConsumerState<MessageList> {
-  // void _scrollToBottom() {
-  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-  //     if (!widget.scrollController.hasClients) return;
-
-  //     widget.scrollController.animateTo(
-  //       widget.scrollController.position.maxScrollExtent,
-  //       duration: const Duration(milliseconds: 300),
-  //       curve: Curves.easeOut,
-  //     );
-  //   });
-  // }
-
   @override
   Widget build(BuildContext context) {
     final messagesAsync = ref.watch(
@@ -111,14 +110,41 @@ class _MessageListState extends ConsumerState<MessageList> {
                 currentDate.month != previousDate.month ||
                 currentDate.day != previousDate.day;
 
+            if (message is GroupSystemMessage) {
+              return Column(
+                children: [
+                  if (showDateSeparator)
+                    MessageDateSeparator(date: currentDate),
+                  GroupSystemBubble(text: message.text),
+                ],
+              );
+            }
+
             final isHighlighted = widget.highlightMessageId == message.id;
 
             final repository = ref.read(
               conversationMessageRepositoryProvider(widget.conversationId),
             );
-            //final repository = ref.read(messageRepositoryProvider);
-            final isRead = message.readBy.length > 1;
             final isMe = message.senderId == currentUserId;
+            //final repository = ref.read(messageRepositoryProvider);
+            final isRead = widget.showSenderNames
+                ? message.readBy.length >= widget.memberCount
+                : message.readBy.length > 1;
+            // 🚀 COMPUTE PROXIMITY CHAIN TO PREVENT REPETITIVE NAME LABELS
+            final prev = index == 0 ? null : visibleMessages[index - 1];
+
+            // Only displays the custom label if it is an incoming group message and the sender changes
+            final showName =
+                widget.showSenderNames &&
+                !isMe &&
+                (showDateSeparator || prev?.senderId != message.senderId);
+
+            debugPrint(
+              'USERNAME DEBUG: '
+              'showSenderNames=${widget.showSenderNames}, '
+              'showName=$showName, '
+              'senderName=${message.senderName}',
+            );
 
             // 🚀 2. THE ENTERPRISE AUTOMATED READ RECEIPT TRIGGER BATCH FILTER
             if (!isMe && !message.readBy.contains(currentUserId)) {
@@ -135,6 +161,14 @@ class _MessageListState extends ConsumerState<MessageList> {
               children: [
                 if (showDateSeparator) MessageDateSeparator(date: currentDate),
 
+                if (showName)
+                  GroupSenderLabel(
+                    senderId: message.senderId,
+                    name: message.senderName,
+                    onTap: widget.onSenderTap == null
+                        ? null
+                        : () => widget.onSenderTap!(message.senderId),
+                  ),
                 // Return your animated chat bubble viewport wrappers down here seamlessly!
                 MessageAnimation(
                   key: ValueKey(message.id),
@@ -166,7 +200,7 @@ class _MessageListState extends ConsumerState<MessageList> {
                       AppSnackBar.info(context, 'Message deleted for you');
                     },
 
-                    onDeleteForEveryone: isMe
+                    onDeleteForEveryone: (isMe || widget.canDeleteOthers)
                         ? () async {
                             await repository.deleteForEveryone(
                               messageId: message.id,

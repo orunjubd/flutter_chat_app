@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:chat_app/features/chat/data/models/message.dart';
+import 'package:flutter/material.dart';
 
 class MessageRepository {
   MessageRepository();
@@ -36,9 +37,17 @@ class MessageRepository {
     required String conversationId,
     required Message message,
   }) async {
-    await messagesCollection(
-      conversationId,
-    ).doc(message.id).set(message.toMap());
+    try {
+      await messagesCollection(
+        conversationId,
+      ).doc(message.id).set(message.toMap());
+    } catch (e, st) {
+      debugPrint(
+        '❌ [Chat] send failed inside ConversationMessageRepository stream node: $e',
+      );
+      debugPrintStack(stackTrace: st);
+      rethrow; // Preserves bubble bubble transmission errors to notify downstream UI states
+    }
   }
 
   /// ------------------------------------------------------------

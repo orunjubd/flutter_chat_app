@@ -1,3 +1,4 @@
+import 'package:chat_app/features/chat/providers/user_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -34,7 +35,7 @@ class MyApp extends ConsumerWidget {
         context,
       ).read(mediaCacheCleanupServiceProvider).clearAll();
     });
-
+    ref.watch(currentUserProvider);
     return MaterialApp(
       navigatorKey: appNavigatorKey,
       title: 'ECE Chat',

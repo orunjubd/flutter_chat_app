@@ -35,13 +35,21 @@ class ConversationRepository {
     required String currentUserId,
   }) {
     return _dbCol
-        .where(
-          'participantIds',
-          arrayContains: currentUserId,
-        ) // 🛡️ Bulletproof privacy shield constraint
+        .where('participantIds', arrayContains: currentUserId)
         .orderBy('updatedAt', descending: true)
         .snapshots()
-        .map((snap) => snap.docs.map(Conversation.fromFirestore).toList());
+        .map(
+          (snap) => snap.docs
+              .where((d) {
+                final data = d.data();
+                final removed =
+                    (data['removedFor'] as List?)?.contains(currentUserId) ??
+                    false;
+                return data['deletedAt'] == null && !removed;
+              })
+              .map(Conversation.fromFirestore)
+              .toList(),
+        );
   }
 
   // Stream<List<Conversation>> conversationStream() {
@@ -62,11 +70,8 @@ class ConversationRepository {
     final snap = await _dbCol
         .where('participantIds', isEqualTo: participantIds)
         .get();
-
-    if (snap.docs.isNotEmpty) {
-      return Conversation.fromFirestore(snap.docs.first);
-    }
-    return null;
+    final direct = snap.docs.where((d) => d.data()['type'] != 'group');
+    return direct.isEmpty ? null : Conversation.fromFirestore(direct.first);
   }
 
   // Future<Conversation?> findConversation(List<String> participantIds) async {
@@ -100,6 +105,12 @@ class ConversationRepository {
     final existing = await findConversation(participants);
 
     if (existing != null) {
+      if (existing.removedFor.contains(currentUserId)) {
+        await restoreConversationForUser(
+          conversationId: existing.id,
+          userId: currentUserId,
+        );
+      }
       return existing;
     }
 
@@ -152,6 +163,7 @@ class ConversationRepository {
       'lastMessage': lastMessage,
       'lastMessageTime': now,
       'updatedAt': now,
+      'removedFor': [],
     });
   }
   //------------------------------------------------------------
@@ -176,9 +188,11 @@ class ConversationRepository {
     };
 
     await _dbCol.doc(conversationId).update({
+      'lastSenderName': message.senderName,
       'lastMessage': preview,
       'lastMessageTime': message.createdAt,
       'updatedAt': message.createdAt,
+      'removedFor': [],
     });
   }
 
@@ -217,9 +231,32 @@ class ConversationRepository {
     required String conversationId,
   }) async {
     await _dbCol.doc(conversationId).update({
+      'lastSenderName': null,
       'lastMessage': '',
       'lastMessageTime': Timestamp.now(),
       'updatedAt': Timestamp.now(),
     });
   }
+
+  /// Removes a conversation from the current user's list
+  /// without deleting the conversation or its messages.
+  Future<void> removeConversationForUser({
+    required String conversationId,
+    required String userId,
+  }) async {
+    if (userId.trim().isEmpty) {
+      throw ArgumentError('User ID cannot be empty.');
+    }
+
+    await _dbCol.doc(conversationId).update({
+      'removedFor': FieldValue.arrayUnion([userId]),
+    });
+  }
+
+  Future<void> restoreConversationForUser({
+    required String conversationId,
+    required String userId,
+  }) => _dbCol.doc(conversationId).update({
+    'removedFor': FieldValue.arrayRemove([userId]),
+  });
 }

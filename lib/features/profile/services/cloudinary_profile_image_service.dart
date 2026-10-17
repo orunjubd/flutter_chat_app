@@ -29,6 +29,8 @@ class CloudinaryProfileImageService {
   Future<String> upload({
     required Uint8List imageBytes,
     required String userId,
+    String folder = 'ece/profile_images',
+    String filenamePrefix = 'profile',
   }) async {
     final uri = Uri.parse(
       ApiConfig.cloudinaryUploadUrl(
@@ -42,19 +44,18 @@ class CloudinaryProfileImageService {
     request.fields['upload_preset'] = uploadPreset;
 
     // Keep profile images separate from chat media.
-    request.fields['folder'] = 'ece/profile_images';
+    request.fields['folder'] = folder;
 
     request.files.add(
       http.MultipartFile.fromBytes(
         'file',
         imageBytes,
-        filename: 'profile_$userId.jpg',
+        filename: '${filenamePrefix}_$userId.jpg',
       ),
     );
 
-    final streamedResponse = await request.send();
-
-    final response = await http.Response.fromStream(streamedResponse);
+    final streamed = await request.send().timeout(const Duration(seconds: 30));
+    final response = await http.Response.fromStream(streamed);
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception(

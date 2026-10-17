@@ -1,1 +1,1 @@
-enum ConversationFilter { all, unread, favorites }
+enum ConversationFilter { all, unread, favorites, groups }

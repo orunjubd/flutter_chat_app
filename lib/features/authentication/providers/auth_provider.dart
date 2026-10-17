@@ -1,4 +1,6 @@
+import 'package:chat_app/features/profile/repositories/private_contact_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/repositories/auth_repository.dart';
 
@@ -37,4 +39,16 @@ final emailVerifiedProvider = FutureProvider<bool>((ref) async {
   final repository = ref.read(authRepositoryProvider);
 
   return repository.isEmailVerified();
+});
+final contactMigrationProvider = FutureProvider.family<void, String>((
+  ref,
+  uid,
+) async {
+  try {
+    await ref.read(privateContactRepositoryProvider).migrateOwn(uid);
+    debugPrint('✅ [Privacy] migration checked for $uid');
+  } catch (e, st) {
+    debugPrint('⚠️ [Privacy] migration failed: $e');
+    debugPrintStack(stackTrace: st);
+  }
 });

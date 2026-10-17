@@ -19,4 +19,9 @@ abstract final class ConversationStrings {
   static const filterFavorites = 'Favorites';
   static const noUnread = 'No unread chats';
   static const noFavorites = 'No favorite chats';
+  static const String filterGroups = 'Groups';
+  static const String noGroups = 'No groups yet.';
+  static const deleteChat = 'Delete chat';
+  static const deleteChatBody =
+      'This removes the chat from your list. The other person keeps their copy.';
 }

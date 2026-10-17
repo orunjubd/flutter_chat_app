@@ -78,10 +78,13 @@ class _UserSelectionScreenState extends ConsumerState<UserSelectionScreen> {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) =>
                     Center(child: Text('Unable to load users: $error')),
-                data: (users) => AppUsersList(
-                  users: users,
-                  onUserTap: (AppUser user) => _startConversation(user.id),
-                ),
+                data: (users) {
+                  final activeUsers = users.where((u) => !u.isDeleted).toList();
+                  return AppUsersList(
+                    users: activeUsers,
+                    onUserTap: (AppUser user) => _startConversation(user.id),
+                  );
+                },
               ),
             ),
           ],

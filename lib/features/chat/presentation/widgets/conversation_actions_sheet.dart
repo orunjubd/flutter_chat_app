@@ -1,5 +1,8 @@
 import 'package:chat_app/features/chat/constants/conversation_strings.dart';
+import 'package:chat_app/features/chat/providers/conversation_provider.dart';
 import 'package:chat_app/features/chat/providers/conversation_settings_provider.dart';
+import 'package:chat_app/features/chat/providers/group_provider.dart';
+import 'package:chat_app/features/chat/providers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -108,6 +111,59 @@ Future<void> showConversationActions(
                       conversationId,
                       duration: choice == Duration.zero ? null : choice,
                     );
+                  },
+                ),
+
+              if (ref
+                      .watch(conversationByIdProvider(conversationId))
+                      ?.isGroup ==
+                  false)
+                ListTile(
+                  leading: Icon(
+                    Icons.delete_outline,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  title: const Text(ConversationStrings.deleteChat),
+                  onTap: () async {
+                    // capture everything BEFORE closing the sheet and awaiting
+                    final repo = ref.read(conversationRepositoryProvider);
+                    final uid = ref.read(currentUserIdProvider);
+                    Navigator.pop(sheetContext);
+                    final ok = await showDialog<bool>(
+                      context: context,
+                      builder: (d) => AlertDialog(
+                        title: const Text(ConversationStrings.deleteChat),
+                        content: const Text(ConversationStrings.deleteChatBody),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(d, false),
+                            child: const Text('Cancel'),
+                          ),
+                          FilledButton(
+                            onPressed: () => Navigator.pop(d, true),
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (ok != true || uid == null) return;
+                    try {
+                      await repo.removeConversationForUser(
+                        conversationId: conversationId,
+                        userId: uid,
+                      );
+                    } catch (e, st) {
+                      debugPrint('❌ [Delete] failed: $e');
+                      debugPrintStack(stackTrace: st);
+                    }
+                    // final uid = ref.read(currentUserIdProvider);
+                    // if (ok != true || uid == null) return;
+                    // await ref
+                    //     .read(conversationRepositoryProvider)
+                    //     .removeConversationForUser(
+                    //       conversationId: conversationId,
+                    //       userId: uid,
+                    //     );
                   },
                 ),
             ],

@@ -8,6 +8,10 @@ class AppUser {
     required this.imageUrl,
     required this.createdAt,
     required this.isOnline,
+    this.phoneNumber = '',
+    this.shareEmailWithGroupMembers = false,
+    this.sharePhoneNumberWithGroupMembers = false,
+    this.deletedAt,
   });
 
   final String id;
@@ -16,15 +20,23 @@ class AppUser {
   final String imageUrl;
   final Timestamp createdAt;
   final bool isOnline;
+  final String phoneNumber;
+  final bool shareEmailWithGroupMembers;
+  final bool sharePhoneNumberWithGroupMembers;
+  final Timestamp? deletedAt;
+  bool get isDeleted => deletedAt != null;
 
   /// Convert AppUser → Firestore Map
   Map<String, dynamic> toMap() {
     return {
       'username': username,
-      'email': email,
+      // 'email': email,
       'imageUrl': imageUrl,
       'createdAt': createdAt,
       'isOnline': isOnline,
+      // 'phoneNumber': phoneNumber,
+      'shareEmailWithGroupMembers': shareEmailWithGroupMembers,
+      'sharePhoneNumberWithGroupMembers': sharePhoneNumberWithGroupMembers,
     };
   }
 
@@ -37,18 +49,17 @@ class AppUser {
       imageUrl: map['imageUrl'] ?? '',
       createdAt: map['createdAt'] ?? Timestamp.now(),
       isOnline: map['isOnline'] ?? false,
+      phoneNumber: map['phoneNumber'] as String? ?? '',
+      shareEmailWithGroupMembers:
+          map['shareEmailWithGroupMembers'] as bool? ?? false,
+      sharePhoneNumberWithGroupMembers:
+          map['sharePhoneNumberWithGroupMembers'] as bool? ?? false,
+      deletedAt: map['deletedAt'] as Timestamp?,
     );
   }
   factory AppUser.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};
-    return AppUser(
-      id: doc
-          .id, // Extracts the unique alphanumeric document string ID directly
-      username: data['username'] as String? ?? '',
-      email: data['email'] as String? ?? '',
-      imageUrl: data['imageUrl'] as String? ?? '',
-      createdAt: data['createdAt'] as Timestamp? ?? Timestamp.now(),
-      isOnline: data['isOnline'] as bool? ?? false,
-    );
+
+    return AppUser.fromMap(doc.id, data);
   }
 }

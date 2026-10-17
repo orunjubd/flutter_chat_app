@@ -57,6 +57,9 @@ class _State extends ConsumerState<GroupCallPickerScreen> {
                   Consumer(
                     builder: (context, ref, _) {
                       final user = ref.watch(userByIdProvider(id)).value;
+                      if (user?.isDeleted == true) {
+                        return const SizedBox.shrink();
+                      }
                       final name = user?.username ?? id;
                       final hasImage = (user?.imageUrl ?? '').trim().isNotEmpty;
                       return CheckboxListTile(
@@ -127,7 +130,7 @@ class _State extends ConsumerState<GroupCallPickerScreen> {
                 names: names,
               )
             : GroupVideoCallScreen.outgoing(
-                type: widget.type,
+                //type: widget.type,
                 inviteeIds: _selected.keys.toList(),
                 names: names,
               ),
