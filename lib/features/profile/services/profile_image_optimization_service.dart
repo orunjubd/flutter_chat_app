@@ -1,6 +1,7 @@
 import 'dart:io';
-import 'dart:typed_data';
+//import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 
 /// Optimizes profile images before remote upload.
@@ -16,37 +17,29 @@ import 'package:image/image.dart' as img;
 class ProfileImageOptimizationService {
   const ProfileImageOptimizationService();
 
-  /// Maximum width/height of the optimized profile image.
-  static const int maxDimension = 800;
-
-  /// JPEG quality.
+  static const int avatarSize = 512;
   static const int jpegQuality = 85;
 
-  /// Optimizes [sourceFile] and returns JPEG bytes.
+  /// Returns a square JPEG of [avatarSize] px, with EXIF rotation applied.
   Future<Uint8List> optimize(File sourceFile) async {
-    final Uint8List originalBytes = await sourceFile.readAsBytes();
-
-    final img.Image? decoded = img.decodeImage(originalBytes);
-
-    if (decoded == null) {
-      throw const FormatException('Unable to decode selected profile image.');
-    }
-
-    final img.Image resized;
-
-    if (decoded.width > maxDimension || decoded.height > maxDimension) {
-      resized = img.copyResize(
-        decoded,
-        width: decoded.width >= decoded.height ? maxDimension : null,
-        height: decoded.height > decoded.width ? maxDimension : null,
-        interpolation: img.Interpolation.linear,
-      );
-    } else {
-      resized = decoded;
-    }
-
-    final List<int> jpegBytes = img.encodeJpg(resized, quality: jpegQuality);
-
-    return Uint8List.fromList(jpegBytes);
+    final bytes = await sourceFile.readAsBytes();
+    return compute(_process, bytes); // runs in a background isolate
   }
+}
+
+// Top-level so compute() can run it in another isolate.
+Uint8List _process(Uint8List input) {
+  final decoded = img.decodeImage(input);
+  if (decoded == null) {
+    throw const FormatException('Unable to decode selected image.');
+  }
+  final upright = img.bakeOrientation(decoded);
+  final square = img.copyResizeCropSquare(
+    upright,
+    size: ProfileImageOptimizationService.avatarSize,
+    interpolation: img.Interpolation.linear,
+  );
+  return Uint8List.fromList(
+    img.encodeJpg(square, quality: ProfileImageOptimizationService.jpegQuality),
+  );
 }
