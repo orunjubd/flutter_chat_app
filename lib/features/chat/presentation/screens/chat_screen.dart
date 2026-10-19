@@ -402,6 +402,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
         : ref.watch(userByIdProvider(otherUserId));
     final otherDeleted =
         !isGroup && (otherUserAsync?.value?.isDeleted ?? false);
+
+    final cleared = conversation.clearedAt[currentUserId];
+    final joined = conversation.joinedAt[currentUserId];
+    final visibleFrom =
+        (cleared != null && (joined == null || cleared.compareTo(joined) > 0))
+        ? cleared
+        : joined;
     return Stack(
       children: [
         AppScaffold(
@@ -487,8 +494,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                   final selectedMessage = await Navigator.push<Message>(
                     context,
                     MaterialPageRoute(
-                      builder: (_) =>
-                          SearchMessagesScreen(conversationId: conversationId),
+                      builder: (_) => SearchMessagesScreen(
+                        conversationId: conversationId,
+                        visibleFrom: isGroup && currentUserId != null
+                            ? conversation.joinedAt[currentUserId]?.toDate()
+                            : null,
+                      ),
                     ),
                   );
 
@@ -667,6 +678,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                   showSenderNames: conversation
                       .isGroup, // 🚀 Dynamically shows names only if group chat!
                   memberCount: conversation.participantIds.length,
+                  visibleFrom: visibleFrom?.toDate(),
                   canDeleteOthers:
                       isGroup &&
                       currentUserId != null &&

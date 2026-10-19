@@ -89,9 +89,10 @@ class CallSystemMessageBubble extends StatelessWidget {
 
                   Expanded(
                     child: Text(
-                      message.callType == CallType.video
-                          ? 'Video call'
-                          : 'Voice call',
+                      // message.callType == CallType.video
+                      //     ? 'Video call'
+                      //     : 'Voice call',
+                      _label(isMe),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: context.bodyTextMedium?.copyWith(
@@ -147,6 +148,26 @@ class CallSystemMessageBubble extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _label(bool isMe) {
+    final type = message.callType == CallType.video
+        ? 'Video call'
+        : 'Voice call';
+    switch (message.status) {
+      case CallHistoryStatus.completed:
+        final s = message.durationSeconds;
+        if (s == null) return type;
+        return '$type · ${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
+      case CallHistoryStatus.missed:
+        return isMe ? 'No answer' : 'Missed $type';
+      case CallHistoryStatus.rejected:
+        return isMe ? 'Call declined' : 'You declined this call';
+      case CallHistoryStatus.cancelled:
+        return isMe ? 'Call cancelled' : 'Missed $type';
+      case CallHistoryStatus.failed:
+        return 'Call failed';
+    }
   }
 
   _CallDisplay _displayFor(

@@ -33,6 +33,7 @@ class MessageMenu {
     required VoidCallback onDeleteForMe,
     required VoidCallback? onDeleteForEveryone,
     required ValueChanged<String> onReaction,
+    VoidCallback? onEdit,
   }) async {
     await showModalBottomSheet<void>(
       context: context,
@@ -75,6 +76,16 @@ class MessageMenu {
 
               const Divider(),
 
+              if (onEdit != null)
+                ListTile(
+                  leading: const Icon(Icons.edit_rounded, color: Colors.blue),
+                  title: const Text('Edit Message'),
+                  onTap: () {
+                    Navigator.pop(context); // প্রথমে লং-প্রেস মেনুটি বন্ধ করবে
+                    onEdit(); // এরপর MessageList থেকে আসা এডিট ডায়ালগটি ওপেন করবে
+                  },
+                ),
+              const Divider(),
               ListTile(
                 leading: Icon(Icons.delete_outline, color: context.errorColor),
                 title: const Text('Delete for Me'),

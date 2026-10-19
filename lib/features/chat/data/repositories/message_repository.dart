@@ -7,6 +7,7 @@ class MessageRepository {
   MessageRepository();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static const editWindow = Duration(minutes: 15);
 
   /// ------------------------------------------------------------
   /// Messages collection inside a conversation
@@ -19,6 +20,47 @@ class MessageRepository {
         .collection('conversations')
         .doc(conversationId)
         .collection('messages');
+  }
+
+  Future<void> editTextMessage({
+    required String conversationId,
+    required String messageId,
+    required String userId,
+    required String newText,
+  }) async {
+    final text = newText.trim();
+    if (text.isEmpty) throw ArgumentError('Message cannot be empty.');
+    final convRef = FirebaseFirestore.instance
+        .collection('conversations')
+        .doc(conversationId);
+    final msgRef = convRef.collection('messages').doc(messageId);
+
+    await FirebaseFirestore.instance.runTransaction((tx) async {
+      final msg = await tx.get(msgRef);
+      final d = msg.data();
+      if (d == null) throw StateError('Message not found.');
+      if (d['senderId'] != userId) {
+        throw StateError('You can only edit your own messages.');
+      }
+      if (d['type'] != 'text') {
+        throw StateError('Only text messages can be edited.');
+      }
+      if (d['deletedForEveryone'] == true) {
+        throw StateError('This message was deleted.');
+      }
+      final created = (d['createdAt'] as Timestamp).toDate();
+      if (DateTime.now().difference(created) > editWindow) {
+        throw StateError('You can edit a message for 15 minutes.');
+      }
+      if (text == d['text']) return;
+
+      final conv = await tx.get(convRef);
+      tx.update(msgRef, {'text': text, 'editedAt': Timestamp.now()});
+      // keep the list preview right if this is the newest message
+      if (conv.data()?['lastMessageTime'] == d['createdAt']) {
+        tx.update(convRef, {'lastMessage': text});
+      }
+    });
   }
 
   /// ------------------------------------------------------------

@@ -1,5 +1,6 @@
+import 'package:chat_app/features/chat/providers/user_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+//import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:chat_app/features/chat/data/models/conversation.dart';
 import 'package:chat_app/features/chat/data/repositories/conversation_repository.dart';
@@ -22,7 +23,7 @@ final conversationsProvider = StreamProvider.autoDispose<List<Conversation>>((
   // return repository.conversationStream();
 
   final repository = ref.watch(conversationRepositoryProvider);
-  final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+  final currentUserId = ref.watch(currentUserIdProvider);
 
   if (currentUserId == null) {
     return Stream.value(

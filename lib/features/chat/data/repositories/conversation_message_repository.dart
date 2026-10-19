@@ -26,6 +26,17 @@ class ConversationMessageRepository {
     return _messageRepository.createMessageDocument(conversationId);
   }
 
+  Future<void> editTextMessage({
+    required String messageId,
+    required String userId,
+    required String newText,
+  }) => _messageRepository.editTextMessage(
+    conversationId: conversationId,
+    messageId: messageId,
+    userId: userId,
+    newText: newText,
+  );
+
   /// ------------------------------------------------------------
   /// Forward
   /// ------------------------------------------------------------

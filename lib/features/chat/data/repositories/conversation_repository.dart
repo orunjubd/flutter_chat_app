@@ -250,6 +250,7 @@ class ConversationRepository {
 
     await _dbCol.doc(conversationId).update({
       'removedFor': FieldValue.arrayUnion([userId]),
+      'clearedAt.$userId': Timestamp.now(),
     });
   }
 

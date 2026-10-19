@@ -4,7 +4,8 @@ import 'package:chat_app/core/video/widgets/fullscreen_video_player.dart';
 import 'package:chat_app/features/calls/core/widgets/call_system_message_bubble.dart';
 import 'package:chat_app/features/chat/presentation/widgets/file_message_bubble.dart';
 import 'package:chat_app/features/chat/presentation/widgets/video_message_bubble.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:chat_app/features/chat/providers/user_provider.dart';
+//import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chat_app/core/extensions/theme_extensions.dart';
@@ -38,10 +39,9 @@ class ChatBubble extends ConsumerWidget {
     required this.isRead,
     required this.onDeleteForMe,
     required this.onDeleteForEveryone,
-
     required this.onReaction,
-
     required this.highlight,
+    this.onEdit,
   });
 
   //final bool? senderName;
@@ -56,8 +56,9 @@ class ChatBubble extends ConsumerWidget {
 
   final bool highlight;
 
-  bool get _deleted =>
-      messageData.deletedForEveryone || messageData.deletedBy.isNotEmpty;
+  final VoidCallback? onEdit;
+
+  bool get _deleted => messageData.deletedForEveryone;
 
   String get _displayMessage {
     if (messageData.deletedForEveryone) {
@@ -76,7 +77,7 @@ class ChatBubble extends ConsumerWidget {
   bool get showSenderNameGlobal => false;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final currentUserId = ref.watch(currentUserIdProvider) ?? '';
     // 📞 Call logs use their own dedicated bubble layout.
     //
     // IMPORTANT:
@@ -101,10 +102,16 @@ class ChatBubble extends ConsumerWidget {
         onLongPress: _deleted
             ? null
             : () {
+                debugPrint('[MENU 1] Message long-pressed.');
+                debugPrint('[MENU 1] Message ID: ${messageData.id}');
+                debugPrint('[MENU 1] Deleted: $_deleted');
+                debugPrint('[MENU 1] onEdit available: ${onEdit != null}');
                 MessageMenu.show(
                   context: context,
                   ref: ref,
                   message: messageData,
+
+                  onEdit: onEdit,
 
                   canDeleteForEveryone: onDeleteForEveryone != null,
 
@@ -313,6 +320,24 @@ class ChatBubble extends ConsumerWidget {
                               : context.textSecondaryColor,
                         ),
                       ),
+                      // Edit
+                      if (messageData.editedAt != null) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          '(edited)',
+                          style: context.captionText?.copyWith(
+                            fontStyle: FontStyle.italic,
+                            fontSize: 10,
+                            color: isMe
+                                ? context.unreadReceiptColor.withValues(
+                                    alpha: .7,
+                                  )
+                                : context.textSecondaryColor.withValues(
+                                    alpha: .7,
+                                  ),
+                          ),
+                        ),
+                      ],
 
                       if (isMe) ...[
                         const SizedBox(width: 4),

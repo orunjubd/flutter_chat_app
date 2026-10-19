@@ -6,11 +6,15 @@ import 'package:chat_app/features/chat/data/models/app_user.dart';
 import 'package:chat_app/features/authentication/providers/auth_provider.dart';
 //import 'package:chat_app/features/chat/providers/user_directory_provider.dart';
 
+final firebaseAuthUserProvider = StreamProvider<User?>(
+  (ref) => FirebaseAuth.instance.authStateChanges(),
+);
 //======================================================================
 //UPDATE YOUR CODE TO THIS:
 //======================================================================
 final currentUserIdProvider = Provider<String?>((ref) {
-  return FirebaseAuth.instance.currentUser?.uid;
+  final fromStream = ref.watch(firebaseAuthUserProvider).value?.uid;
+  return fromStream ?? FirebaseAuth.instance.currentUser?.uid;
 });
 
 // final currentUserProvider = FutureProvider<AppUser?>((ref) async {

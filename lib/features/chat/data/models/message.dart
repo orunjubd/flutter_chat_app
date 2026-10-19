@@ -30,6 +30,7 @@ sealed class Message {
     this.forwardedFromUserId,
     this.forwardedFromUserName,
     this.reactions = const {},
+    this.editedAt,
   });
 
   final String id;
@@ -50,6 +51,7 @@ sealed class Message {
   final String? forwardedFromUserId;
   final String? forwardedFromUserName;
   final Map<String, List<String>> reactions;
+  final Timestamp? editedAt;
 
   Map<String, dynamic> baseMap() => {
     'senderId': senderId,
@@ -69,6 +71,7 @@ sealed class Message {
     'forwardedFromUserId': forwardedFromUserId,
     'forwardedFromUserName': forwardedFromUserName,
     'reactions': reactions,
+    'editedAt': editedAt,
   };
 
   Map<String, dynamic> toMap();
@@ -150,6 +153,7 @@ class TextMessage extends Message {
     super.forwardedFromUserId,
     super.forwardedFromUserName,
     super.reactions,
+    super.editedAt,
   }) : super(type: 'text');
 
   factory TextMessage._fromMap(String documentId, Map<String, dynamic> data) {
@@ -171,6 +175,7 @@ class TextMessage extends Message {
       forwardedFromUserId: data['forwardedFromUserId'] as String?,
       forwardedFromUserName: data['forwardedFromUserName'] as String?,
       reactions: Message.parseReactions(data['reactions']),
+      editedAt: data['editedAt'] as Timestamp?,
     );
   }
 

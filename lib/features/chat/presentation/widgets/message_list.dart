@@ -1,15 +1,15 @@
 import 'package:chat_app/features/chat/data/models/message.dart';
+import 'package:chat_app/features/chat/data/repositories/message_repository.dart';
+import 'package:chat_app/features/chat/presentation/widgets/edit_message_dialog.dart';
 import 'package:chat_app/features/chat/presentation/widgets/group_sender_label.dart';
 import 'package:chat_app/features/chat/presentation/widgets/group_system_bubble.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_date_separator.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
-//import 'package:firebase_auth/firebase_auth.dart';
-
 import 'package:chat_app/features/chat/providers/user_provider.dart';
 import 'package:chat_app/features/chat/providers/conversation_message_provider.dart';
-//import 'package:chat_app/features/chat/providers/message_provider.dart';
 import 'package:chat_app/features/chat/presentation/widgets/chat_bubble.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_animation.dart';
 import 'package:chat_app/core/utils/firebase_error_mapper.dart';
@@ -28,6 +28,7 @@ class MessageList extends ConsumerStatefulWidget {
     this.memberCount = 2,
     this.onSenderTap,
     this.canDeleteOthers = false,
+    this.visibleFrom,
   });
 
   final ScrollController scrollController;
@@ -38,6 +39,7 @@ class MessageList extends ConsumerStatefulWidget {
   final int memberCount;
   final void Function(String userId)? onSenderTap;
   final bool canDeleteOthers;
+  final DateTime? visibleFrom;
 
   @override
   ConsumerState<MessageList> createState() => _MessageListState();
@@ -69,10 +71,12 @@ class _MessageListState extends ConsumerState<MessageList> {
         }
 
         // 🚀 UPSTREAM FILTERING MATRIX: Eliminates hidden text bubbles before it hits the UI layout tree
-        final visibleMessages = messages.where((message) {
-          return !message.deletedBy.contains(currentUserId);
+        final visibleMessages = messages.where((m) {
+          if (m.deletedBy.contains(currentUserId)) return false;
+          final from = widget.visibleFrom;
+          return from == null ||
+              m.createdAt.compareTo(Timestamp.fromDate(from)) >= 0;
         }).toList();
-
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
 
@@ -179,6 +183,66 @@ class _MessageListState extends ConsumerState<MessageList> {
                     isMe: isMe,
                     isRead: isRead,
                     highlight: isHighlighted,
+                    onEdit:
+                        (isMe &&
+                            message is TextMessage &&
+                            !message.deletedForEveryone &&
+                            DateTime.now().difference(
+                                  message.createdAt.toDate(),
+                                ) <
+                                MessageRepository.editWindow)
+                        ? () async {
+                            debugPrint(
+                              '========== EDIT MESSAGE DEBUG ==========',
+                            );
+                            debugPrint('[EDIT 1] Edit callback started.');
+                            debugPrint('[EDIT 1] Message ID: ${message.id}');
+                            debugPrint(
+                              '[EDIT 1] Message type: ${message.runtimeType}',
+                            );
+                            debugPrint(
+                              '[EDIT 1] Current user ID: $currentUserId',
+                            );
+                            debugPrint(
+                              '[EDIT 1] Original text: ${message.text}',
+                            );
+                            final newText = await showDialog<String>(
+                              context: context,
+                              builder: (_) =>
+                                  EditMessageDialog(initialText: message.text),
+                            );
+                            debugPrint('[EDIT 3] Dialog builder executed.');
+                            if (!context.mounted || newText == null) return;
+                            if (newText.isEmpty ||
+                                newText == message.text.trim()) {
+                              return;
+                            }
+                            try {
+                              debugPrint(
+                                '[EDIT 6] Calling repository.editTextMessage().',
+                              );
+                              await repository.editTextMessage(
+                                messageId: message.id,
+                                userId: currentUserId,
+                                newText: newText,
+                              );
+                              debugPrint(
+                                '[EDIT 7] Repository update completed successfully.',
+                              );
+                            } catch (e, stackTrace) {
+                              debugPrint('[EDIT DIALOG ERROR] $e');
+                              debugPrintStack(stackTrace: stackTrace);
+                              if (!context.mounted) return;
+                              AppSnackBar.info(
+                                context,
+                                e is StateError
+                                    ? e.message
+                                    : 'Could not edit the message.',
+                              );
+                            }
+                            debugPrint('========== EDIT DEBUG END ==========');
+                          }
+                        : null,
                     onReaction: (emoji) async {
                       await repository.toggleReaction(
                         messageId: message.id,

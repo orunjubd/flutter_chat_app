@@ -1,5 +1,6 @@
 // lib/features/peoples/providers/peoples_provider.dart
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:chat_app/features/chat/providers/user_provider.dart';
+//import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chat_app/features/chat/data/models/app_user.dart';
 import 'package:chat_app/features/chat/providers/user_directory_provider.dart';
@@ -14,7 +15,7 @@ import 'package:chat_app/features/chat/providers/user_directory_provider.dart';
 /// differently.
 final peoplesProvider = Provider<AsyncValue<List<AppUser>>>((ref) {
   final directory = ref.watch(usersDirectoryProvider);
-  final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+  final currentUserId = ref.watch(currentUserIdProvider);
 
   return directory.whenData(
     (users) => users.where((u) => u.id != currentUserId).toList(),

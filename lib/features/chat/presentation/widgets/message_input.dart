@@ -3,10 +3,11 @@ import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:chat_app/core/media/widgets/attachment_sheet.dart';
 import 'package:chat_app/features/authentication/providers/auth_provider.dart';
 import 'package:chat_app/features/chat/data/repositories/typing_repository.dart';
+import 'package:chat_app/features/chat/providers/user_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+//import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:chat_app/features/chat/providers/typing_provider.dart';
 import 'package:chat_app/features/chat/data/models/typing_status.dart';
@@ -34,6 +35,7 @@ class _MessageInputState extends ConsumerState<MessageInput> {
   Timer? _typingTimer;
   bool _isTyping = false;
   late final TypingRepository _typing;
+  //  String? get _uid => ref.read(currentUserIdProvider);
   String? _uid;
   String _username = '';
 
@@ -41,7 +43,10 @@ class _MessageInputState extends ConsumerState<MessageInput> {
   void initState() {
     super.initState();
     _typing = ref.read(typingRepositoryProvider);
-    _uid = FirebaseAuth.instance.currentUser?.uid;
+    //_uid = FirebaseAuth.instance.currentUser?.uid;
+    _uid = ref.read(currentUserIdProvider);
+
+    debugPrint('[MessageInput] Initialized with UID: $_uid');
   }
 
   Future<void> _startTyping() async {
@@ -81,8 +86,14 @@ class _MessageInputState extends ConsumerState<MessageInput> {
 
   @override
   void dispose() {
+    debugPrint('[MessageInput] dispose() called.');
     _typingTimer?.cancel();
-    if (_isTyping && _uid != null) unawaited(_typing.stopTyping(_uid!));
+    final uid = _uid;
+    if (_isTyping && uid != null) {
+      debugPrint('[MessageInput] Stopping typing for UID: $uid');
+
+      unawaited(_typing.stopTyping(uid));
+    }
     _controller.dispose();
     super.dispose();
   }

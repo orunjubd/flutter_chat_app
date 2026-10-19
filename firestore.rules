@@ -62,9 +62,9 @@ service cloud.firestore {
         (!isGroup(resource.data)
           && request.resource.data.participantIds == resource.data.participantIds)
         // unread counters: any member
-        || changed().hasOnly(['unreadCounts'])
+        || changed().hasOnly(['unreadCounts','removedFor'])
         // message preview: members who can send
-        || (changed().hasOnly(['lastMessage', 'lastMessageTime', 'updatedAt', 'lastSenderName', 'unreadCounts'])
+        || (changed().hasOnly(['lastMessage', 'lastMessageTime', 'updatedAt', 'lastSenderName', 'unreadCounts', 'removedFor'])
             && (!isGroup(resource.data) || hasPerm('send')))
         // admins: everything
         || (isGroup(resource.data) && isAdmin())
@@ -77,11 +77,11 @@ service cloud.firestore {
         || (isGroup(resource.data) && hasPerm('addMembers')
             && request.resource.data.participantIds.hasAll(resource.data.participantIds)
             && changed().hasOnly(['participantIds', 'joinedAt', 'permissions', 'unreadCounts',
-                                  'lastMessage', 'lastMessageTime', 'updatedAt', 'lastSenderName']))
+                                  'lastMessage', 'lastMessageTime', 'updatedAt', 'lastSenderName','removedFor']))
         // edit info
         || (isGroup(resource.data) && hasPerm('editInfo')
             && changed().hasOnly(['name', 'description', 'avatarUrl',
-                                  'lastMessage', 'lastMessageTime', 'updatedAt', 'lastSenderName']))
+                                  'lastMessage', 'lastMessageTime', 'updatedAt', 'lastSenderName', 'removedFor']))
       );
       allow delete: if false;
 
@@ -116,12 +116,20 @@ service cloud.firestore {
         );
 
         allow update: if member()
-          && request.resource.data.diff(resource.data).affectedKeys()
-               .hasOnly(['readBy', 'reactions', 'deletedBy', 'deletedForEveryone', 'deletedAt', 'removedFor'])
+          && ((request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['readBy', 'reactions', 'deletedBy', 'deletedForEveryone', 'deletedAt'])
           && (!('deletedForEveryone' in request.resource.data.diff(resource.data).affectedKeys())
-              || mayDeleteAll());
+              || mayDeleteAll()))
+||
+  (resource.data.senderId == request.auth.uid
+   && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt'])
+   && request.resource.data.editedAt is timestamp
+   && (conv().get('type', 'direct') != 'group'
+       || request.auth.uid in conv().get('adminIds', [])
+       || 'send' in conv().get('permissions', {}).get(request.auth.uid, [])))
+);
 
-        allow delete: if false;
+allow delete: if false;
       }
     }
 
@@ -136,12 +144,15 @@ service cloud.firestore {
         && request.resource.data.calleeId == resource.data.calleeId;
       allow delete: if false;
     }
-    match /callHistory/{id} {
-      allow read, create, update: if signedIn()
-        && (request.auth.uid == request.resource.data.get('callerId', resource.data.callerId)
-            || request.auth.uid == request.resource.data.get('calleeId', resource.data.calleeId));
-      allow delete: if false;
-    }
+match /callHistory/{id} {
+  allow create: if signedIn()
+    && (request.auth.uid == request.resource.data.callerId
+        || request.auth.uid == request.resource.data.calleeId);
+  allow read, update: if signedIn()
+    && (request.auth.uid == resource.data.callerId
+        || request.auth.uid == resource.data.calleeId);
+  allow delete: if false;
+}
 
     // ---------- group calls ----------
     match /groupCalls/{id} {

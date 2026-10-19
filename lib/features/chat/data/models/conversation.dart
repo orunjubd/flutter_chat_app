@@ -21,6 +21,7 @@ class Conversation {
     this.lastSenderName,
     this.adminIds = const [],
     this.joinedAt = const {},
+    this.clearedAt = const {},
     this.permissions = const {},
     this.defaultPermissions = const [],
     this.removedFor = const [],
@@ -43,6 +44,7 @@ class Conversation {
   final String? createdBy;
   final List<String> adminIds;
   final Map<String, Timestamp> joinedAt;
+  final Map<String, Timestamp> clearedAt;
   final Map<String, List<String>> permissions; // uid -> GroupPermission names
   final List<String> defaultPermissions;
   final List<String> removedFor;
@@ -80,6 +82,11 @@ class Conversation {
         for (final e in ((data['joinedAt'] as Map?) ?? const {}).entries)
           e.key as String: e.value as Timestamp,
       },
+      clearedAt:
+          (data['clearedAt'] as Map<String, dynamic>?)?.map(
+            (key, value) => MapEntry(key, value as Timestamp),
+          ) ??
+          {},
       permissions: {
         for (final e in ((data['permissions'] as Map?) ?? const {}).entries)
           e.key as String: List<String>.from(e.value as List),

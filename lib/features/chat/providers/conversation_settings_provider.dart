@@ -1,3 +1,4 @@
+import 'package:chat_app/features/chat/providers/user_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,7 +12,7 @@ final conversationSettingsRepositoryProvider = Provider(
 
 final conversationSettingsMapProvider =
     StreamProvider.autoDispose<Map<String, ConversationSettings>>((ref) {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
+      final uid = ref.watch(currentUserIdProvider);
       if (uid == null) return Stream.value(const {});
       return ref.watch(conversationSettingsRepositoryProvider).watchAll(uid);
     });

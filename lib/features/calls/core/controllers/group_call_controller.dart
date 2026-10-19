@@ -1,5 +1,9 @@
 import 'dart:async';
 
+import 'package:chat_app/features/calls/core/models/call_history.dart';
+import 'package:chat_app/features/chat/data/models/message.dart';
+import 'package:chat_app/features/chat/providers/conversation_message_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -94,6 +98,7 @@ class GroupCallController extends Notifier<GroupCallUiState> {
   Timer? _ringTimer;
   DateTime? _joinedAt;
   String? _recordedCallId;
+  int _peakJoined = 1;
 
   String? get _uid => FirebaseAuth.instance.currentUser?.uid;
   GroupCallSignalingRepository get _repo =>
@@ -337,6 +342,7 @@ class GroupCallController extends Notifier<GroupCallUiState> {
         ? DateTime.now().difference(_joinedAt!).inSeconds
         : null;
     try {
+      // 🛡️ [User private profile Call System Message Injection]
       await ref
           .read(groupCallHistoryRepositoryProvider)
           .record(
@@ -345,6 +351,30 @@ class GroupCallController extends Notifier<GroupCallUiState> {
             outcome: outcome,
             durationSeconds: seconds,
           );
+      // 1🛡️ [First, the call history will be recorded under the user's personal profile (existing code).]
+      if (s.callerId == uid && s.conversationId != null) {
+        //2. The call is considered successful (Completed) only if the call host has joined and the peak number of members who joined (Peak Joined) is 2 or more.
+        final connected =
+            outcome == GroupCallOutcome.joined && _peakJoined >= 2;
+        final msg = CallSystemMessage(
+          id: s.id,
+          senderId: uid,
+          senderName: s.callerName ?? 'Unknown',
+          createdAt: Timestamp.now(),
+          readBy: [uid],
+          deletedForEveryone: false,
+          deletedBy: const [],
+          callType: s.type,
+          status: connected
+              ? CallHistoryStatus.completed
+              : CallHistoryStatus.missed,
+          durationSeconds: connected ? seconds : null,
+        );
+        // 3. The system bubble was pushed into the group chat via the conversation message repository.
+        await ref
+            .read(conversationMessageRepositoryProvider(s.conversationId!))
+            .sendMessage(msg);
+      }
     } catch (e) {
       debugPrint('❌ [GroupHistory] save failed: $e');
     }
@@ -427,6 +457,10 @@ class GroupCallController extends Notifier<GroupCallUiState> {
         }
         return;
       }
+      final joinedNow = s.statuses.values
+          .where((v) => v == ParticipantStatus.joined)
+          .length;
+      if (joinedNow > _peakJoined) _peakJoined = joinedNow;
       state = state.copyWith(session: s);
     });
   }
@@ -457,6 +491,7 @@ class GroupCallController extends Notifier<GroupCallUiState> {
     _roomLostSub?.cancel();
     _ringTimer?.cancel();
     _roomLostSub = null;
+    _peakJoined = 1;
     await ref.read(callAudioServiceProvider).stopLoop();
     final room = ref.read(liveKitCallServiceProvider);
     room.groupMode = false;

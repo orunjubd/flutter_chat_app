@@ -12,9 +12,15 @@ import 'package:chat_app/core/search/providers/search_history_provider.dart';
 import 'package:chat_app/core/search/widget/recent_search_list.dart';
 
 class SearchMessagesScreen extends ConsumerStatefulWidget {
-  const SearchMessagesScreen({super.key, required this.conversationId});
+  const SearchMessagesScreen({
+    super.key,
+    required this.conversationId,
+    this.visibleFrom,
+  });
 
   final String conversationId;
+
+  final DateTime? visibleFrom;
 
   @override
   ConsumerState<SearchMessagesScreen> createState() =>
@@ -94,8 +100,17 @@ class _SearchMessagesScreenState extends ConsumerState<SearchMessagesScreen> {
                     error: (error, _) => Center(child: Text(error.toString())),
 
                     data: (messages) {
+                      // Step 1: Filter messages according to the user's group join date.
+                      final visibleMessages = widget.visibleFrom == null
+                          ? messages
+                          : messages.where((message) {
+                              return !message.createdAt.toDate().isBefore(
+                                widget.visibleFrom!,
+                              );
+                            }).toList();
+
                       final results = _repository.search(
-                        messages: messages,
+                        messages: visibleMessages,
                         query: query,
                       );
                       final resultCount = results.length;
