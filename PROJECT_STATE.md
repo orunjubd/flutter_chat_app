@@ -693,6 +693,7 @@ Group chat feature, Profile Photos and User Profile, then Firestore rules replac
 | 4 Media / Calls | Done |
 | 5 Conversations | Done |
 | 6 Group Chat | Done, except Mentions (@) |
+| 7 Notifications | Planning |
 
 ## Group chat
 - conversations/{id} with type, name, avatarUrl, adminIds, joinedAt, permissions, defaultPermissions, removedFor
@@ -704,3 +705,30 @@ Group chat feature, Profile Photos and User Profile, then Firestore rules replac
 - Push sender is the dev relay (Blaze needed); fcmToken still in the public profile
 - Group permission map values only validated client-side
 - Old messages visible to new members until the joinedAt filter ships
+
+====================================================
+# Project State (2026-10-19, v1.12.1)
+====================================================
+# Project State (2026-10-19, v1.12.1)
+
+| Phase | Status |
+|---|---|
+| 1 Foundation / Auth | Done, self-healing login pending |
+| 2-3 Messaging, media | Done |
+| 4 Media / Calls | Done |
+| 5 Conversations | Done |
+| 6 Group Chat | Done, except Mentions (@) |
+| 7 Notifications | Planning |
+
+## Current architecture
+- conversations/{id}: direct or group (type, adminIds, permissions, joinedAt, removedFor, clearedAt)
+- Per-user data: users/{uid}/conversationSettings, groupCallHistory, private/{email,phone}
+- Rules: staged rules in firestore.rules; dev push relay in push_relay/
+
+## Known gaps
+- Cloud Functions (Blaze) not available: relay is a dev tool, no message pushes yet
+- fcmToken readable by signed-in users
+- Server-side validation for group permissions and invitees
+
+## Next
+Phase 7 notifications (in-app first, then deep links, then push channels).

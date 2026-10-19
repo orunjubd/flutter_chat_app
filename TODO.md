@@ -375,43 +375,48 @@ call_kit_callbacks.dart, group_call_controller.dart, global_group_call_listener.
 
 ## Next
 - [ ] Self-healing login: create users/{uid} if the profile document is missing
-- [ ] Message edit (does not exist yet; "Allow edit info" is group name/description only)
-- [ ] Hide old messages from new group members (query by joinedAt)
+- [ Done ] Message edit (does not exist yet; "Allow edit info" is group name/description only)
+- [Done ] Hide old messages from new group members (query by joinedAt)
 - [ ] Phase 1 leftovers and Phase 7 onward
+- [ ] Mentions (@), after Phase 7
 
 ## Security
-- [ ] Move fcmToken out of the public users/{uid} document into a private document
+- [ Blaze] Move fcmToken out of the public users/{uid} document into a private document
       (needs a client change and a relay/Cloud Function change). Low severity: a token alone cannot send a push,
       but it is readable by every signed-in user
-- [ ] Contact privacy: email and phone live in users/{uid}/private/*, sharing flags in the public document.
+- [Done ] Contact privacy: email and phone live in users/{uid}/private/*, sharing flags in the public document.
       Rules cannot check "shares a group with me", so any signed-in user may read once the flag is on
-- [ ] Group permission map values are only checked client-side; per-value checks in rules need a server
+- [Blaze ] Group permission map values are only checked client-side; per-value checks in rules need a server
 - [ ] Server-side check that group invitees are real contacts
-- [ ] Cloudinary: restrict the unsigned preset (formats, max size, folder, unique filename, no overwrite),
+- [ Done ] Cloudinary: restrict the unsigned preset (formats, max size, folder, unique filename, no overwrite),
       signed uploads from a server later
-- [ ] Profile and group photos: bake EXIF orientation, square crop (512 px), optimize off the UI thread
+- [ Done] Profile and group photos: bake EXIF orientation, square crop (512 px), optimize off the UI thread
 
 ## Blaze phase (server work, do once)
 - [ ] Replace push_relay/relay.js with Cloud Functions: onCallRinging (1:1), onGroupCallCreated/Ended
 - [ ] Mute: functions read users/{uid}/conversationSettings before sending message and call pushes
+- [ ] Move fcmToken to a private document (client + function change together)
+- [ ] Callable function for group changes: validate permission map values and that invitees are real contacts
 - [ ] Account deletion server job: client only signs out and requests deletion; the server evicts the user from
       groups, formats the tombstone profile and scrubs subcollections. A client cannot delete other users' data,
       and a cleanup interrupted by a crash or lost network leaves orphans
 - [ ] Scheduled cleanup: deleted groups (>7 days), ended group calls (>30 days), stale typing (>1 day).
       Script exists: push_relay/cleanup.js (dry-run by default, --apply to delete)
-- [ ] Ring-timeout reaper and heartbeat for stuck calls
+- [ ] Ring-timeout reaper and heartbeat for stuck calls; write the group call chat line when the call truly ends
 - [ ] One-time migration of every account's email/phone to private documents (Admin SDK),
       then remove contactMigrationProvider
+- [ ] Signed Cloudinary uploads 
+- [ ] serverTimestamp for call createdAt (CallSession must accept a null createdAt)     
 - [ ] Retire push_relay/
 - [ ] └── Advanced
     └── Mentions (@)
 
 ## Verify
-- [ ] Group killed-state accept/decline, after the double-accept guard
-- [ ] Notification-body tap while a group call rings (no in-app takeover)
-- [ ] Delete-messages permission: canDeleteOthers wired in MessageList
-- [ ] Creator protection (other admins cannot demote or remove the creator)
-- [ ] Flip camera on a two-camera phone, camera permission denied path
+- [DOne] Group killed-state accept/decline, after the double-accept guard
+- [DOne ] Notification-body tap while a group call rings (no in-app takeover)
+- [DOne ] Delete-messages permission: canDeleteOthers wired in MessageList
+- [DOne ] Creator protection (other admins cannot demote or remove the creator)
+- [DOne ] Flip camera on a two-camera phone, camera permission denied path
 
 ## Before release
 - [ ] Confirm messages live only under conversations/{id}/messages, then delete the unused
@@ -421,12 +426,15 @@ call_kit_callbacks.dart, group_call_controller.dart, global_group_call_listener.
 - [ ] Remove debug prints (typing, send, group, timing)
 - [ ] Complete the Info.plist contacts usage description sentence
 - [ ] Guard NetworkImage against empty URLs everywhere
+- [ ] Info.plist contacts usage description sentence
+- [ ] Delete the unused FirestoreRepository.messagesCollection getter
 
 ## Known limits
 - Archived chats do not pop out on a new message
 - Accepting a group call after the 30 s ring timeout is refused as stale
 - Group call history is not written for calls that were never delivered
 - A deleted group keeps its messages until the server cleanup runs
+- Message edit window is 15 minutes
 
 ## Later
 - [ ] Mid-call invite, rejoin, host rights
@@ -438,6 +446,8 @@ call_kit_callbacks.dart, group_call_controller.dart, global_group_call_listener.
 ## Done
 - [x] Phase 4 media, Phase 5 conversations
 - [x] Phase 6 group chat: create, info, admin actions, system messages, avatar, read-only profile, privacy migration
+- [x] Message edit, history hidden from new members, creator protection, delete permission
+- [x] Contact privacy migration, Cloudinary preset restrictions, group call kill/background checks
 
 ## Limits (add to TODO.md)
 

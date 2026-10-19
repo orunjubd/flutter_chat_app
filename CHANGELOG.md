@@ -1468,3 +1468,43 @@ other.
 - Mentions (@) not built
 - Admin and permission checks in group rules are client-validated per map value
 - Old messages are not hidden from new members yet (planned)
+
+--------------------------------------------------------------
+## v1.12.1
+--------------------------------------------------------------
+## [ v1.12.1] – 2026-10-19 – Phase 6 Group Chat Complete
+
+### Added
+
+- Group chat: create (name max 25, members, "members can send"), group info, member list
+- Admin actions: add/remove, promote/demote, per-member permissions (send, addMembers, deleteMessages, editInfo)
+- Creator protected from other admins; last admin leaving promotes the longest-standing member
+- Group avatar upload (square 512 px, EXIF-corrected, processed off the UI thread)
+- System messages written in the same transaction as membership changes
+- Group calls started from a group chat; a group of two calls 1:1
+- Call lines in chat show the real outcome (completed, missed, declined, cancelled, failed)
+- Group call line in the group chat (written by the creator, only for calls started from a chat)
+- Message edit (own text, 15 minutes, "(edited)" label)
+- Delete chat for me (removedFor) with history hidden afterwards (clearedAt)
+- New group members see only messages from their join time
+- Read-only profile screen; email and phone moved to users/{uid}/private/* with opt-in sharing
+- Account deletion with tombstone profile ("Deleted account")
+- Staged Firestore rules (firestore.rules), cleanup script (push_relay/cleanup.js)
+
+### Fixed
+
+- Typing indicator scoped per conversation, stale entries ignored
+- Sending and typing when currentUserProvider stayed in AsyncLoading
+- Stale user id after account switching (currentUserIdProvider follows auth state)
+- "Delete for me" greying the other person's message; "delete for everyone" hiding the sender's copy
+- callHistory writes denied by rules; chat call line no longer depends on the history write
+- Edit dialog freezing (dialog owns its controller)
+- First group call tap for members
+
+### Known limits
+
+- Mentions (@) not built
+- Permission map values and invitee validity are only checked client-side (needs server)
+- Group call chat line appears when the creator leaves, not when the call truly ends
+- Push sender is the dev relay; fcmToken still in the public profile
+

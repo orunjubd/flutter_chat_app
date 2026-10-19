@@ -1755,3 +1755,25 @@ Background/killed: FCM (relay) → `call_push_handler` → CallKit (`showRaw`, d
   the owner's share flag is on. Rules cannot check "shares a group with me".
 - Account deletion: re-auth, leave groups, delete own data, tombstone, delete Auth user last.
 - Decision: removedFor hides a direct chat for one user without touching the other copy.
+
+-----------------------------------------------
+## v1.12.1
+-----------------------------------------------
+## Group chat
+
+- Data: conversations/{id}, type=group. participantIds = members, adminIds = roles,
+  permissions map (uid -> permission names), defaultPermissions, joinedAt map, removedFor, clearedAt.
+- Layers: Conversation model (can(), isAdmin(), canSend()), GroupPolicy, GroupRepository (transactions),
+  group_provider, create / info / add-members screens, GroupAvatarService.
+- Membership changes write a group_system message in the same transaction.
+- Visibility: MessageList hides messages older than max(joinedAt, clearedAt) for the viewer
+  (client-side; rules can only check membership).
+- Privacy: users/{uid} public; users/{uid}/private/{email,phone} owner-readable, or readable
+  when the owner's share flag is on.
+- Account deletion: re-auth, leave groups, delete own data, tombstone profile, delete Auth user last.
+- Calls in chat: CallSystemMessage shows the stored status; group call lines are written by the creator.
+
+### Decisions
+
+- removedFor hides a direct chat for one user; a new message restores it.
+- Permission values and invitee validity need a server (Blaze).

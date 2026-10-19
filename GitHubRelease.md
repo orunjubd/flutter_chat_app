@@ -935,3 +935,30 @@ Release date: 2026-10-17
 - Mentions (@) not included
 - Old messages visible to new members (fix planned next)
 - Dev push relay still required for background calls
+
+==============================================================
+# ECE v1.12.1 – GROUP CHAT COMPLETE
+==============================================================
+# ECE v1.12.1 – Group Chat
+
+Release date: 2026-10-19
+
+## Features
+- Groups with admins, per-member permissions, avatar, system notices and member list
+- Group voice and video calls from the chat
+- Message edit, delete chat for me, history hidden from new members
+- Contact privacy (email and phone shared only on opt-in), account deletion
+
+## Testing status
+| Scenario | Result |
+|---|---|
+| Create group, send as admin and member, read-only | Passed (3 devices) |
+| Add, remove, promote, demote, leave, delete | Passed |
+| Group calls from chat, 1:1 calls and history lines | Passed |
+| Edit, delete for me / everyone, delete chat | Passed |
+| Account deletion and tombstone view | Passed |
+
+## Known limitations
+- Mentions (@) not included
+- No message push notifications yet (Phase 7); background calls need the dev relay
+- Group permission values and invitees validated on the client only
