@@ -1,3 +1,4 @@
+import 'package:chat_app/core/notifications/widgets/notification_host.dart';
 import 'package:chat_app/features/chat/providers/user_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -58,7 +59,7 @@ class MyApp extends ConsumerWidget {
         // is what actually makes the incoming-call overlay global.
         return GlobalIncomingCallListener(
           child: GlobalGroupCallListener(
-            child: child ?? const SizedBox.shrink(),
+            child: NotificationHost(child: child ?? const SizedBox.shrink()),
           ),
         );
         //final safeChild = child ?? const SizedBox.shrink();

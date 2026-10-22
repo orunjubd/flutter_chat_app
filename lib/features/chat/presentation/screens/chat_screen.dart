@@ -1,11 +1,14 @@
 import 'package:chat_app/core/dialogs/app_snackbar.dart';
+import 'package:chat_app/core/notifications/providers/notification_provider.dart';
 import 'package:chat_app/features/authentication/providers/auth_provider.dart';
 import 'package:chat_app/features/calls/core/controllers/group_call_controller.dart';
 import 'package:chat_app/features/calls/core/models/call_type.dart';
 import 'package:chat_app/features/calls/core/policies/group_call_policy.dart';
+import 'package:chat_app/features/calls/core/utils/app_lifecycle_utils.dart';
 import 'package:chat_app/features/calls/group_video_calls/screens/group_call_picker_screen.dart';
 import 'package:chat_app/features/calls/group_video_calls/screens/group_video_call_screen.dart';
 import 'package:chat_app/features/calls/group_voice_calls/screens/group_voice_call_screen.dart';
+import 'package:chat_app/features/chat/data/repositories/conversation_repository.dart';
 import 'package:chat_app/features/chat/presentation/screens/group_info_screen.dart';
 import 'package:chat_app/features/chat/presentation/widgets/read_only_bar.dart';
 //import 'package:chat_app/features/calls/group_video_calls/screens/group_video_call_screen.dart';
@@ -58,13 +61,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
   String? _highlightMessageId;
 
   Conversation get conversation => widget.conversation;
+  ConversationRepository? _convRepo;
+  ActiveConversationNotifier? _active;
 
   @override
   void initState() {
     super.initState();
 
+    _convRepo = ref.read(conversationRepositoryProvider);
+    _active = ref.read(activeConversationProvider.notifier);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      _active?.enter(widget.conversation.id);
       _initializeChatScreen();
     });
 
@@ -322,8 +330,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
       );
       WidgetsBinding.instance.scheduleFrame();
     } finally {
-      // 🔓 সুরক্ষার স্বার্থে ট্রাই ব্লকের কাজ সফল বা ব্যর্থ যাই হোক না কেন,
-      // 🔓 কল শেষ হওয়ার পর ফ্ল্যাগটি আবার সবার জন্য ওপেন বা false করে দেওয়া হলো ব্রো।
       _calling = false;
     }
   }
@@ -356,6 +362,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
 
   @override
   void dispose() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final id = widget.conversation.id;
+    final repo = _convRepo;
+    final active = _active;
+    if (uid != null && repo != null) {
+      Future(() => repo.clearUnread(conversationId: id, userId: uid));
+    }
+    Future(() => active?.leave(id));
+
     WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
     super.dispose();
@@ -409,6 +424,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
         (cleared != null && (joined == null || cleared.compareTo(joined) > 0))
         ? cleared
         : joined;
+    ref.listen<AsyncValue<List<Conversation>>>(conversationsProvider, (
+      _,
+      next,
+    ) {
+      final me = FirebaseAuth.instance.currentUser?.uid;
+      if (me == null || !mounted) return;
+      final c = next.value
+          ?.where((c) => c.id == widget.conversation.id)
+          .firstOrNull;
+      if (c != null && (c.unreadCounts[me] ?? 0) > 0 && isAppInForeground) {
+        clearUnread();
+      }
+    });
     return Stack(
       children: [
         AppScaffold(

@@ -435,6 +435,7 @@ call_kit_callbacks.dart, group_call_controller.dart, global_group_call_listener.
 - Group call history is not written for calls that were never delivered
 - A deleted group keeps its messages until the server cleanup runs
 - Message edit window is 15 minutes
+- The stock Android launcher doesn’t support numeric badges
 
 ## Later
 - [ ] Mid-call invite, rejoin, host rights

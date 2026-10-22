@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:chat_app/features/chat/data/models/conversation.dart';
 import 'package:chat_app/features/chat/data/models/message.dart';
+import 'package:flutter/material.dart';
 
 class ConversationRepository {
   ConversationRepository();
@@ -156,15 +157,28 @@ class ConversationRepository {
   Future<void> updateConversationAfterMessage({
     required String conversationId,
     required String lastMessage,
+    required String lastSenderName,
   }) async {
     final now = Timestamp.now();
-
-    await _dbCol.doc(conversationId).update({
-      'lastMessage': lastMessage,
-      'lastMessageTime': now,
-      'updatedAt': now,
-      'removedFor': [],
-    });
+    debugPrint(
+      '🐛 [DEBUG] Updating conversation: $conversationId for receiver: receiverUid',
+    );
+    try {
+      await _dbCol.doc(conversationId).update({
+        'lastMessage': lastMessage,
+        'lastSenderName': lastSenderName,
+        'lastMessageTime': now,
+        'updatedAt': now,
+        'removedFor': [],
+        //if (receiverUid.isNotEmpty)'unreadCounts.$receiverUid': FieldValue.increment(1),
+      });
+      debugPrint(
+        '✅ [DEBUG] Conversation updated & unreadCount incremented successfully!',
+      );
+    } catch (e, stackTrace) {
+      debugPrint('❌ [DEBUG] Error updating conversation: $e');
+      debugPrint(stackTrace.toString());
+    }
   }
   //------------------------------------------------------------
   /// Update conversation preview
@@ -199,19 +213,53 @@ class ConversationRepository {
   ///------------------------------------------------------------
   /// Increment unread count for all participants except the sender
   ///------------------------------------------------------------
+  // Future<void> incrementUnread({
+  //   required Conversation conversation,
+  //   required String senderId,
+  // }) async {
+  //   final updates = <String, Object>{};
+
+  //   for (final participant in conversation.participantIds) {
+  //     if (participant == senderId) continue;
+
+  //     updates['unreadCounts.$participant'] = FieldValue.increment(1);
+  //   }
+
+  //   await _dbCol.doc(conversation.id).update(updates);
+  // }
   Future<void> incrementUnread({
-    required Conversation conversation,
+    required String conversationId,
     required String senderId,
   }) async {
-    final updates = <String, Object>{};
+    final conversationRef = _dbCol.doc(conversationId);
 
-    for (final participant in conversation.participantIds) {
-      if (participant == senderId) continue;
+    final snapshot = await conversationRef.get();
 
-      updates['unreadCounts.$participant'] = FieldValue.increment(1);
+    if (!snapshot.exists) {
+      throw Exception('Conversation not found: $conversationId');
     }
 
-    await _dbCol.doc(conversation.id).update(updates);
+    final data = snapshot.data();
+
+    if (data == null) {
+      throw Exception('Conversation data is empty: $conversationId');
+    }
+
+    final participantIds = List<String>.from(
+      data['participantIds'] ?? const <String>[],
+    );
+
+    final updates = <String, Object>{};
+
+    for (final participantId in participantIds) {
+      if (participantId == senderId) continue;
+
+      updates['unreadCounts.$participantId'] = FieldValue.increment(1);
+    }
+
+    if (updates.isNotEmpty) {
+      await conversationRef.update(updates);
+    }
   }
 
   ///------------------------------------------------------------

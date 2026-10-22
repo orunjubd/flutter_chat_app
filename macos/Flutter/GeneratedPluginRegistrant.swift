@@ -5,6 +5,7 @@
 import FlutterMacOS
 import Foundation
 
+import app_badge_plus
 import audio_session
 import cloud_firestore
 import connectivity_plus
@@ -30,6 +31,7 @@ import url_launcher_macos
 import video_player_avfoundation
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
+  AppBadgePlusPlugin.register(with: registry.registrar(forPlugin: "AppBadgePlusPlugin"))
   AudioSessionPlugin.register(with: registry.registrar(forPlugin: "AudioSessionPlugin"))
   FLTFirebaseFirestorePlugin.register(with: registry.registrar(forPlugin: "FLTFirebaseFirestorePlugin"))
   ConnectivityPlusPlugin.register(with: registry.registrar(forPlugin: "ConnectivityPlusPlugin"))

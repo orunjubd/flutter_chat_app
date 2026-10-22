@@ -77,6 +77,20 @@ class _MessageListState extends ConsumerState<MessageList> {
           return from == null ||
               m.createdAt.compareTo(Timestamp.fromDate(from)) >= 0;
         }).toList();
+        // TEMPORARY DIAGNOSTICS — remove after investigation.
+        debugPrint('========== MESSAGE LIST DEBUG ==========');
+        debugPrint('Conversation ID: ${widget.conversationId}');
+        debugPrint('Current user ID: $currentUserId');
+        debugPrint('Received messages: ${messages.length}');
+        debugPrint('Visible messages: ${visibleMessages.length}');
+        debugPrint('Visible from: ${widget.visibleFrom}');
+
+        if (messages.isNotEmpty) {
+          debugPrint('First message timestamp: ${messages.first.createdAt}');
+          debugPrint('Last message timestamp: ${messages.last.createdAt}');
+        }
+
+        debugPrint('========================================');
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
 
@@ -143,12 +157,12 @@ class _MessageListState extends ConsumerState<MessageList> {
                 !isMe &&
                 (showDateSeparator || prev?.senderId != message.senderId);
 
-            debugPrint(
-              'USERNAME DEBUG: '
-              'showSenderNames=${widget.showSenderNames}, '
-              'showName=$showName, '
-              'senderName=${message.senderName}',
-            );
+            // debugPrint(
+            //   'USERNAME DEBUG: '
+            //   'showSenderNames=${widget.showSenderNames}, '
+            //   'showName=$showName, '
+            //   'senderName=${message.senderName}',
+            // );
 
             // 🚀 2. THE ENTERPRISE AUTOMATED READ RECEIPT TRIGGER BATCH FILTER
             if (!isMe && !message.readBy.contains(currentUserId)) {

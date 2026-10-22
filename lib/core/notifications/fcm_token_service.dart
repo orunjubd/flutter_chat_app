@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
 
 class FcmTokenService {
   FcmTokenService();
@@ -18,6 +19,16 @@ class FcmTokenService {
     if (_registeredForUserId == userId) {
       return; // already registered for this user — nothing to do
     }
+    // 🍎 [iOS Permission Guard] লগইন করার পরপরই আইওএস ব্যাজ, সাউন্ড ও অ্যালার্ট পারমিশন চাওয়া হলো
+    try {
+      await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+    } catch (e) {
+      debugPrint('⚠️ [FCM Permission] Request failed: $e');
+    }
     final messaging = FirebaseMessaging.instance;
     final token = await messaging.getToken();
     if (token != null) {
@@ -31,9 +42,9 @@ class FcmTokenService {
   }
 
   Future<void> _saveToken(String userId, String token) async {
-    await FirebaseFirestore.instance.collection('users').doc(userId).update({
+    await FirebaseFirestore.instance.collection('users').doc(userId).set({
       'fcmToken': token,
-    });
+    }, SetOptions(merge: true));
   }
 
   Future<void> dispose() async {

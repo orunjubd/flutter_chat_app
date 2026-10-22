@@ -64,15 +64,24 @@ class ConversationMessageRepository {
   /// Send
   /// ------------------------------------------------------------
   Future<void> sendMessage(Message message) async {
+    debugPrint('🚀 [DEBUG] Starting sendMessage Flow...');
+    debugPrint(
+      '📦 [DEBUG] Message ID: ${message.id}, Sender: ${message.senderName}, Type: ${message.type}',
+    );
     debugPrint(
       '📝 [Repository] sendMessage pipeline initialized for: ${message.id}',
     );
     try {
+      // Step A: Save message
+      debugPrint('⏳ [DEBUG] Step A: Saving message to Firestore...');
       await _messageRepository.sendMessage(
         conversationId: conversationId,
         message: message,
       );
+      debugPrint('✅ [DEBUG] Step A Complete: Message saved.');
 
+      // Step B: Update conversation
+      debugPrint('⏳ [DEBUG] Step B: Updating conversation metadata...');
       await _conversationRepository.updateConversationAfterMessage(
         conversationId: conversationId,
         lastMessage: switch (message.type) {
@@ -82,15 +91,24 @@ class ConversationMessageRepository {
           'file' => '📎 File',
           'location' => '📍 Location',
           'call_system' => '📞 Call',
+
           _ => message.text,
         },
+        lastSenderName: message.senderName,
       );
       debugPrint(
         '📡 [Repository] Step B complete: Parent conversation preview fields updated.',
       );
 
       // Step C: Increment the unread counts array maps for other group participants
-      // example: await incrementUnreadCounts(conversationId, message.senderId);
+      // example: await incrementUnread(conversationId, message.senderId);
+      debugPrint(
+        '⏳ [DEBUG] Step C: Incrementing unread counts for peer participants...',
+      );
+      await _conversationRepository.incrementUnread(
+        conversationId: conversationId,
+        senderId: message.senderId,
+      );
       debugPrint(
         '📡 [Repository] Step C complete: Dynamic participant unread fields incremented.',
       );
