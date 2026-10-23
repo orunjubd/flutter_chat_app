@@ -1,13 +1,15 @@
 import 'dart:async';
-import 'package:chat_app/core/navigation/app_navigator_key.dart';
+//import 'package:chat_app/core/navigation/app_navigator_key.dart';
+import 'package:chat_app/core/notifications/models/notification_payload.dart';
 import 'package:chat_app/core/notifications/providers/notification_provider.dart';
+import 'package:chat_app/core/notifications/services/notification_deep_link_service.dart';
 import 'package:chat_app/features/authentication/providers/auth_provider.dart';
 import 'package:chat_app/features/calls/core/controllers/call_controller.dart';
 import 'package:chat_app/features/calls/core/controllers/group_call_controller.dart';
 import 'package:chat_app/features/calls/core/models/call_state.dart';
 import 'package:chat_app/features/calls/core/utils/app_lifecycle_utils.dart';
 import 'package:chat_app/features/chat/data/models/conversation.dart';
-import 'package:chat_app/features/chat/presentation/screens/chat_screen.dart';
+//import 'package:chat_app/features/chat/presentation/screens/chat_screen.dart';
 import 'package:chat_app/features/chat/providers/conversation_provider.dart';
 import 'package:chat_app/features/chat/providers/conversation_settings_provider.dart';
 import 'package:chat_app/features/chat/providers/user_provider.dart';
@@ -91,9 +93,15 @@ class _NotificationHostState extends ConsumerState<NotificationHost> {
         .show(
           body.isEmpty ? title : '$title: $body',
           actionLabel: 'Open',
-          onAction: () => appNavigatorKey.currentState?.push(
-            MaterialPageRoute(builder: (_) => ChatScreen(conversation: c)),
-          ),
+          onAction: () => ref
+              .read(notificationDeepLinkServiceProvider)
+              .open(
+                NotificationPayload(
+                  type: NotificationType.message,
+                  conversationId: c.id,
+                  isGroup: c.isGroup,
+                ),
+              ),
         );
   }
 

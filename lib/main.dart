@@ -1,3 +1,4 @@
+import 'package:chat_app/core/notifications/widgets/notification_deep_link_host.dart';
 import 'package:chat_app/core/notifications/widgets/notification_host.dart';
 import 'package:chat_app/features/chat/providers/user_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -53,18 +54,13 @@ class MyApp extends ConsumerWidget {
 
       //home: const AuthGate(),
       home: const AuthGate(),
-      builder: (context, child) {
-        // Wraps the entire Navigator — every pushed route, at any
-        // depth — not just the initial `home` route's content. This
-        // is what actually makes the incoming-call overlay global.
-        return GlobalIncomingCallListener(
-          child: GlobalGroupCallListener(
+      builder: (context, child) => GlobalIncomingCallListener(
+        child: GlobalGroupCallListener(
+          child: NotificationDeepLinkHost(
             child: NotificationHost(child: child ?? const SizedBox.shrink()),
           ),
-        );
-        //final safeChild = child ?? const SizedBox.shrink();
-        // return GlobalIncomingCallListener(child: safeChild);
-      },
+        ),
+      ),
     );
   }
 }

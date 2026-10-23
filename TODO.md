@@ -455,3 +455,22 @@ call_kit_callbacks.dart, group_call_controller.dart, global_group_call_listener.
 - Old messages and group call names keep A’s old name, because senders are stored by name at send time. Only the profile is anonymized.
 - The server job in the Blaze phase finishes cleanup for interrupted deletions. A client can’t delete other users’ data.
 - Only email and password accounts are supported, since re-authentication uses the password.
+- A tap while the app is signed out is dropped, not queued until login.
+- Tapping a message while you are in a call opens the chat on top of the call screen.
+- Group chat notifications for chats you muted are filtered on the sender side in 7.2.
+------------------------------------
+## Tick 7.1 and 7.3, then add:
+------------------------------------
+## Phase 7 notifications
+- [x] 7.1 In-app alerts, sound, launcher badge, unread clearing
+- [x] 7.3 Payload model, parser, deep links (background and cold start tested on Nokia 6)
+- [ ] 7.2 Push: channels, flutter_local_notifications, message push handler, relay extension, sender-side mute check
+- [ ] Global mute and sound toggle (users/{uid}/private/settings + rules line + settings screen)
+- [ ] 7.4 Notifications screen (optional, skipped for now)
+
+## Known limits (notifications)
+- Launcher numeric badge is unsupported on the stock Android launcher (Supported: false)
+- A notification tapped while signed out is dropped, not queued until login
+- Tapping a message notification during a call opens the chat over the call screen
+- Foreground message push display arrives with 7.2 (local notifications)
+- Message pushes need the dev relay until Cloud Functions (Blaze) exist
