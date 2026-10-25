@@ -79,28 +79,30 @@ Future<void> showConversationActions(
                     Navigator.pop(sheetContext);
                     final choice = await showModalBottomSheet<Duration?>(
                       context: context,
-                      builder: (_) => SafeArea(
+                      builder: (muteContext) => SafeArea(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             ListTile(
                               title: const Text(ConversationStrings.mute8h),
                               onTap: () => Navigator.pop(
-                                context,
+                                muteContext,
                                 const Duration(hours: 8),
                               ),
                             ),
+
                             ListTile(
                               title: const Text(ConversationStrings.mute1w),
                               onTap: () => Navigator.pop(
-                                context,
+                                muteContext,
                                 const Duration(days: 7),
                               ),
                             ),
+
                             ListTile(
                               title: const Text(ConversationStrings.muteAlways),
                               onTap: () =>
-                                  Navigator.pop(context, Duration.zero),
+                                  Navigator.pop(muteContext, Duration.zero),
                             ),
                           ],
                         ),
@@ -129,6 +131,7 @@ Future<void> showConversationActions(
                     final repo = ref.read(conversationRepositoryProvider);
                     final uid = ref.read(currentUserIdProvider);
                     Navigator.pop(sheetContext);
+                    if (!context.mounted) return;
                     final ok = await showDialog<bool>(
                       context: context,
                       builder: (d) => AlertDialog(

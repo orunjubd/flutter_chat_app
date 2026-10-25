@@ -474,3 +474,12 @@ call_kit_callbacks.dart, group_call_controller.dart, global_group_call_listener.
 - Tapping a message notification during a call opens the chat over the call screen
 - Foreground message push display arrives with 7.2 (local notifications)
 - Message pushes need the dev relay until Cloud Functions (Blaze) exist
+### Phase 7 
+### Known Limitations & Future Enhancements:
+- Android-only implementation; iOS requires APNs setup and content-available configuration.
+- The message push relay runs locally on PC for dev; needs migration to Firebase Cloud Functions (Blaze tier).
+- Unread counts do not update the home screen launcher badge in the background.
+- Notification body shows raw message preview; per-chat privacy option ("Hide preview") is not yet implemented.
+- Global mute and custom sound toggles are missing (requires `users/{uid}/private/settings`).
+- Tap while signed out is dropped, not queued until login.
+- Tapping a message while in an active call opens the chat on top of the call screen.

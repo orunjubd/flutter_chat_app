@@ -88,7 +88,7 @@ class ConversationTile extends ConsumerWidget {
                       ],
                     ),
                     ConversationTime(timestamp: conversation.lastMessageTime),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 2),
                     UnreadBadge(
                       unreadCount: unreadCount,
                       muted: settings.isMuted,

@@ -1,3 +1,4 @@
+import 'package:chat_app/core/notifications/services/local_notification_service.dart';
 import 'package:chat_app/core/notifications/widgets/notification_deep_link_host.dart';
 import 'package:chat_app/core/notifications/widgets/notification_host.dart';
 import 'package:chat_app/features/chat/providers/user_provider.dart';
@@ -19,6 +20,7 @@ import 'package:chat_app/features/calls/core/widgets/global_incoming_call_listen
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await LocalNotificationService.instance.init();
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   await FlutterCallkitIncoming.onBackgroundMessage(callKitBackgroundHandler);
   //registerForegroundCallListener();

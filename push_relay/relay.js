@@ -1,5 +1,5 @@
 const { initializeApp, cert } = require("firebase-admin/app");
-const { getFirestore } = require("firebase-admin/firestore");
+const { getFirestore, Timestamp } = require("firebase-admin/firestore");
 const { getMessaging } = require("firebase-admin/messaging");
 const serviceAccount = require("./serviceAccountKey.json");
 
@@ -15,7 +15,7 @@ async function tokenOf(uid) {
     return doc.data()?.fcmToken;
 }
 
-async function push(uid, data) {
+async function push(uid, data, ttl = 45_000) {
     const token = await tokenOf(uid);
     if (!token) {
         console.log(`⚠️ no fcmToken for ${uid}`);
@@ -26,7 +26,7 @@ async function push(uid, data) {
         data,
         android: { priority: "high", ttl: 45_000 },
     });
-    console.log(`✅ ${data.type} → ${uid} (${data.callId})`);
+    console.log(`✅ ${data.type} → ${uid} (${data.callId ?? data.conversationId})`);
 }
 
 async function safe(fn) {
@@ -120,3 +120,58 @@ db.collection("groupCalls").where("state", "==", "active").onSnapshot(
     },
     (err) => console.error("❌ groupCalls listener:", err)
 );
+// ---------------------------------------------------------------- messages
+const startedAt = Timestamp.now();
+const lastSeenTime = new Map();   // conversationId -> lastMessageTime millis
+const pushedMessages = new Set(); // messageIds already sent
+
+async function isMuted(uid, conversationId) {
+    const s = await db.collection("users").doc(uid)
+        .collection("conversationSettings").doc(conversationId).get();
+    const until = s.data()?.mutedUntil?.toMillis?.() ?? 0;
+    return until > Date.now();
+}
+
+db.collection("conversations").where("updatedAt", ">", startedAt).onSnapshot(
+    async (snap) => {
+        for (const change of snap.docChanges()) {
+            if (change.type === "removed") continue;
+            const conv = change.doc.data();
+            const convId = change.doc.id;
+
+            // only when a new message arrived (not on read receipts or unread resets)
+            const t = conv.lastMessageTime?.toMillis?.() ?? 0;
+            if (lastSeenTime.get(convId) === t) continue;
+            lastSeenTime.set(convId, t);
+
+            await safe(async () => {
+                const latest = await change.doc.ref.collection("messages")
+                    .orderBy("createdAt", "desc").limit(1).get();
+                const msgDoc = latest.docs[0];
+                if (!msgDoc || pushedMessages.has(msgDoc.id)) return;
+                pushedMessages.add(msgDoc.id);
+
+                const m = msgDoc.data();
+                if (["group_system", "call_system"].includes(m.type)) return;
+                if (m.deletedForEveryone) return;
+
+                const isGroup = conv.type === "group";
+                const title = isGroup ? (conv.name ?? "Group") : (m.senderName ?? "New message");
+                const preview = conv.lastMessage ?? "";
+                const body = isGroup ? `${m.senderName ?? ""}: ${preview}` : preview;
+
+                for (const uid of conv.participantIds ?? []) {
+                    if (uid === m.senderId) continue;
+                    if (await isMuted(uid, convId)) { console.log(`🔇 muted ${uid} ${convId}`); continue; }
+                    await safe(() => push(uid, {
+                        type: "new_message",
+                        conversationId: convId,
+                        isGroup: String(isGroup),
+                        title,
+                        body,
+                    }, 86_400_000));
+                }
+            });
+        }
+    },
+    (err) => console.error("❌ conversations listener:", err));

@@ -2,6 +2,7 @@ import 'dart:async';
 //import 'package:chat_app/core/navigation/app_navigator_key.dart';
 import 'package:chat_app/core/notifications/models/notification_payload.dart';
 import 'package:chat_app/core/notifications/providers/notification_provider.dart';
+import 'package:chat_app/core/notifications/services/local_notification_service.dart';
 import 'package:chat_app/core/notifications/services/notification_deep_link_service.dart';
 import 'package:chat_app/features/authentication/providers/auth_provider.dart';
 import 'package:chat_app/features/calls/core/controllers/call_controller.dart';
@@ -125,6 +126,11 @@ class _NotificationHostState extends ConsumerState<NotificationHost> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String?>(activeConversationProvider, (_, id) {
+      if (id != null) {
+        unawaited(LocalNotificationService.instance.cancelForConversation(id));
+      }
+    });
     ref.listen<AsyncValue<List<Conversation>>>(
       conversationsProvider,
       _onConversations,

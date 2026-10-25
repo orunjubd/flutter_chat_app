@@ -1,5 +1,6 @@
 // features/calls/services/call_push_handler.dart
 //import 'package:chat_app/features/calls/providers/call_provider.dart';
+import 'package:chat_app/core/notifications/services/local_notification_service.dart';
 import 'package:chat_app/features/calls/core/services/callkit_bridge.dart';
 import 'package:chat_app/features/calls/core/services/pending_call_service.dart';
 import 'package:chat_app/firebase_options.dart';
@@ -28,6 +29,12 @@ import 'package:chat_app/features/calls/core/models/call_state.dart'
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   final type = message.data['type'];
+
+  if (type == 'new_message') {
+    await LocalNotificationService.instance.showMessage(message.data);
+    return;
+  }
+
   final callId = (message.data['callId'] as String?)?.trim();
   if (callId == null || callId.isEmpty) return;
 

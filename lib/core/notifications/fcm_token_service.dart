@@ -1,6 +1,7 @@
 // lib/core/notifications/fcm_token_service.dart
 import 'dart:async';
 
+import 'package:chat_app/core/notifications/services/local_notification_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +29,12 @@ class FcmTokenService {
       );
     } catch (e) {
       debugPrint('⚠️ [FCM Permission] Request failed: $e');
+    }
+    // 🔔 Request local notification permission (Android 13+).
+    try {
+      await LocalNotificationService.instance.requestPermission();
+    } catch (e) {
+      debugPrint('⚠️ [Local Notification Permission] Request failed: $e');
     }
     final messaging = FirebaseMessaging.instance;
     final token = await messaging.getToken();

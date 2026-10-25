@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:chat_app/core/dialogs/app_snackbar.dart';
 import 'package:chat_app/core/notifications/providers/notification_provider.dart';
+import 'package:chat_app/core/notifications/services/local_notification_service.dart';
 import 'package:chat_app/features/authentication/providers/auth_provider.dart';
 import 'package:chat_app/features/calls/core/controllers/group_call_controller.dart';
 import 'package:chat_app/features/calls/core/models/call_type.dart';
@@ -73,6 +76,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _active?.enter(widget.conversation.id);
+      unawaited(
+        LocalNotificationService.instance.cancelForConversation(
+          widget.conversation.id,
+        ),
+      );
       _initializeChatScreen();
     });
 
@@ -342,6 +350,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
       case AppLifecycleState.resumed:
         clearUnread();
         _setOnline();
+        unawaited(
+          LocalNotificationService.instance.cancelForConversation(
+            widget.conversation.id,
+          ),
+        );
         break;
 
       case AppLifecycleState.paused:
