@@ -31,6 +31,7 @@ class AuthGate extends ConsumerWidget {
         if (user == null) {
           return const AuthScreen();
         }
+
         ref.watch(contactMigrationProvider(user.uid));
         ref.watch(ensureProfileProvider(user.uid));
         final emailVerified = ref.watch(emailVerifiedProvider);

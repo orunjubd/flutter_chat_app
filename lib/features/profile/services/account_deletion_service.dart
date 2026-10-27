@@ -75,6 +75,7 @@ class AccountDeletionService {
     final userRef = _db.collection('users').doc(uid);
     await userRef.collection('private').doc('email').delete();
     await userRef.collection('private').doc('phone').delete();
+    await userRef.collection('private').doc('settings').delete();
     await _deleteAll(userRef.collection('groupCallHistory'));
     await _deleteAll(userRef.collection('conversationSettings'));
     await _db.collection('presence').doc(uid).delete();

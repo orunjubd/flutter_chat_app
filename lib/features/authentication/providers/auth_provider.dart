@@ -62,12 +62,12 @@ final ensureProfileProvider = FutureProvider.family<void, String>((
   final user = FirebaseAuth.instance.currentUser;
   if (user == null || user.uid != uid) return;
   final db = FirebaseFirestore.instance;
-  final ref0 = db.collection('users').doc(uid);
+  final userRef = db.collection('users').doc(uid);
   try {
     final created = await db.runTransaction<bool>((tx) async {
-      if ((await tx.get(ref0)).exists) return false;
+      if ((await tx.get(userRef)).exists) return false;
       final email = user.email ?? '';
-      tx.set(ref0, {
+      tx.set(userRef, {
         'username': email.contains('@') ? email.split('@').first : 'User',
         'imageUrl': '',
         'createdAt': Timestamp.now(),

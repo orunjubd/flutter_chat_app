@@ -3,6 +3,7 @@ import 'package:chat_app/core/location/widgets/location_message_bubble.dart';
 import 'package:chat_app/core/video/widgets/fullscreen_video_player.dart';
 import 'package:chat_app/features/calls/core/widgets/call_system_message_bubble.dart';
 import 'package:chat_app/features/chat/presentation/widgets/file_message_bubble.dart';
+import 'package:chat_app/features/chat/presentation/widgets/mention_text.dart';
 import 'package:chat_app/features/chat/presentation/widgets/video_message_bubble.dart';
 import 'package:chat_app/features/chat/providers/user_provider.dart';
 //import 'package:firebase_auth/firebase_auth.dart';
@@ -271,14 +272,28 @@ class ChatBubble extends ConsumerWidget {
                             message: m,
                             isMe: isMe,
                           ),
-                          TextMessage() => Text(
-                            _displayMessage,
-                            style: context.bodyText?.copyWith(
-                              color: isMe
-                                  ? context.myBubbleTextPrimary
-                                  : context.colorScheme.onSurface,
-                            ),
-                          ),
+                          TextMessage() =>
+                            _deleted || messageData.mentions.isEmpty
+                                ? Text(
+                                    _displayMessage,
+                                    style: context.bodyText?.copyWith(
+                                      color: isMe
+                                          ? context.myBubbleTextPrimary
+                                          : context.colorScheme.onSurface,
+                                    ),
+                                  )
+                                : MentionText(
+                                    text: _displayMessage,
+                                    mentions: messageData.mentions,
+                                    style: context.bodyText?.copyWith(
+                                      color: isMe
+                                          ? context.myBubbleTextPrimary
+                                          : context.colorScheme.onSurface,
+                                    ),
+                                    highlight: isMe
+                                        ? Colors.white
+                                        : context.primaryColor,
+                                  ),
                           LegacyMessage m when m.type == 'file' =>
                             FileMessageBubble(message: m, isMe: isMe),
                           LegacyMessage m => MediaContent(

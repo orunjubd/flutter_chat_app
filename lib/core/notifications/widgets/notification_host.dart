@@ -72,6 +72,9 @@ class _NotificationHostState extends ConsumerState<NotificationHost> {
   Future<void> _maybeAlert(Conversation c, String me) async {
     if (!isAppInForeground) return;
     if (ref.read(activeConversationProvider) == c.id) return;
+    final g = ref.read(globalNotificationSettingsProvider).value;
+    if (g?.isMuted ?? false) return;
+
     if (ref.read(conversationSettingsProvider(c.id)).isMuted) return;
     if (ref.read(callProvider).phase.isBusy ||
         ref.read(groupCallProvider).phase.isBusy) {
@@ -83,7 +86,10 @@ class _NotificationHostState extends ConsumerState<NotificationHost> {
     final title = await _title(c, me);
     if (!mounted) return;
     if (ref.read(activeConversationProvider) == c.id) return;
-    unawaited(ref.read(notificationSoundServiceProvider).playMessage());
+
+    if (g?.messageSound ?? true) {
+      unawaited(ref.read(notificationSoundServiceProvider).playMessage());
+    }
 
     final sender = c.lastSenderName ?? '';
     final body = (c.isGroup && sender.isNotEmpty)

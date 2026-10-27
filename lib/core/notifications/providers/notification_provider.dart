@@ -1,3 +1,5 @@
+import 'package:chat_app/core/notifications/models/global_notification_settings.dart';
+import 'package:chat_app/core/notifications/repositories/global_notification_settings_repository.dart';
 import 'package:chat_app/core/notifications/services/notification_badge_service.dart';
 import 'package:chat_app/core/notifications/services/notification_service.dart';
 import 'package:chat_app/core/notifications/services/notification_sound_service.dart';
@@ -49,3 +51,13 @@ final unreadTotalProvider = Provider.autoDispose<int>((ref) {
   }
   return total;
 });
+final globalNotificationSettingsRepositoryProvider = Provider(
+  (ref) => GlobalNotificationSettingsRepository(),
+);
+
+final globalNotificationSettingsProvider =
+    StreamProvider<GlobalNotificationSettings>((ref) {
+      final uid = ref.watch(currentUserIdProvider);
+      if (uid == null) return Stream.value(const GlobalNotificationSettings());
+      return ref.watch(globalNotificationSettingsRepositoryProvider).watch(uid);
+    });

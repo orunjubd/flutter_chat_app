@@ -709,7 +709,6 @@ Group chat feature, Profile Photos and User Profile, then Firestore rules replac
 ====================================================
 # Project State (2026-10-19, v1.12.1)
 ====================================================
-# Project State (2026-10-19, v1.12.1)
 
 | Phase | Status |
 |---|---|
@@ -732,3 +731,29 @@ Group chat feature, Profile Photos and User Profile, then Firestore rules replac
 
 ## Next
 Phase 7 notifications (in-app first, then deep links, then push channels).
+====================================================
+# Project State (2026-10-27, v1.13.0)
+====================================================
+
+| Phase | Status |
+|---|---|
+| 1 Foundation / Auth | Done (self-healing login added) |
+| 2-3 Messaging, media | Done |
+| 4 Media / Calls | Done |
+| 5 Conversations | Done |
+| 6 Group Chat | Done |
+| 7 Notifications | Done on Android with the dev relay; notifications screen (7.4) skipped |
+
+## Notifications
+- Foreground: Firestore-driven (no FCM): sound, SnackBar, badge, respecting chat mute and global mute
+- Background/killed: data-only FCM from the relay, shown through flutter_local_notifications
+- Taps: one deep-link service validates membership before opening a chat; calls stay with CallKit
+- Mute: per chat (users/{uid}/conversationSettings) and global (users/{uid}/private/settings)
+
+## Known gaps
+- Relay must run on a PC; Cloud Functions need Blaze
+- iOS push, mention marker on tiles, in-app mention override
+- fcmToken readable by signed-in users
+
+## Next
+Blaze migration (Cloud Functions), then the next roadmap phase.

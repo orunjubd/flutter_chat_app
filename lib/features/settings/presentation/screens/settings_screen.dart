@@ -1,4 +1,5 @@
 import 'package:chat_app/features/profile/presentation/screens/delete_account_screen.dart';
+import 'package:chat_app/features/settings/presentation/screens/notification_settings_screen.dart';
 import 'package:flutter/material.dart';
 
 import 'privacy_settings_screen.dart';
@@ -90,15 +91,21 @@ class SettingsScreen extends StatelessWidget {
                 title: const Text('Notifications'),
                 subtitle: const Text('Notification preferences'),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  ScaffoldMessenger.of(context)
-                    ..hideCurrentSnackBar()
-                    ..showSnackBar(
-                      const SnackBar(
-                        content: Text('Notification settings are coming next.'),
-                      ),
-                    );
-                },
+                // onTap: () {
+                //   ScaffoldMessenger.of(context)
+                //     ..hideCurrentSnackBar()
+                //     ..showSnackBar(
+                //       const SnackBar(
+                //         content: Text('Notification settings are coming next.'),
+                //       ),
+                //     );
+                // },
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const NotificationSettingsScreen(),
+                  ),
+                ),
               ),
 
               ListTile(

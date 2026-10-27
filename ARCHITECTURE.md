@@ -1777,3 +1777,21 @@ Background/killed: FCM (relay) → `call_push_handler` → CallKit (`showRaw`, d
 
 - removedFor hides a direct chat for one user; a new message restores it.
 - Permission values and invitee validity need a server (Blaze).
+
+-----------------------------------------------
+## v1.13.0
+-----------------------------------------------
+## Notifications
+- Foreground path: NotificationHost watches conversationsProvider; a rise in unreadCounts for a chat
+  that is not open, not muted, and not during a call triggers sound and a SnackBar.
+- Background path: the relay (later a Cloud Function) sends data-only `new_message` pushes, filtered per
+  recipient by global mute and chat mute. firebaseMessagingBackgroundHandler is the single FCM entry point
+  and routes by `type`: calls to CallKit, messages to LocalNotificationService.
+- Deep links: NotificationPayloadParser validates input; NotificationDeepLinkService verifies membership,
+  removedFor and deletedAt before navigating. Call payloads never navigate; the call UI owns them.
+- Settings: conversationSettings (per chat) and private/settings (global mute, sound).
+- Mentions: Message.mentions (uid -> name) is written by the composer; mentioned members bypass chat mute
+  (never global mute).
+### Decisions
+- Data-only pushes so the app controls display, mute and deep links.
+- Foreground alerts do not use FCM, so no duplicates and no server dependency while the app is open.

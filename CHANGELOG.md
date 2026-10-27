@@ -1508,3 +1508,23 @@ other.
 - Group call chat line appears when the creator leaves, not when the call truly ends
 - Push sender is the dev relay; fcmToken still in the public profile
 
+--------------------------------------------------------------
+## [1.13.0] – 2026-10-25 – Phase 7 Notifications + Mentions
+--------------------------------------------------------------
+
+### Added
+- In-app message alerts (sound, SnackBar, launcher badge), unread clearing while a chat is open
+- NotificationPayload model, parser and deep links (background, cold start, validated navigation)
+- Push for messages: channels (messages, group_messages), flutter_local_notifications,
+  data-only FCM handled in the single background handler, relay extension with per-recipient mute
+- Global mute and message sound toggle (users/{uid}/private/settings) with a settings screen
+- Mentions (@) in group chats: suggestions, highlighted text, push that overrides chat mute
+- Self-healing login: missing profile is recreated
+### Fixed
+- Notification stayed in the tray after opening the chat
+- Active-chat tracking after leaving a chat; stale unread counts after reading
+### Known limits
+- Android only for message push; iOS needs APNs setup
+- Push sender is the dev relay (needs a PC); Cloud Functions require Blaze
+- Launcher numeric badge unsupported on the stock Android launcher
+- In-app alerts ignore mentions; no "@" marker on tiles; edited messages keep their original mentions

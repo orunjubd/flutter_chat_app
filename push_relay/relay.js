@@ -132,6 +132,12 @@ async function isMuted(uid, conversationId) {
     return until > Date.now();
 }
 
+async function globalMuted(uid) {
+    const s = await db.collection("users").doc(uid)
+        .collection("private").doc("settings").get();
+    return (s.data()?.mutedUntil?.toMillis?.() ?? 0) > Date.now();
+}
+
 db.collection("conversations").where("updatedAt", ">", startedAt).onSnapshot(
     async (snap) => {
         for (const change of snap.docChanges()) {
@@ -160,15 +166,31 @@ db.collection("conversations").where("updatedAt", ">", startedAt).onSnapshot(
                 const preview = conv.lastMessage ?? "";
                 const body = isGroup ? `${m.senderName ?? ""}: ${preview}` : preview;
 
+
+
+                const mentionIds = Object.keys(m.mentions ?? {});
+
                 for (const uid of conv.participantIds ?? []) {
                     if (uid === m.senderId) continue;
-                    if (await isMuted(uid, convId)) { console.log(`🔇 muted ${uid} ${convId}`); continue; }
+                    if (await globalMuted(uid)) {
+                        console.log(`🔇 global mute ${uid}`);
+                        continue;
+                    }
+
+                    const mentioned = isGroup && mentionIds.includes(uid);
+
+                    // চ্যাট ম্যুট চেক: মেনশন না করা থাকলে এবং চ্যাট ম্যুট থাকলে নোটিফিকেশন স্কিপ হবে
+                    if (!mentioned && await isMuted(uid, convId)) {
+                        console.log(`🔇 muted ${uid} ${convId}`);
+                        continue;
+                    }
                     await safe(() => push(uid, {
                         type: "new_message",
                         conversationId: convId,
                         isGroup: String(isGroup),
+                        mention: String(mentioned),
                         title,
-                        body,
+                        body: mentioned ? `${m.senderName ?? ""} mentioned you: ${preview}` : body,
                     }, 86_400_000));
                 }
             });

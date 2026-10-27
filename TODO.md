@@ -379,6 +379,9 @@ call_kit_callbacks.dart, group_call_controller.dart, global_group_call_listener.
 - [Done ] Hide old messages from new group members (query by joinedAt)
 - [ ] Phase 1 leftovers and Phase 7 onward
 - [ ] Mentions (@), after Phase 7
+- [ ] Mention marker "@" on conversation tiles; mention override for in-app alerts
+- [ ] Edited messages: recompute mentions
+- [ ] iOS push (APNs, content-available)
 
 ## Security
 - [ Blaze] Move fcmToken out of the public users/{uid} document into a private document
@@ -410,7 +413,11 @@ call_kit_callbacks.dart, group_call_controller.dart, global_group_call_listener.
 - [ ] Retire push_relay/
 - [ ] └── Advanced
     └── Mentions (@)
-
+--------------------------------------------
+- [ ] Cloud Function equivalents for the relay's message, mention, global-mute and chat-mute filters
+- [ ] Notification text privacy option (hide previews)
+- [ ] Delete users/{uid}/private/settings in the server account-deletion job
+---------------------------------------------
 ## Verify
 - [DOne] Group killed-state accept/decline, after the double-accept guard
 - [DOne ] Notification-body tap while a group call rings (no in-app takeover)
@@ -469,11 +476,9 @@ call_kit_callbacks.dart, group_call_controller.dart, global_group_call_listener.
 - [ ] 7.4 Notifications screen (optional, skipped for now)
 
 ## Known limits (notifications)
-- Launcher numeric badge is unsupported on the stock Android launcher (Supported: false)
-- A notification tapped while signed out is dropped, not queued until login
-- Tapping a message notification during a call opens the chat over the call screen
-- Foreground message push display arrives with 7.2 (local notifications)
-- Message pushes need the dev relay until Cloud Functions (Blaze) exist
+- Launcher numeric badge unsupported on the stock Android launcher
+- A tapped notification while signed out is dropped
+- Tapping a message notification during a call opens the chat over the call screen exist
 ### Phase 7 
 ### Known Limitations & Future Enhancements:
 - Android-only implementation; iOS requires APNs setup and content-available configuration.

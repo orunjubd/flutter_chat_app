@@ -962,3 +962,29 @@ Release date: 2026-10-19
 - Mentions (@) not included
 - No message push notifications yet (Phase 7); background calls need the dev relay
 - Group permission values and invitees validated on the client only
+
+==============================================================
+# ECE v1.13.0 – Notifications
+==============================================================
+
+Release date: 2026-10-25
+
+## Features
+- Message alerts with sound and badge while the app is open
+- Push notifications when the app is in the background or closed (channels, deep links)
+- Mute per chat and globally, message sound toggle
+- Mentions (@) in groups, which notify even in a muted group
+- Profile self-healing at login
+
+## Testing status
+| Scenario | Result |
+|---|---|
+| In-app alerts, mute, group alerts, throttling | Passed |
+| Push in background, killed, foreground, mute, group, permission dialog | Passed (Nokia 6) |
+| Deep link from tap (background and cold start) | Passed |
+| Global mute, sound toggle, mentions, self-healing | Run the checklist before tagging |
+
+## Known limitations
+- Message push needs the dev relay running; Cloud Functions need the Blaze plan
+- Android only; iOS push is not set up
+- Numeric launcher badge is not supported on the stock Android launcher

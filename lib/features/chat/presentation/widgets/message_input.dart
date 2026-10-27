@@ -3,6 +3,7 @@ import 'package:chat_app/core/extensions/theme_extensions.dart';
 import 'package:chat_app/core/media/widgets/attachment_sheet.dart';
 import 'package:chat_app/features/authentication/providers/auth_provider.dart';
 import 'package:chat_app/features/chat/data/repositories/typing_repository.dart';
+import 'package:chat_app/features/chat/presentation/widgets/mention_suggestions.dart';
 import 'package:chat_app/features/chat/providers/user_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -19,11 +20,12 @@ class MessageInput extends ConsumerStatefulWidget {
     super.key,
     required this.onSend,
     required this.conversationId,
+    this.mentionCandidates = const {},
   });
 
-  final Future<void> Function(String text) onSend;
-
+  final Future<void> Function(String text, Map<String, String> mentions) onSend;
   final String conversationId;
+  final Map<String, String> mentionCandidates;
 
   @override
   ConsumerState<MessageInput> createState() => _MessageInputState();
@@ -31,6 +33,8 @@ class MessageInput extends ConsumerStatefulWidget {
 
 class _MessageInputState extends ConsumerState<MessageInput> {
   final TextEditingController _controller = TextEditingController();
+  final Map<String, String> _picked = {}; // uid -> name inserted into the text
+  List<MapEntry<String, String>> _matches = const [];
 
   Timer? _typingTimer;
   bool _isTyping = false;
@@ -39,13 +43,15 @@ class _MessageInputState extends ConsumerState<MessageInput> {
   String? _uid;
   String _username = '';
 
+  // VoidCallback get _updateMentionQuery => null;
+
   @override
   void initState() {
     super.initState();
     _typing = ref.read(typingRepositoryProvider);
     //_uid = FirebaseAuth.instance.currentUser?.uid;
     _uid = ref.read(currentUserIdProvider);
-
+    _controller.addListener(_updateMentionQuery);
     debugPrint('[MessageInput] Initialized with UID: $_uid');
   }
 
@@ -76,6 +82,71 @@ class _MessageInputState extends ConsumerState<MessageInput> {
     }
   }
 
+  void _updateMentionQuery() {
+    if (widget.mentionCandidates.isEmpty) return;
+    // if (widget.mentionCandidates.isEmpty) {
+    //   _setMatches(const []);
+    //   debugPrint('💬 [Mention] No mention candidates available.');
+    //   return;
+    // }
+    final sel = _controller.selection;
+    if (!sel.isValid || !sel.isCollapsed) {
+      _setMatches(const []);
+      return;
+    }
+    final text = _controller.text;
+    final cursor = sel.baseOffset;
+    final at = text.lastIndexOf('@', cursor > 0 ? cursor - 1 : 0);
+    final validStart =
+        at >= 0 && at < cursor && (at == 0 || text[at - 1].trim().isEmpty);
+    if (!validStart) {
+      _setMatches(const []);
+      return;
+    }
+    final query = text.substring(at + 1, cursor).toLowerCase();
+    debugPrint('💬 [Mention] Text: $text');
+    debugPrint('💬 [Mention] Query: "$query"');
+    debugPrint(
+      '💬 [Mention] Candidate count: ${widget.mentionCandidates.length}',
+    );
+    if (query.contains('\n') || query.length > 20) {
+      _setMatches(const []);
+      return;
+    }
+    final results = widget.mentionCandidates.entries
+        .where(
+          (e) =>
+              !_picked.containsKey(e.key) &&
+              e.value.toLowerCase().startsWith(query),
+        )
+        .take(5)
+        .toList();
+    debugPrint('💬 [Mention] Matches found: ${results.length}');
+    _setMatches(results);
+  }
+
+  void _setMatches(List<MapEntry<String, String>> m) {
+    if (m.length == _matches.length &&
+        m.every((e) => _matches.any((o) => o.key == e.key))) {
+      return;
+    }
+    setState(() => _matches = m);
+  }
+
+  void _pick(String uid, String name) {
+    final text = _controller.text;
+    final cursor = _controller.selection.baseOffset;
+    final at = text.lastIndexOf('@', cursor > 0 ? cursor - 1 : 0);
+    if (at < 0) return;
+    final inserted = '@$name ';
+    _controller.value = TextEditingValue(
+      text: text.replaceRange(at, cursor, inserted),
+      selection: TextSelection.collapsed(offset: at + inserted.length),
+    );
+    _picked[uid] = name;
+    setState(() => _matches = const []);
+  }
+
   void _stopTyping() {
     _typingTimer?.cancel();
     _typingTimer = Timer(const Duration(seconds: 2), () async {
@@ -94,25 +165,42 @@ class _MessageInputState extends ConsumerState<MessageInput> {
 
       unawaited(_typing.stopTyping(uid));
     }
+    _controller.removeListener(_updateMentionQuery);
     _controller.dispose();
     super.dispose();
   }
 
+  // Future<void> _submit() async {
+  //   final message = _controller.text.trim();
+  //   if (message.isEmpty) {
+  //     return;
+  //   }
+  //  final mentions = {
+  //     for (final e in _picked.entries)
+  //       if (message.contains('@${e.value}')) e.key: e.value,
+  //   };
+  //   _controller.clear();
+  //   if (_isTyping && _uid != null) {
+  //     _typingTimer
+  //         ?.cancel(); // Terminate any pending background execution tickers safely
+  //     _isTyping = false; // Reset the local state tracker flag instantly
+
+  //     // Fires an unawaited asynchronous cloud write loop so it updates the server without blocking message transmission speed
+  //     unawaited(_typing.stopTyping(_uid!));
+  //   }
+  //   await widget.onSend(message, mentions);
+  // }
   Future<void> _submit() async {
     final message = _controller.text.trim();
-    if (message.isEmpty) {
-      return;
-    }
+    if (message.isEmpty) return;
+    final mentions = {
+      for (final e in _picked.entries)
+        if (message.contains('@${e.value}')) e.key: e.value,
+    };
     _controller.clear();
-    if (_isTyping && _uid != null) {
-      _typingTimer
-          ?.cancel(); // Terminate any pending background execution tickers safely
-      _isTyping = false; // Reset the local state tracker flag instantly
-
-      // Fires an unawaited asynchronous cloud write loop so it updates the server without blocking message transmission speed
-      unawaited(_typing.stopTyping(_uid!));
-    }
-    await widget.onSend(message);
+    _picked.clear();
+    setState(() => _matches = const []);
+    await widget.onSend(message, mentions);
   }
 
   @override
@@ -123,6 +211,7 @@ class _MessageInputState extends ConsumerState<MessageInput> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          MentionSuggestions(matches: _matches, onPick: _pick),
           Material(
             elevation: 1,
             color: context.cardColor,
@@ -169,6 +258,7 @@ class _MessageInputState extends ConsumerState<MessageInput> {
                         _startTyping();
 
                         _stopTyping();
+                        // _updateMentionQuery();
                       },
                       onSubmitted: (_) => _submit(),
                     ),

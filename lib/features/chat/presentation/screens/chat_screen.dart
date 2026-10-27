@@ -14,6 +14,7 @@ import 'package:chat_app/features/calls/group_voice_calls/screens/group_voice_ca
 import 'package:chat_app/features/chat/data/repositories/conversation_repository.dart';
 import 'package:chat_app/features/chat/presentation/screens/group_info_screen.dart';
 import 'package:chat_app/features/chat/presentation/widgets/read_only_bar.dart';
+import 'package:chat_app/features/chat/providers/group_provider.dart';
 //import 'package:chat_app/features/calls/group_video_calls/screens/group_video_call_screen.dart';
 import 'package:chat_app/features/chat/search/screens/search_messages_screen.dart';
 import 'package:chat_app/features/profile/presentation/screens/user_profile_screen.dart';
@@ -104,13 +105,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
   }
 
   //Future<void> _sendMessage(WidgetRef ref, String text) async {
-  Future<void> _sendMessage(String text) async {
+  Future<void> _sendMessage(
+    String text, [
+    Map<String, String> mentions = const {},
+    //Map<String, List<String>> mentions = const {},
+  ]) async {
     debugPrint('👤 [Chat] currentUser state: ${ref.read(currentUserProvider)}');
     debugPrint(
       '✉️ [Chat] send start conv=${conversation.id} group=${conversation.isGroup} '
       'canSend=${conversation.canSend(ref.read(currentUserIdProvider) ?? '')}',
     );
-
+    // final formattedMentions = mentions.map((k, v) => MapEntry(k, [v]));
     final firebaseUser = FirebaseAuth.instance.currentUser;
     if (firebaseUser == null) {
       debugPrint('❌ [Chat] no firebase user');
@@ -164,6 +169,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
         deletedForEveryone: false,
         deletedBy: const [],
         deletedAt: null,
+
+        mentions: mentions,
       );
 
       final message = replyRepository.attachReply(
@@ -798,6 +805,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                 MessageInput(
                   conversationId: widget.conversation.id,
                   onSend: _sendMessage,
+                  mentionCandidates: isGroup
+                      ? (ref
+                                .watch(groupMemberNamesProvider(conversationId))
+                                .value ??
+                            const {})
+                      : const {},
                 ),
               ] else ...[
                 ReadOnlyBar(

@@ -30,6 +30,7 @@ sealed class Message {
     this.forwardedFromUserId,
     this.forwardedFromUserName,
     this.reactions = const {},
+    this.mentions = const {},
     this.editedAt,
   });
 
@@ -51,6 +52,8 @@ sealed class Message {
   final String? forwardedFromUserId;
   final String? forwardedFromUserName;
   final Map<String, List<String>> reactions;
+  //final Map<String, List<String>> mentions;
+  final Map<String, String> mentions;
   final Timestamp? editedAt;
 
   Map<String, dynamic> baseMap() => {
@@ -71,6 +74,7 @@ sealed class Message {
     'forwardedFromUserId': forwardedFromUserId,
     'forwardedFromUserName': forwardedFromUserName,
     'reactions': reactions,
+    if (mentions.isNotEmpty) 'mentions': mentions,
     'editedAt': editedAt,
   };
 
@@ -153,10 +157,12 @@ class TextMessage extends Message {
     super.forwardedFromUserId,
     super.forwardedFromUserName,
     super.reactions,
+    super.mentions,
     super.editedAt,
   }) : super(type: 'text');
 
   factory TextMessage._fromMap(String documentId, Map<String, dynamic> data) {
+    //final rawMentions = Map<String, dynamic>.from(data['mentions'] ?? const {});
     return TextMessage(
       id: documentId,
       senderId: data['senderId'] as String? ?? '',
@@ -175,6 +181,10 @@ class TextMessage extends Message {
       forwardedFromUserId: data['forwardedFromUserId'] as String?,
       forwardedFromUserName: data['forwardedFromUserName'] as String?,
       reactions: Message.parseReactions(data['reactions']),
+      mentions: Map<String, String>.from(data['mentions'] ?? const {}),
+      // mentions: rawMentions.map(
+      //   (key, value) => MapEntry(key, List<String>.from(value as List)),
+      // ),
       editedAt: data['editedAt'] as Timestamp?,
     );
   }
@@ -207,6 +217,8 @@ class TextMessage extends Message {
       forwardedFromUserId: forwardedFromUserId,
       forwardedFromUserName: forwardedFromUserName,
       reactions: reactions,
+      mentions: mentions,
+      //editedAt: editedAt,
     );
   }
 

@@ -178,6 +178,7 @@ restoring obsolete roadmap states from older documentation.
 
 | Version | Summary |
 |---|---|
+| v1.13.0 | 2026-10-25 | Phase 7 Notifications: in-app alerts, deep links, message push (dev relay), channels, global mute and sound toggle, mentions, self-healing login. Tested on Pixel 6, Nokia 6 (push) and Pixel 8. |
 | v1.12.1 | 2026-10-19 | Phase 6 Group Chat complete: groups, roles and permissions, avatar, system messages, message edit, delete chat for me, contact privacy, account deletion. Tested on 3+ devices. Mentions deferred. |
 | v1.12.0 | 2026-10-17 | Phase 6 Group Chat complete: groups, admin roles and permissions, group avatar, system messages, contact privacy migration, delete chat for me, account deletion. Tested with 3 devices. Mentions deferred. |
 | v1.11.0 | 2026-10-09 | Phase 5 Conversations complete: search conversations, pin (max 3), archive, favorite, mute, filters. Per-user settings in users/{uid}/conversationSettings. All feature tests passed. Mute does not silence pushes yet (Blaze migration). |
